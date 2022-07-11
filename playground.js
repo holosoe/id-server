@@ -1,6 +1,6 @@
-const { MerkleTree } = require('merkletreejs')
 const crypto = require('crypto')
-
+const { MerkleTree } = require('merkletreejs')
+const dbWrapper = require('./src/utils/dbWrapper')
 
 /**
  * Hash function for Merkle tree
@@ -42,6 +42,13 @@ function generateSecret() {
   return crypto.randomBytes(256)
 }
 
+/**
+ * Sign data with the server's private key
+ */
+function sign(data) {
+  // TODO...
+  return ''
+}
 
 async function main() {
   const address = '0x0000000000000000000000000000000000000000'
@@ -54,13 +61,23 @@ async function main() {
   const merkleRoot = tree.getRoot() // as bytes
   const secret = generateSecret() // as bytes
 
-  // pseudocode: 
-  // db.insert(address, merkleRoot, secret)
-  // db.insert(leaf1, leaf2, leaf3, ...)
-  // const encryptedRoot = hash(Buffer.concat([merkleRoot, secret]))
-  // return sign(Buffer.concat([address, encryptedRoot]))
+  // Insert info into db
+  const user = await dbWrapper.getUserByAddress(address)
+  if (!user) {
+    const userColumns = 'address=?, secret=?, merkleRoot=?'
+    const userParams = [address, secret, merkleRoot]
+    dbWrapper.runSql(`INSERT Users SET ${userColumns} WHERE address=?`, userParams)
+    const leavesColumns = 'merkleRoot=?, firstName=?, lastName=?, state=?'
+    const leavesParams = [merkleRoot, firstName, lastName, stateOfResidence]  
+    dbWrapper.runSql(`INSERT Users SET ${leavesColumns} WHERE address=?`, leavesParams)
+  }
 
-  // NOTE: The tree can be reconstructed from its leaves. Just store the leaves
+  // Return server's signature + encrypted root of user's Merkle tree.
+  // (This is given to the user.)
+  const encryptedRoot = hash(Buffer.concat([merkleRoot, secret]))
+  const signature = sign(Buffer.concat([address, encryptedRoot]))
+  return {signature: signature, enryptedRoot: encryptedRoot}
+
 
 
   // console.log(tree)
