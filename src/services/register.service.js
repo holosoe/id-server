@@ -1,3 +1,4 @@
+const axios = require("axios");
 const crypto = require("crypto");
 const { MerkleTree } = require("merkletreejs");
 const express = require("express");
@@ -51,8 +52,14 @@ async function getPersonaInquiry(inqId) {
   return inqResp.data;
 }
 
+async function getPersonaVerification(verId) {
+  const verResp = await axios.get(`https://withpersona.com/api/v1/verifications/${verId}`, personaHeaders);
+  return verResp.data;
+}
+
 // Create inquiry for user's gov id. Return inquiry id
 async function startPersonaInquiry(req, res) {
+  console.log(`${new Date().toISOString()} startPersonaInquiry: entered`);
   if (!req.query.address || !req.query.signature) {
     return res.status(400).json({ error: "Missing argument(s)" });
   }
@@ -60,11 +67,13 @@ async function startPersonaInquiry(req, res) {
   const userSignature = req.query.signature;
   const secretMessage = cache.take(address);
   if (!assertSignerIsAddress(secretMessage, userSignature, address)) {
+    console.log(`${new Date().toISOString()} startPersonaInquiry: signer != address. Exiting.`);
     return res.status(400).json({ error: "signer != address" });
   }
   // Ensure user hasn't already registered
   const user = await dbWrapper.getUserByAddress(address);
   if (user) {
+    console.log(`${new Date().toISOString()} startPersonaInquiry: User has already registered. Exiting.`);
     return res.status(400).json({ error: "User has already registered" });
   }
 
@@ -72,7 +81,7 @@ async function startPersonaInquiry(req, res) {
     data: {
       attributes: {
         "inquiry-template-id": "itmpl_q7otFYTBCsjBXCcNfcvw42QU", // Government ID template
-        "redirect-uri": `${process.env.THIS_URL}/register/`, // Persona redirects user to "<redirect-uri>/redirect"
+        "redirect-uri": `${process.env.THIS_URL}/register/redirect/`, // Persona redirects user to "<redirect-uri>/redirect"
       },
     },
   };
@@ -87,78 +96,93 @@ async function startPersonaInquiry(req, res) {
  * This function gets the newly created data from Persona.
  */
 async function acceptPersonaRedirect(req, res) {
-  const inqId = req.query.inquiryId;
+  console.log(`${new Date().toISOString()} acceptPersonaRedirect: entered`);
+  const inqId = req.query["inquiry-id"];
   const inquiry = await getPersonaInquiry(inqId);
 
   // Assert inquiry complete
   const inqStatus = inquiry.data.attributes.status;
   if (inqStatus !== "completed") {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: personaInquiry.status != completed`);
     return res.status(400).json({ error: "inquiry status != completed" });
   }
 
-  const userInfo = inquiry.included.attributes;
+  const verifications = inquiry["data"]["relationships"]["verifications"];
+  const verId = verifications["data"][0]["id"];
+  const verification = await getPersonaVerification(verId);
+  const verificationAttrs = verification["data"]["attributes"];
 
-  const firstName = userInfo.nameFirst;
-  const lastName = userInfo.nameLast;
-  const { countryCode } = userInfo;
-  const streetAddr1 = userInfo.addressStreet1;
-  const streetAddr2 = userInfo.addressStreet2;
-  const city = userInfo.addressCity;
-  const addrSubdivision = userInfo.addressSubdivision;
-  const postalCode = userInfo.addressPostalCode;
-  const { birthdate } = userInfo;
+  // Assert verifcation passed
+  if (verificationAttrs["status"] != "passed") {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: personaVerification.status != passed`);
+    return res.status(400).json({ error: "verification status !== passed" });
+  }
 
-  const creds = [
-    countryCode,
-    firstName,
-    lastName,
-    streetAddr1,
-    streetAddr2,
-    city,
-    addrSubdivision,
-    postalCode,
-    birthdate,
-  ];
-  const tree = await generateMerkleTree(creds);
-  const merkleRoot = tree.getRoot(); // as bytes
-  const secret = generateSecret(); // as bytes
-  const address = cache.take(inqId);
+  // const userInfo = inquiry.included.attributes;
 
-  // Insert info into db
-  const userColumns = "address=?, secret=?, merkleRoot=?";
-  const userParams = [address, secret, merkleRoot];
-  await dbWrapper.runSql(`INSERT Users SET ${userColumns} WHERE address=?`, userParams);
-  const leavesColumnsArr = [
-    "merkleRoot=?",
-    "firstName=?",
-    "lastName=?",
-    "countryCode=?",
-    "streetAddress1=?",
-    "streetAddress2=?",
-    "city=?",
-    "addressSubdivision=?",
-    "postalCode=?",
-    "birthdate=?",
-  ];
-  const leavesColumns = leavesColumnsArr.join(", ");
-  const leavesParams = [
-    merkleRoot,
-    firstName,
-    lastName,
-    countryCode,
-    streetAddr1,
-    streetAddr2,
-    city,
-    addrSubdivision,
-    postalCode,
-    birthdate,
-  ];
-  await dbWrapper.runSql(`INSERT Users SET ${leavesColumns} WHERE address=?`, leavesParams);
+  const firstName = verificationAttrs.nameFirst;
+  const lastName = verificationAttrs.nameLast;
+  const { countryCode } = verificationAttrs;
+  const streetAddr1 = verificationAttrs.addressStreet1;
+  const streetAddr2 = verificationAttrs.addressStreet2;
+  const city = verificationAttrs.addressCity;
+  const addrSubdivision = verificationAttrs.addressSubdivision;
+  const postalCode = verificationAttrs.addressPostalCode;
+  const { birthdate } = verificationAttrs;
+
+  // const creds = [
+  //   countryCode,
+  //   firstName,
+  //   lastName,
+  //   streetAddr1,
+  //   streetAddr2,
+  //   city,
+  //   addrSubdivision,
+  //   postalCode,
+  //   birthdate,
+  // ];
+  // const tree = await generateMerkleTree(creds);
+  // const merkleRoot = tree.getRoot(); // as bytes
+  // const secret = generateSecret(); // as bytes
+  // const address = cache.take(inqId);
+
+  // // Insert info into db
+  // const userColumns = "address=?, secret=?, merkleRoot=?";
+  // const userParams = [address, secret, merkleRoot];
+  // await dbWrapper.runSql(`INSERT Users SET ${userColumns} WHERE address=?`, userParams);
+  // const leavesColumnsArr = [
+  //   "merkleRoot=?",
+  //   "firstName=?",
+  //   "lastName=?",
+  //   "countryCode=?",
+  //   "streetAddress1=?",
+  //   "streetAddress2=?",
+  //   "city=?",
+  //   "addressSubdivision=?",
+  //   "postalCode=?",
+  //   "birthdate=?",
+  // ];
+  // const leavesColumns = leavesColumnsArr.join(", ");
+  // const leavesParams = [
+  //   merkleRoot,
+  //   firstName,
+  //   lastName,
+  //   countryCode,
+  //   streetAddr1,
+  //   streetAddr2,
+  //   city,
+  //   addrSubdivision,
+  //   postalCode,
+  //   birthdate,
+  // ];
+  // await dbWrapper.runSql(`INSERT Users SET ${leavesColumns} WHERE address=?`, leavesParams);
 
   // userPubKey||hash(serverPubKey||credential||secret)
 
   // TODO: Store encrypted user data in db
 
+  console.log(`${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`);
+  return res.redirect("http://localhost:3002/verified");
   // TODO: return res.redirect('FRONTEND-URL')
 }
 

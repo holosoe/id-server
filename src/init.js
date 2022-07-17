@@ -1,5 +1,6 @@
 const sqlite3 = require("sqlite3").verbose();
 const NodeCache = require("node-cache");
+require("dotenv").config();
 
 // NOTE: stdTTL of 10 min might not be enough. User might take >10 min to complete Persona verification
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 100 });
