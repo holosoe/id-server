@@ -1,8 +1,10 @@
-const express = require('express')
-const router = express.Router()
+const express = require("express");
 
-const register = require('../services/register.service')
+const router = express.Router();
 
-router.get('/', register.register)
+const register = require("../services/register.service");
 
-module.exports = router
+router.get("/", register.startPersonaInquiry);
+router.get("/redirect", register.acceptPersonaRedirect);
+
+module.exports = router;

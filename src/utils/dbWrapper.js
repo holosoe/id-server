@@ -1,7 +1,6 @@
-const sqlite3 = require('sqlite3').verbose();
+const sqlite3 = require("sqlite3").verbose();
 
-const { db } = require('../init')
-
+const { db } = require("../init");
 
 /**
  * Select from users table where column=value.
@@ -9,33 +8,34 @@ const { db } = require('../init')
  */
 module.exports.selectUser = (column, value) => {
   return new Promise((resolve, reject) => {
-    const statement = `SELECT * FROM Users WHERE ${column}=?`
+    const statement = `SELECT * FROM Users WHERE ${column}=?`;
     db.get(statement, value, (err, row) => {
       if (err) {
-        console.log(err)
-        reject(err)
+        console.log(err);
+        reject(err);
       } else {
-        resolve(row)
+        resolve(row);
       }
-    })
-  })
-}
+    });
+  });
+};
 
 module.exports.getUserByAddress = async (address) => {
-  return await module.exports.selectUser('address', address)
-}
+  return await module.exports.selectUser("address", address);
+};
 
 /**
- * Run the given SQL command with the given parameters. 
+ * Run the given SQL command with the given parameters.
  * Helpful for UPDATEs and INSERTs.
  */
 module.exports.runSql = (sql, params) => {
   return new Promise((resolve, reject) => {
     db.run(sql, params, (err) => {
       if (err) {
-        console.log(err)
-        reject(err)
+        console.log(err);
+        reject(err);
       }
-    })
-  })
-}
+      resolve();
+    });
+  });
+};
