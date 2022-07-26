@@ -24,6 +24,10 @@ module.exports.getUserByAddress = async (address) => {
   return await module.exports.selectUser("address", address);
 };
 
+module.exports.getUserByUuid = async (uuid) => {
+  return await module.exports.selectUser("uuid", uuid);
+};
+
 /**
  * Run the given SQL command with the given parameters.
  * Helpful for UPDATEs and INSERTs.

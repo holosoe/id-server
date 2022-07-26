@@ -9,29 +9,13 @@ const db = new sqlite3.Database(`${__dirname}/../database/db.sqlite3`);
 process.on("SIGTERM", () => db.close());
 db.serialize(() => {
   /**
-   * Users table records user's address, their secret, and their Merkle root.
-   *
-   * Leaves table records all leaves in the user's Merkle tree. The merkleRoot
-   * column in this table serves as a key used to link to the Users table.
+   * uuid == hash(user's driver license number)
+   * address == blockchain address
+   * creds == concatenation of the creds as bytes (see README)
+   * secret == user's nullifier
    */
-
-  const usersColumns = "(address TEXT, secret BLOB, merkleRoot BLOB)";
-  const leavesColumnsArr = [
-    "merkleRoot BLOB",
-    "firstName BLOB",
-    "lastName BLOB",
-    "countryCode BLOB",
-    "streetAddress1 BLOB",
-    "streetAddress2 BLOB",
-    "city BLOB",
-    "addressSubdivision BLOB",
-    "postalCode BLOB",
-    "birthdate BLOB",
-  ];
-  const leavesColumns = "(" + leavesColumnsArr.join(", ") + ")";
-
-  db.prepare(`CREATE TABLE IF NOT EXISTS Users ${usersColumns}`).run().finalize();
-  db.prepare(`CREATE TABLE IF NOT EXISTS Leaves ${leavesColumns}`).run().finalize();
+  const columns = "(uuid BLOB, address TEXT, creds BLOB, secret BLOB)";
+  db.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 
 module.exports = {

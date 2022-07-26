@@ -34,15 +34,6 @@ function hash(data) {
   return crypto.createHash("sha256").update(data).digest();
 }
 
-/**
- * @param creds Array of credentials to be hashed into Merkle tree
- */
-async function generateMerkleTree(creds) {
-  const leaves = creds.map((value) => hash(value));
-  const tree = new MerkleTree(leaves, hash);
-  return tree;
-}
-
 function generateSecret() {
   return crypto.randomBytes(16);
 }
@@ -128,6 +119,10 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "verification status !== passed" });
   }
 
+  if (verAttrs?.countryCode != "US") {
+    return res.status(400).json({ error: "User is not from US" });
+  }
+
   // const userInfo = inquiry.included.attributes;
 
   // Get each cred as bytestream of certain length
@@ -141,60 +136,42 @@ async function acceptPersonaRedirect(req, res) {
   const city = Buffer.concat(Buffer.from(verAttrs.addressCity || ""), 16);
   const postalCode = Buffer.concat(Buffer.from(verAttrs.addressPostalCode || ""), 8);
 
-  // const creds = [
-  //   countryCode,
-  //   firstName,
-  //   lastName,
-  //   streetAddr1,
-  //   streetAddr2,
-  //   city,
-  //   addrSubdivision,
-  //   postalCode,
-  //   birthdate,
-  // ];
-  // const tree = await generateMerkleTree(creds);
-  // const merkleRoot = tree.getRoot(); // as bytes
-  // const secret = generateSecret(); // as bytes
-  // const address = cache.take(inqId);
+  const creds = Buffer.concat([
+    firstName,
+    middleInitial,
+    lastName,
+    birthdate,
+    countryCode,
+    streetAddr1,
+    streetAddr2,
+    city,
+    postalCode,
+  ]);
+  const secret = generateSecret(); // as bytes
+  const address = cache.take(inqId);
+  const uuid = hash(verAttrs.driverLicenseNumber);
+  if (!uuid) {
+    return res.status(400).json({ error: "Driver License Number not found" });
+  }
 
-  // // Insert info into db
-  // const userColumns = "address=?, secret=?, merkleRoot=?";
-  // const userParams = [address, secret, merkleRoot];
-  // await dbWrapper.runSql(`INSERT Users SET ${userColumns} WHERE address=?`, userParams);
-  // const leavesColumnsArr = [
-  //   "merkleRoot=?",
-  //   "firstName=?",
-  //   "lastName=?",
-  //   "countryCode=?",
-  //   "streetAddress1=?",
-  //   "streetAddress2=?",
-  //   "city=?",
-  //   "addressSubdivision=?",
-  //   "postalCode=?",
-  //   "birthdate=?",
-  // ];
-  // const leavesColumns = leavesColumnsArr.join(", ");
-  // const leavesParams = [
-  //   merkleRoot,
-  //   firstName,
-  //   lastName,
-  //   countryCode,
-  //   streetAddr1,
-  //   streetAddr2,
-  //   city,
-  //   addrSubdivision,
-  //   postalCode,
-  //   birthdate,
-  // ];
-  // await dbWrapper.runSql(`INSERT Users SET ${leavesColumns} WHERE address=?`, leavesParams);
+  // Ensure user hasn't already registered
+  const user = await dbWrapper.getUserByUuid(uuid);
+  if (user) {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`);
+    return res.status(400).json({ error: "User has already registered" });
+  }
+
+  const columns = "uuid=?, address=?, creds=?, secret=?";
+  const params = [uuid, address, creds, secret];
+  await dbWrapper.runSql(`INSERT Users SET ${columns} WHERE address=?`, params);
+
+  // TODO: Call contract. Pseudocode:
+  // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
 
   // userPubKey||hash(serverPubKey||credential||secret)
 
-  // TODO: Store encrypted user data in db
-
   console.log(`${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`);
   return res.redirect("http://localhost:3002/verified");
-  // TODO: return res.redirect('FRONTEND-URL')
 }
 
 /**
