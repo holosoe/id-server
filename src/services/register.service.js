@@ -120,21 +120,26 @@ async function acceptPersonaRedirect(req, res) {
   }
 
   if (verAttrs?.countryCode != "US") {
-    return res.status(400).json({ error: "User is not from US" });
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: User is not from the US.`);
+    return res.status(400).json({ error: "User is not from the US" });
+  }
+  if (!verAttrs.driverLicenseNumber) {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: Driver license number not found.`);
+    return res.status(400).json({ error: "Could not give user a unique identifier" });
   }
 
   // const userInfo = inquiry.included.attributes;
 
   // Get each cred as bytestream of certain length
-  const firstName = Buffer.concat(Buffer.from(verAttrs.nameFirst || ""), 14);
-  const middleInitial = Buffer.concat(Buffer.from(verAttrs.nameMiddle || ""), 1);
-  const lastName = Buffer.concat(Buffer.from(verAttrs.nameLast || ""), 14);
+  const firstName = Buffer.concat([Buffer.from(verAttrs.nameFirst || "")], 14);
+  const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
+  const lastName = Buffer.concat([Buffer.from(verAttrs.nameLast || "")], 14);
   const birthdate = verAttrs.birthdate ? getBirthdateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
-  const countryCode = Buffer.concat(Buffer.from(verAttrs.countryCode || ""), 3);
-  const streetAddr1 = Buffer.concat(Buffer.from(verAttrs.addressStreet1 || ""), 16);
-  const streetAddr2 = Buffer.concat(Buffer.from(verAttrs.addressStreet2 || ""), 12);
-  const city = Buffer.concat(Buffer.from(verAttrs.addressCity || ""), 16);
-  const postalCode = Buffer.concat(Buffer.from(verAttrs.addressPostalCode || ""), 8);
+  const countryCode = Buffer.concat([Buffer.from(verAttrs.countryCode || "")], 3);
+  const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
+  const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
+  const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
+  const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
 
   const creds = Buffer.concat([
     firstName,
@@ -149,10 +154,7 @@ async function acceptPersonaRedirect(req, res) {
   ]);
   const secret = generateSecret(); // as bytes
   const address = cache.take(inqId);
-  const uuid = hash(verAttrs.driverLicenseNumber);
-  if (!uuid) {
-    return res.status(400).json({ error: "Driver License Number not found" });
-  }
+  const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber));
 
   // Ensure user hasn't already registered
   const user = await dbWrapper.getUserByUuid(uuid);
