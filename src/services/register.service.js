@@ -16,6 +16,16 @@ const personaHeaders = {
   },
 };
 
+const fourZeroedBytes = Buffer.concat([Buffer.from("")], 4);
+
+/**
+ * Convert birthdate string to first 4 bytes of UNIX timestamp
+ * @param {string} birthdate
+ */
+function getBirthdateAsBytes(birthdate) {
+  return Buffer.concat([Buffer.from(new Date(birthdate).getTime().toString())], 4);
+}
+
 /**
  * Hash function for Merkle tree
  */
@@ -110,25 +120,26 @@ async function acceptPersonaRedirect(req, res) {
   const verifications = inquiry["data"]["relationships"]["verifications"];
   const verId = verifications["data"][0]["id"];
   const verification = await getPersonaVerification(verId);
-  const verificationAttrs = verification["data"]["attributes"];
+  const verAttrs = verification["data"]["attributes"];
 
   // Assert verifcation passed
-  if (verificationAttrs["status"] != "passed") {
+  if (verAttrs["status"] != "passed") {
     console.log(`${new Date().toISOString()} acceptPersonaRedirect: personaVerification.status != passed`);
     return res.status(400).json({ error: "verification status !== passed" });
   }
 
   // const userInfo = inquiry.included.attributes;
 
-  const firstName = verificationAttrs.nameFirst;
-  const lastName = verificationAttrs.nameLast;
-  const { countryCode } = verificationAttrs;
-  const streetAddr1 = verificationAttrs.addressStreet1;
-  const streetAddr2 = verificationAttrs.addressStreet2;
-  const city = verificationAttrs.addressCity;
-  const addrSubdivision = verificationAttrs.addressSubdivision;
-  const postalCode = verificationAttrs.addressPostalCode;
-  const { birthdate } = verificationAttrs;
+  // Get each cred as bytestream of certain length
+  const firstName = Buffer.concat(Buffer.from(verAttrs.nameFirst || ""), 14);
+  const middleInitial = Buffer.concat(Buffer.from(verAttrs.nameMiddle || ""), 1);
+  const lastName = Buffer.concat(Buffer.from(verAttrs.nameLast || ""), 14);
+  const birthdate = verAttrs.birthdate ? getBirthdateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
+  const countryCode = Buffer.concat(Buffer.from(verAttrs.countryCode || ""), 3);
+  const streetAddr1 = Buffer.concat(Buffer.from(verAttrs.addressStreet1 || ""), 16);
+  const streetAddr2 = Buffer.concat(Buffer.from(verAttrs.addressStreet2 || ""), 12);
+  const city = Buffer.concat(Buffer.from(verAttrs.addressCity || ""), 16);
+  const postalCode = Buffer.concat(Buffer.from(verAttrs.addressPostalCode || ""), 8);
 
   // const creds = [
   //   countryCode,
