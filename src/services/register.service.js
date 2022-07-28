@@ -139,7 +139,7 @@ async function acceptPersonaRedirect(req, res) {
   const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
   const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
   const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
-  const completedAt = verAttrs.birthdate ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
+  const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
   const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
 
   const credsArr = [
