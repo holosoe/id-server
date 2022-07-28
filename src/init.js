@@ -12,9 +12,9 @@ db.serialize(() => {
    * uuid == hash(user's driver license number)
    * address == blockchain address
    * creds == concatenation of the creds as bytes (see README)
-   * secret == user's nullifier
+   * secrets == nullifiers for each credential. This is a bytestream, where each secret is 16 bytes
    */
-  const columns = "(uuid BLOB, address TEXT, creds BLOB, secret BLOB)";
+  const columns = "(uuid BLOB, address TEXT, creds BLOB, secrets BLOB)";
   db.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 

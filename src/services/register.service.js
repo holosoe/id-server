@@ -34,8 +34,8 @@ function hash(data) {
   return crypto.createHash("sha256").update(data).digest();
 }
 
-function generateSecret() {
-  return crypto.randomBytes(16);
+function generateSecret(numBytes = 16) {
+  return crypto.randomBytes(numBytes);
 }
 
 /**
@@ -141,7 +141,7 @@ async function acceptPersonaRedirect(req, res) {
   const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
   const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
 
-  const creds = Buffer.concat([
+  const credsArr = [
     firstName,
     middleInitial,
     lastName,
@@ -151,8 +151,9 @@ async function acceptPersonaRedirect(req, res) {
     streetAddr2,
     city,
     postalCode,
-  ]);
-  const secret = generateSecret(); // as bytes
+  ];
+  const creds = Buffer.concat(credsArr);
+  const secrets = generateSecret(credsArr.length * 16);
   const address = cache.take(inqId);
   const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber));
 
@@ -163,8 +164,8 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "User has already registered" });
   }
 
-  const columns = "uuid=?, address=?, creds=?, secret=?";
-  const params = [uuid, address, creds, secret];
+  const columns = "uuid=?, address=?, creds=?, secrets=?";
+  const params = [uuid, address, creds, secrets];
   await dbWrapper.runSql(`INSERT Users SET ${columns} WHERE address=?`, params);
 
   // TODO: Call contract. Pseudocode:
