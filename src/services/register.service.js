@@ -19,11 +19,11 @@ const personaHeaders = {
 const fourZeroedBytes = Buffer.concat([Buffer.from("")], 4);
 
 /**
- * Convert birthdate string to first 4 bytes of UNIX timestamp
- * @param {string} birthdate
+ * Convert date string to first 4 bytes of UNIX timestamp
+ * @param {string} date
  */
-function getBirthdateAsBytes(birthdate) {
-  return Buffer.concat([Buffer.from(new Date(birthdate).getTime().toString())], 4);
+function getDateAsBytes(date) {
+  return Buffer.concat([Buffer.from(new Date(date).getTime().toString())], 4);
 }
 
 /**
@@ -132,25 +132,27 @@ async function acceptPersonaRedirect(req, res) {
 
   // Get each cred as bytestream of certain length
   const firstName = Buffer.concat([Buffer.from(verAttrs.nameFirst || "")], 14);
-  const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
   const lastName = Buffer.concat([Buffer.from(verAttrs.nameLast || "")], 14);
-  const birthdate = verAttrs.birthdate ? getBirthdateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
+  const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
   const countryCode = Buffer.concat([Buffer.from(verAttrs.countryCode || "")], 3);
   const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
   const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
   const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
   const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
+  const completedAt = verAttrs.birthdate ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
+  const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
 
   const credsArr = [
     firstName,
-    middleInitial,
     lastName,
-    birthdate,
+    middleInitial,
     countryCode,
     streetAddr1,
     streetAddr2,
     city,
     postalCode,
+    completedAt,
+    birthdate,
   ];
   const creds = Buffer.concat(credsArr);
   const secrets = generateSecret(credsArr.length * 16);
