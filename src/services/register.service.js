@@ -4,7 +4,8 @@ const { MerkleTree } = require("merkletreejs");
 const express = require("express");
 const { cache } = require("../init");
 const dbWrapper = require("../utils/dbWrapper");
-const { assertSignerIsAddress, sign } = require("../utils/utils");
+const { assertSignerIsAddress, sign, getDaysSinceNewYear } = require("../utils/utils");
+const { stateAbbreviations } = require("../utils/constants");
 
 const personaHeaders = {
   headers: {
@@ -19,11 +20,34 @@ const personaHeaders = {
 const fourZeroedBytes = Buffer.concat([Buffer.from("")], 4);
 
 /**
- * Convert date string to first 4 bytes of UNIX timestamp
- * @param {string} date
+ * Convert date string to 3 bytes with the following structure:
+ * byte 1: number of years since 1900
+ * bytes 2-3: number of days since beginning of the year
+ * @param {string} date Must be of form yyyy-mm-dd
  */
 function getDateAsBytes(date) {
-  return Buffer.concat([Buffer.from(new Date(date).getTime().toString())], 4);
+  const [year, month, day] = date.split("-");
+  const yearsSince1900 = parseInt(year) - 1900;
+  const daysSinceNewYear = getDaysSinceNewYear(parseInt(month), parseInt(day));
+
+  // Convert yearsSince1900 and daysSinceNewYear to bytes
+  const yearsBuffer = Buffer.alloc(1, yearsSince1900);
+  let daysBuffer;
+  if (daysSinceNewYear > 255) {
+    daysBuffer = Buffer.concat([Buffer.from([0x01]), Buffer.alloc(1, daysSinceNewYear - 256)]);
+  } else {
+    daysBuffer = Buffer.alloc(1, daysSinceNewYear);
+  }
+
+  return Buffer.concat([yearsBuffer, daysBuffer], 3);
+}
+
+function getStateAsBytes(state) {
+  if (!state) {
+    return Buffer.concat([Buffer.from("")], 2);
+  }
+  state = stateAbbreviations[state.toUpperCase()];
+  return Buffer.concat([Buffer.from(state || "")], 2);
 }
 
 /**
@@ -138,9 +162,10 @@ async function acceptPersonaRedirect(req, res) {
   const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
   const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
   const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
+  const subdivision = getStateAsBytes(verAttrs.addressSubdivision); // 2 bytes
   const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
   const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
-  const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes; // yyyy-mm-dd
+  const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes;
 
   const credsArr = [
     firstName,
@@ -150,6 +175,7 @@ async function acceptPersonaRedirect(req, res) {
     streetAddr1,
     streetAddr2,
     city,
+    subdivision,
     postalCode,
     completedAt,
     birthdate,
