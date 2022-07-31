@@ -2,17 +2,15 @@ const web3 = require("web3");
 const { ethers } = require("ethers");
 // import { verifyMessage } from 'ethers/lib/utils'
 
-module.exports.assertSignerIsAddress = async (message, signature, address) => {
-  // const msgHash = web3.utils.sha3(message);
+module.exports.assertSignerIsAddress = (message, signature, address) => {
   let signer;
   try {
-    // signer = ethers.utils.recoverAddress(msgHash, signature).toLowerCase();
     signer = ethers.utils.verifyMessage(message, signature);
   } catch (err) {
     console.log(err);
     console.log("Malformed signature");
   }
-  return signer == address;
+  return signer.toLowerCase() == address.toLowerCase();
 };
 
 /**
