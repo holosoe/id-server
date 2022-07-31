@@ -14,7 +14,21 @@ db.serialize(() => {
    * creds == concatenation of the creds as bytes (see README)
    * secrets == nullifiers for each credential. This is a bytestream, where each secret is 16 bytes
    */
-  const columns = "(uuid BLOB, address TEXT, creds BLOB, secrets BLOB)";
+  const credsColumns =
+    [
+      "firstName",
+      "lastName",
+      "middleInitial",
+      "countryCode",
+      "streetAddress1",
+      "streetAddress2",
+      "city",
+      "subdivision",
+      "postalCode",
+      "completedAt",
+      "birthdate",
+    ].join(" TEXT, ") + " TEXT";
+  const columns = `(tempSecret TEXT, uuid BLOB, address TEXT, secret BLOB, ${credsColumns})`;
   db.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 

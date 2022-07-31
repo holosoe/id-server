@@ -59,7 +59,7 @@ function hash(data) {
 }
 
 function generateSecret(numBytes = 16) {
-  return crypto.randomBytes(numBytes);
+  return crypto.randomBytes(numBytes); // TODO: Generate random bytes in a frontend-friendly way. Use a string or typed integer array
 }
 
 /**
@@ -90,16 +90,10 @@ async function startPersonaInquiry(req, res) {
   }
   const address = req.query.address.toLowerCase();
   const userSignature = req.query.signature;
-  const secretMessage = cache.take(address);
+  const secretMessage = cache.get(address);
   if (!assertSignerIsAddress(secretMessage, userSignature, address)) {
     console.log(`${new Date().toISOString()} startPersonaInquiry: signer != address. Exiting.`);
     return res.status(400).json({ error: "signer != address" });
-  }
-  // Ensure user hasn't already registered
-  const user = await dbWrapper.getUserByAddress(address);
-  if (user) {
-    console.log(`${new Date().toISOString()} startPersonaInquiry: User has already registered. Exiting.`);
-    return res.status(400).json({ error: "User has already registered" });
   }
 
   const payload = {
@@ -147,25 +141,37 @@ async function acceptPersonaRedirect(req, res) {
     console.log(`${new Date().toISOString()} acceptPersonaRedirect: User is not from the US.`);
     return res.status(400).json({ error: "User is not from the US" });
   }
-  if (!verAttrs.driverLicenseNumber) {
-    console.log(`${new Date().toISOString()} acceptPersonaRedirect: Driver license number not found.`);
-    return res.status(400).json({ error: "Could not give user a unique identifier" });
-  }
-
-  // const userInfo = inquiry.included.attributes;
+  // TODO: UNCOMMENT this if statement. Figure out how to handle scenario in which user doesn't have a driver's license
+  // if (!verAttrs.driverLicenseNumber) {
+  //   console.log(`${new Date().toISOString()} acceptPersonaRedirect: Driver license number not found.`);
+  //   return res.status(400).json({ error: "Could not give user a unique identifier" });
+  // }
 
   // Get each cred as bytestream of certain length
-  const firstName = Buffer.concat([Buffer.from(verAttrs.nameFirst || "")], 14);
-  const lastName = Buffer.concat([Buffer.from(verAttrs.nameLast || "")], 14);
-  const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
-  const countryCode = Buffer.concat([Buffer.from(verAttrs.countryCode || "")], 3);
-  const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
-  const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
-  const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
-  const subdivision = getStateAsBytes(verAttrs.addressSubdivision); // 2 bytes
-  const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
-  const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
-  const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes;
+  // const firstName = Buffer.concat([Buffer.from(verAttrs.nameFirst || "")], 14);
+  // const lastName = Buffer.concat([Buffer.from(verAttrs.nameLast || "")], 14);
+  // const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
+  // const countryCode = Buffer.concat([Buffer.from(verAttrs.countryCode || "")], 3);
+  // const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
+  // const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
+  // const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
+  // const subdivision = getStateAsBytes(verAttrs.addressSubdivision); // 2 bytes
+  // const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
+  // const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
+  // const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes;
+
+  // Get each cred. Serialize in frontend
+  const firstName = verAttrs.nameFirst || "";
+  const lastName = verAttrs.nameLast || "";
+  const middleInitial = verAttrs.nameMiddle || "";
+  const countryCode = verAttrs.countryCode || "";
+  const streetAddr1 = verAttrs.addressStreet1 || "";
+  const streetAddr2 = verAttrs.addressStreet2 || "";
+  const city = verAttrs.addressCity || "";
+  const subdivision = verAttrs.addressSubdivision || "";
+  const postalCode = verAttrs.addressPostalCode || "";
+  const completedAt = verAttrs.completedAt || "";
+  const birthdate = verAttrs.birthdate || "";
 
   const credsArr = [
     firstName,
@@ -180,10 +186,11 @@ async function acceptPersonaRedirect(req, res) {
     completedAt,
     birthdate,
   ];
-  const creds = Buffer.concat(credsArr);
-  const secrets = generateSecret(credsArr.length * 16);
+  // const creds = Buffer.concat(credsArr);
+  const secret = generateSecret().toString();
   const address = cache.take(inqId);
-  const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber));
+  const tempSecret = cache.take(address);
+  const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber || address)); // TODO: Figure out how to handle scenario in which user doesn't have driver's license or dl number isn't returned
 
   // Ensure user hasn't already registered
   const user = await dbWrapper.getUserByUuid(uuid);
@@ -192,9 +199,23 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "User has already registered" });
   }
 
-  const columns = "uuid=?, address=?, creds=?, secrets=?";
-  const params = [uuid, address, creds, secrets];
-  await dbWrapper.runSql(`INSERT Users SET ${columns} WHERE address=?`, params);
+  const credsColumns = [
+    "firstName",
+    "lastName",
+    "middleInitial",
+    "countryCode",
+    "streetAddress1",
+    "streetAddress2",
+    "city",
+    "subdivision",
+    "postalCode",
+    "completedAt",
+    "birthdate",
+  ].join(", ");
+  const columns = "(" + `tempSecret, uuid, address, secret, ${credsColumns}` + ")";
+  const params = [tempSecret, uuid, address, secret, ...credsArr];
+  const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
+  await dbWrapper.runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
 
   // TODO: Call contract. Pseudocode:
   // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
@@ -206,53 +227,53 @@ async function acceptPersonaRedirect(req, res) {
 }
 
 /**
- * End Persona
+ * Allows user to retrieve their Persona verification info
  */
+async function acceptFrontendRedirect(req, res) {
+  console.log(`${new Date().toISOString()} acceptFrontendRedirect: Entered`);
+  const tempSecret = req.body.secret;
+  if (!tempSecret || tempSecret.includes(" ")) {
+    console.log(`${new Date().toISOString()} acceptFrontendRedirect: Invalid secret. Secret: ${tempSecret}`);
+    return res.status(400).json({ error: "Invalid secret." });
+  }
 
-/**
- * Register a user.
- * Steps:
- * 1. Have user go through ID verification on Persona
- * 2. Ensure verification checks pass
- * 3. Get user's info from Persona (name, address, etc.)
- * 4. Generate Merkle tree with user's info as leaves
- * 5. Generate secret for the user
- * 6. Store the user's address, secret, Merkle root, and leaves (i.e., hashes of info) in db.
- * 7. Return encrypted Merkle root and server's signature of encrypted Merkle root
- */
-// async function register(req, res) {
-//   // const address = '0x0000000000000000000000000000000000000000' // For testing
-//   const stateOfResidence = await getStateFromVerification({});
-//   const firstName = "John";
-//   const lastName = "Doe";
+  // Get user's info from db
+  // Remove from return value the fields user doesn't need
+  const user = await dbWrapper.getUserByTempSecret(tempSecret);
+  if (!user) {
+    console.log(`${new Date().toISOString()} acceptFrontendRedirect: Could not find user. Exiting.`);
+    return res.status(400).json({ error: "Could not find user" });
+  }
+  const uuid = user.uuid;
+  user.tempSecret = undefined;
+  user.uuid = undefined;
+  user.address = undefined;
 
-//   // Ensure user hasn't already registered
-//   const user = await dbWrapper.getUserByAddress(address);
-//   if (user) {
-//     return res.status(400).json({ error: "User has already registered" });
-//   }
+  // Delete user's creds+tempSecret from db
+  // Keep uuid & address to prevent sybil attacks
+  const credsColsArr = [
+    "firstName",
+    "lastName",
+    "middleInitial",
+    "countryCode",
+    "streetAddress1",
+    "streetAddress2",
+    "city",
+    "subdivision",
+    "postalCode",
+    "completedAt",
+    "birthdate",
+  ];
+  const credsColumns = credsColsArr.join("=?, ") + "=?, ";
+  const columns = credsColumns + "tempSecret=?";
+  const params = [...credsColsArr.map((item) => ""), "", uuid];
+  await dbWrapper.runSql(`UPDATE Users SET ${columns} WHERE uuid=?`, params);
 
-//   const creds = [stateOfResidence, firstName, lastName];
-//   const tree = await generateMerkleTree(creds);
-//   const merkleRoot = tree.getRoot(); // as bytes
-//   const secret = generateSecret(); // as bytes
-
-//   // Insert info into db
-//   const userColumns = "address=?, secret=?, merkleRoot=?";
-//   const userParams = [address, secret, merkleRoot];
-//   dbWrapper.runSql(`INSERT Users SET ${userColumns} WHERE address=?`, userParams);
-//   const leavesColumns = "merkleRoot=?, firstName=?, lastName=?, state=?";
-//   const leavesParams = [merkleRoot, firstName, lastName, stateOfResidence];
-//   dbWrapper.runSql(`INSERT Users SET ${leavesColumns} WHERE address=?`, leavesParams);
-
-//   // Return server's signature + encrypted root of user's Merkle tree.
-//   // (This should be given to the user.)
-//   const encryptedRoot = hash(Buffer.concat([merkleRoot, secret]));
-//   const signature = sign(Buffer.concat([address, encryptedRoot]));
-//   return res.status(200).json({ signature, enryptedRoot: encryptedRoot });
-// }
+  return res.status(200).json(user);
+}
 
 module.exports = {
   startPersonaInquiry: startPersonaInquiry,
   acceptPersonaRedirect: acceptPersonaRedirect,
+  acceptFrontendRedirect: acceptFrontendRedirect,
 };
