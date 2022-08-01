@@ -11,7 +11,7 @@
     "merkletreejs": "^0.2.32",
     "node-cache": "^5.1.2",
     "sqlite3": "^5.0.8",
-    "web3": "^1.7.4"
+    "web3": "^1.7.5"
   },
   "devDependencies": {
     "eslint": "^8.20.0",
