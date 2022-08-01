@@ -50,6 +50,13 @@ function getStateAsBytes(state) {
   return Buffer.concat([Buffer.from(state || "")], 2);
 }
 
+function handleVerificationCount() {
+  if (dbWrapper.getLastZeroed() < new Date().getMonth()) {
+    dbWrapper.setVerificationCountToZero();
+  }
+  dbWrapper.incrementVerificationCount();
+}
+
 /**
  * Hash function for Merkle tree
  */
@@ -85,6 +92,10 @@ async function getPersonaVerification(verId) {
 // Create inquiry for user's gov id. Return inquiry id
 async function startPersonaInquiry(req, res) {
   console.log(`${new Date().toISOString()} startPersonaInquiry: entered`);
+  handleVerificationCount();
+  if (dbWrapper.getVerificationCount() >= 500) {
+    return res.status(503).json({ error: "We cannot service any more verifications this month." });
+  }
   if (!req.query.address || !req.query.signature) {
     return res.status(400).json({ error: "Missing argument(s)" });
   }
