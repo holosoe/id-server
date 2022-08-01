@@ -1,8 +1,9 @@
-const web3 = require("web3");
-const { ethers } = require("ethers");
+import web3 from "web3";
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 // import { verifyMessage } from 'ethers/lib/utils'
 
-module.exports.assertSignerIsAddress = (message, signature, address) => {
+export function assertSignerIsAddress(message, signature, address) {
   let signer;
   try {
     signer = ethers.utils.verifyMessage(message, signature);
@@ -11,18 +12,18 @@ module.exports.assertSignerIsAddress = (message, signature, address) => {
     console.log("Malformed signature");
   }
   return signer.toLowerCase() == address.toLowerCase();
-};
+}
 
 /**
  * Sign data with the server's private key
  */
-module.exports.sign = async (data) => {
+export async function sign(data) {
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const signature = await wallet.signMessage(data);
   return signature;
-};
+}
 
-module.exports.getDaysSinceNewYear = (month, day) => {
+export function getDaysSinceNewYear(month, day) {
   let daysSinceNewYear = day;
   if (month == 1) {
     return daysSinceNewYear;
@@ -61,4 +62,4 @@ module.exports.getDaysSinceNewYear = (month, day) => {
     daysSinceNewYear += 30;
   }
   return daysSinceNewYear;
-};
+}

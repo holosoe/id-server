@@ -1,11 +1,11 @@
-const axios = require("axios");
-const crypto = require("crypto");
-const { MerkleTree } = require("merkletreejs");
-const express = require("express");
-const { cache } = require("../init");
-const dbWrapper = require("../utils/dbWrapper");
-const { assertSignerIsAddress, sign, getDaysSinceNewYear } = require("../utils/utils");
-const { stateAbbreviations } = require("../utils/constants");
+import axios from "axios";
+import { createHash, randomBytes } from "crypto";
+// import { MerkleTree } from "merkletreejs";
+import express from "express";
+import { cache } from "../init.js";
+import { getUserByUuid, runSql, getUserByTempSecret } from "../utils/dbWrapper.js";
+import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
+import { stateAbbreviations } from "../utils/constants.js";
 
 const personaHeaders = {
   headers: {
@@ -55,11 +55,11 @@ function getStateAsBytes(state) {
  */
 function hash(data) {
   // returns Buffer
-  return crypto.createHash("sha256").update(data).digest();
+  return createHash("sha256").update(data).digest();
 }
 
 function generateSecret(numBytes = 16) {
-  return crypto.randomBytes(numBytes); // TODO: Generate random bytes in a frontend-friendly way. Use a string or typed integer array
+  return randomBytes(numBytes); // TODO: Generate random bytes in a frontend-friendly way. Use a string or typed integer array
 }
 
 /**
@@ -91,6 +91,10 @@ async function startPersonaInquiry(req, res) {
   const address = req.query.address.toLowerCase();
   const userSignature = req.query.signature;
   const secretMessage = cache.get(address);
+  if (!secretMessage) {
+    console.log(`${new Date().toISOString()} startPersonaInquiry: secret message expired. Exiting.`);
+    return res.status(400).json({ error: "Temporary secret expired. Please try again." });
+  }
   if (!assertSignerIsAddress(secretMessage, userSignature, address)) {
     console.log(`${new Date().toISOString()} startPersonaInquiry: signer != address. Exiting.`);
     return res.status(400).json({ error: "signer != address" });
@@ -197,7 +201,7 @@ async function acceptPersonaRedirect(req, res) {
   const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber || address)); // TODO: Figure out how to handle scenario in which user doesn't have driver's license or dl number isn't returned
 
   // Ensure user hasn't already registered
-  const user = await dbWrapper.getUserByUuid(uuid);
+  const user = await getUserByUuid(uuid);
   if (user) {
     console.log(`${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`);
     return res.status(400).json({ error: "User has already registered" });
@@ -219,7 +223,7 @@ async function acceptPersonaRedirect(req, res) {
   const columns = "(" + `tempSecret, uuid, address, secret, ${credsColumns}` + ")";
   const params = [tempSecret, uuid, address, secret, ...credsArr];
   const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
-  await dbWrapper.runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
+  await runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
 
   // TODO: Call contract. Pseudocode:
   // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
@@ -241,7 +245,7 @@ async function acceptFrontendRedirect(req, res) {
 
   // Get user's info from db
   // Remove from return value the fields user doesn't need
-  const user = await dbWrapper.getUserByTempSecret(tempSecret);
+  const user = await getUserByTempSecret(tempSecret);
   if (!user) {
     console.log(`${new Date().toISOString()} acceptFrontendRedirect: Could not find user. Exiting.`);
     return res.status(400).json({ error: "Could not find user" });
@@ -287,13 +291,9 @@ async function acceptFrontendRedirect(req, res) {
   const credsColumns = credsColsArr.join("=?, ") + "=?, ";
   const columns = credsColumns + "tempSecret=?";
   const params = [...credsColsArr.map((item) => ""), "", uuid];
-  await dbWrapper.runSql(`UPDATE Users SET ${columns} WHERE uuid=?`, params);
+  await runSql(`UPDATE Users SET ${columns} WHERE uuid=?`, params);
 
   return res.status(200).json(user);
 }
 
-module.exports = {
-  startPersonaInquiry: startPersonaInquiry,
-  acceptPersonaRedirect: acceptPersonaRedirect,
-  acceptFrontendRedirect: acceptFrontendRedirect,
-};
+export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };

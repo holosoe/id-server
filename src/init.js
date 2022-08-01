@@ -1,11 +1,13 @@
-const sqlite3 = require("sqlite3").verbose();
-const NodeCache = require("node-cache");
-require("dotenv").config();
+// const sqlite3 = require("sqlite3").verbose();
+import sqlite3 from "sqlite3";
+import NodeCache from "node-cache";
+import dotenv from "dotenv";
+dotenv.config();
 
 // NOTE: stdTTL of 10 min might not be enough. User might take >10 min to complete Persona verification
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 100 });
 
-const db = new sqlite3.Database(`${__dirname}/../database/db.sqlite3`);
+const db = new sqlite3.Database(process.env.PATH_TO_DB);
 process.on("SIGTERM", () => db.close());
 db.serialize(() => {
   /**
@@ -31,7 +33,4 @@ db.serialize(() => {
   db.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 
-module.exports = {
-  db: db,
-  cache: cache,
-};
+export { db, cache };

@@ -1,6 +1,8 @@
-const express = require("express");
-const cors = require("cors");
-const init = require("./init");
+import express from "express";
+import cors from "cors";
+// import init from "./init.js";
+import register from "./routes/register.js";
+import initialize from "./routes/initialize.js";
 
 const app = express();
 
@@ -13,9 +15,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const register = require("./routes/register");
-const initialize = require("./routes/initialize");
 app.use("/register", register);
 app.use("/initialize", initialize);
 
-module.exports = app;
+export { app };

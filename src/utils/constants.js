@@ -1,4 +1,4 @@
-module.exports.stateAbbreviations = {
+export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",
   "AMERICAN SAMOA": "AS",

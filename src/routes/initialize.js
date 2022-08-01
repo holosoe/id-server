@@ -1,9 +1,8 @@
-const express = require("express");
+import express from "express";
+import { initialize } from "../services/initialize.service.js";
 
 const router = express.Router();
 
-const initialize = require("../services/initialize.service");
+router.get("/", initialize);
 
-router.get("/", initialize.initialize);
-
-module.exports = router;
+export default router;
