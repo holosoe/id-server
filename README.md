@@ -2,16 +2,20 @@ Backend for Lobby3 ID.
 
 ## Creds Serialization
 
-For every user, the following fields are represented as bytes, concatenated, and stored in the `creds` column of the `Users` table.
+Credentials are temporarilly stored plaintext in the `Users` table near the end of the verification process. At the end of the verification process, the user is given their credentials to store in their browser.
+
+The following is the serialization scheme that our proofs will expect. User credentials must be converted to bytes on the frontend prior to proof generation.
 
 | field           | number of bytes |
 | --------------- | --------------- |
 | `nameFirst`     | 14              |
-| `middleInitial` | 1               |
 | `lastName`      | 14              |
-| `birthdate`     | 4               |
+| `middleInitial` | 1               |
 | `countryCode`   | 3               |
 | `streetAddr1`   | 16              |
 | `streetAddr2`   | 12              |
 | `city`          | 16              |
+| `subdivision`   | 2               |
 | `postalCode`    | 8               |
+| `completedAt`   | 3               |
+| `birthdate`     | 3               |

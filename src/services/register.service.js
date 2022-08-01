@@ -17,7 +17,7 @@ const personaHeaders = {
   },
 };
 
-const fourZeroedBytes = Buffer.concat([Buffer.from("")], 4);
+const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 
 /**
  * Convert date string to 3 bytes with the following structure:
@@ -157,8 +157,8 @@ async function acceptPersonaRedirect(req, res) {
   // const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
   // const subdivision = getStateAsBytes(verAttrs.addressSubdivision); // 2 bytes
   // const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
-  // const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : fourZeroedBytes;
-  // const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : fourZeroedBytes;
+  // const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : threeZeroedBytes;
+  // const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : threeZeroedBytes;
 
   // Get each cred. Serialize in frontend
   const firstName = verAttrs.nameFirst || "";
