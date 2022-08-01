@@ -11,8 +11,7 @@ db.serialize(() => {
   /**
    * uuid == hash(user's driver license number)
    * address == blockchain address
-   * creds == concatenation of the creds as bytes (see README)
-   * secrets == nullifiers for each credential. This is a bytestream, where each secret is 16 bytes
+   * secret == nullifier. String. Must be converted to bytes for proofs.
    */
   const credsColumns =
     [
