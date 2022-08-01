@@ -116,6 +116,10 @@ async function startPersonaInquiry(req, res) {
  */
 async function acceptPersonaRedirect(req, res) {
   console.log(`${new Date().toISOString()} acceptPersonaRedirect: entered`);
+  if (!req.query["inquiry-id"]) {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: entered`);
+    return res.status(400).json({ error: "No inquiry-id found." });
+  }
   const inqId = req.query["inquiry-id"];
   const inquiry = await getPersonaInquiry(inqId);
 
@@ -219,8 +223,6 @@ async function acceptPersonaRedirect(req, res) {
 
   // TODO: Call contract. Pseudocode:
   // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
-
-  // userPubKey||hash(serverPubKey||credential||secret)
 
   console.log(`${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`);
   return res.redirect("http://localhost:3002/verified");
