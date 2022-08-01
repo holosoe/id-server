@@ -270,7 +270,7 @@ async function acceptFrontendRedirect(req, res) {
     user.completedAt +
     user.birthdate;
   const msg = process.env.ADDRESS + user.secret + credentials;
-  const serverSignature = sign(msg);
+  const serverSignature = await sign(msg);
   user.serverSignature = serverSignature;
 
   // Delete user's creds+tempSecret from db
