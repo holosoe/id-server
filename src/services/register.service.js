@@ -231,7 +231,7 @@ async function acceptPersonaRedirect(req, res) {
  */
 async function acceptFrontendRedirect(req, res) {
   console.log(`${new Date().toISOString()} acceptFrontendRedirect: Entered`);
-  const tempSecret = req.body.secret;
+  const tempSecret = req.query.secret;
   if (!tempSecret || tempSecret.includes(" ")) {
     console.log(`${new Date().toISOString()} acceptFrontendRedirect: Invalid secret. Secret: ${tempSecret}`);
     return res.status(400).json({ error: "Invalid secret." });
