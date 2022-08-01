@@ -249,6 +249,24 @@ async function acceptFrontendRedirect(req, res) {
   user.uuid = undefined;
   user.address = undefined;
 
+  // TODO: Serialize this in a way that the frontend can also serialize it
+  // sign(server_address∣∣secret∣∣credentials​)
+  const credentials =
+    user.firstName +
+    user.lastName +
+    user.middleInitial +
+    user.countryCode +
+    user.streetAddr1 +
+    user.streetAddr2 +
+    user.city +
+    user.subdivision +
+    user.postalCode +
+    user.completedAt +
+    user.birthdate;
+  const msg = process.env.ADDRESS + user.secret + credentials;
+  const serverSignature = sign(msg);
+  user.serverSignature = serverSignature;
+
   // Delete user's creds+tempSecret from db
   // Keep uuid & address to prevent sybil attacks
   const credsColsArr = [
