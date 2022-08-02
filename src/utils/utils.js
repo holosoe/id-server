@@ -32,7 +32,11 @@ export function getDaysSinceNewYear(month, day) {
     daysSinceNewYear += 31;
   }
   if (month > 2) {
-    daysSinceNewYear += 28; // TODO: Check for leap years
+    if (isLeapYear(new Date().getYear())) {
+      daysSinceNewYear += 29;
+    } else {
+      daysSinceNewYear += 28;
+    }
   }
   if (month > 3) {
     daysSinceNewYear += 31;
@@ -62,4 +66,8 @@ export function getDaysSinceNewYear(month, day) {
     daysSinceNewYear += 30;
   }
   return daysSinceNewYear;
+}
+
+function isLeapYear(year) {
+  return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }

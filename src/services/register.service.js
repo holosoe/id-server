@@ -276,8 +276,6 @@ async function acceptFrontendRedirect(req, res) {
   user.uuid = undefined;
   user.address = undefined;
 
-  // TODO: Serialize this in a way that the frontend can also serialize it
-  // sign(server_address∣∣secret∣∣credentials​)
   const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
   const arrayifiedSecret = ethers.utils.arrayify(user.secret);
   const credsArr = [
