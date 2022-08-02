@@ -90,13 +90,21 @@ function generateSecret(numBytes = 16) {
  */
 
 async function getPersonaInquiry(inqId) {
-  const inqResp = await axios.get(`https://withpersona.com/api/v1/inquiries/${inqId}`, personaHeaders);
-  return inqResp.data;
+  try {
+    const inqResp = await axios.get(`https://withpersona.com/api/v1/inquiries/${inqId}`, personaHeaders);
+    return inqResp.data;
+  } catch (err) {
+    return {};
+  }
 }
 
 async function getPersonaVerification(verId) {
-  const verResp = await axios.get(`https://withpersona.com/api/v1/verifications/${verId}`, personaHeaders);
-  return verResp.data;
+  try {
+    const verResp = await axios.get(`https://withpersona.com/api/v1/verifications/${verId}`, personaHeaders);
+    return verResp.data;
+  } catch (err) {
+    return {};
+  }
 }
 
 // Create inquiry for user's gov id. Return inquiry id
@@ -176,46 +184,6 @@ async function acceptPersonaRedirect(req, res) {
   //   return res.status(400).json({ error: "Could not give user a unique identifier" });
   // }
 
-  // Get each cred as bytestream of certain length
-  // const firstName = Buffer.concat([Buffer.from(verAttrs.nameFirst || "")], 14);
-  // const lastName = Buffer.concat([Buffer.from(verAttrs.nameLast || "")], 14);
-  // const middleInitial = Buffer.concat([Buffer.from(verAttrs.nameMiddle || "")], 1);
-  // const countryCode = Buffer.concat([Buffer.from(verAttrs.countryCode || "")], 3);
-  // const streetAddr1 = Buffer.concat([Buffer.from(verAttrs.addressStreet1 || "")], 16);
-  // const streetAddr2 = Buffer.concat([Buffer.from(verAttrs.addressStreet2 || "")], 12);
-  // const city = Buffer.concat([Buffer.from(verAttrs.addressCity || "")], 16);
-  // const subdivision = getStateAsBytes(verAttrs.addressSubdivision); // 2 bytes
-  // const postalCode = Buffer.concat([Buffer.from(verAttrs.addressPostalCode || "")], 8);
-  // const completedAt = verAttrs.completedAt ? getDateAsBytes(verAttrs.completedAt) : threeZeroedBytes;
-  // const birthdate = verAttrs.birthdate ? getDateAsBytes(verAttrs.birthdate) : threeZeroedBytes;
-
-  // Get each cred. Serialize in frontend
-  const firstName = verAttrs.nameFirst || "";
-  const lastName = verAttrs.nameLast || "";
-  const middleInitial = verAttrs.nameMiddle || "";
-  const countryCode = verAttrs.countryCode || "";
-  const streetAddr1 = verAttrs.addressStreet1 || "";
-  const streetAddr2 = verAttrs.addressStreet2 || "";
-  const city = verAttrs.addressCity || "";
-  const subdivision = verAttrs.addressSubdivision || "";
-  const postalCode = verAttrs.addressPostalCode || "";
-  const completedAt = verAttrs.completedAt || "";
-  const birthdate = verAttrs.birthdate || "";
-
-  const credsArr = [
-    firstName,
-    lastName,
-    middleInitial,
-    countryCode,
-    streetAddr1,
-    streetAddr2,
-    city,
-    subdivision,
-    postalCode,
-    completedAt,
-    birthdate,
-  ];
-  // const creds = Buffer.concat(credsArr);
   const secret = generateSecret();
   const address = cache.take(inqId);
   const tempSecret = cache.take(address);
@@ -228,21 +196,8 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "User has already registered" });
   }
 
-  const credsColumns = [
-    "firstName",
-    "lastName",
-    "middleInitial",
-    "countryCode",
-    "streetAddress1",
-    "streetAddress2",
-    "city",
-    "subdivision",
-    "postalCode",
-    "completedAt",
-    "birthdate",
-  ].join(", ");
-  const columns = "(" + `tempSecret, uuid, address, secret, ${credsColumns}` + ")";
-  const params = [tempSecret, uuid, address, secret, ...credsArr];
+  const columns = "(tempSecret, uuid, address, secret, inquiryId)";
+  const params = [tempSecret, uuid, address, secret, inqId];
   const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
   await runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
 
@@ -275,61 +230,76 @@ async function acceptFrontendRedirect(req, res) {
   user.tempSecret = undefined;
   user.uuid = undefined;
   user.address = undefined;
+  const inquiry = await getPersonaInquiry(user.inquiryId);
+
+  // Assert inquiry complete
+  const inqStatus = inquiry.data.attributes.status;
+  if (inqStatus !== "completed") {
+    console.log(`${new Date().toISOString()} acceptPersonaRedirect: personaInquiry.status != completed`);
+    return res.status(400).json({ error: "inquiry status != completed" });
+  }
+
+  const verifications = inquiry["data"]["relationships"]["verifications"];
+  const verId = verifications["data"][0]["id"];
+  const verification = await getPersonaVerification(verId);
+  const verAttrs = verification["data"]["attributes"];
+
+  // Get each credential
+  const firstName = verAttrs.nameFirst || "";
+  const lastName = verAttrs.nameLast || "";
+  const middleInitial = verAttrs.nameMiddle || "";
+  const countryCode = verAttrs.countryCode || "";
+  const streetAddr1 = verAttrs.addressStreet1 || "";
+  const streetAddr2 = verAttrs.addressStreet2 || "";
+  const city = verAttrs.addressCity || "";
+  const subdivision = verAttrs.addressSubdivision || "";
+  const postalCode = verAttrs.addressPostalCode || "";
+  const completedAt = verAttrs.completedAt || "";
+  const birthdate = verAttrs.birthdate || "";
 
   const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
   const arrayifiedSecret = ethers.utils.arrayify(user.secret);
   const credsArr = [
     // Get each cred as bytestream of certain length
-    Buffer.concat([Buffer.from(user.firstName || "")], 14),
-    Buffer.concat([Buffer.from(user.lastName || "")], 14),
-    Buffer.concat([Buffer.from(user.middleInitial || "")], 1),
-    Buffer.concat([Buffer.from(user.countryCode || "")], 3),
-    Buffer.concat([Buffer.from(user.streetAddr1 || "")], 16),
-    Buffer.concat([Buffer.from(user.streetAddr2 || "")], 12),
-    Buffer.concat([Buffer.from(user.city || "")], 16),
-    getStateAsBytes(user.subdivision), // 2 bytes
-    Buffer.concat([Buffer.from(user.postalCode || "")], 8),
-    user.completedAt ? getDateAsBytes(user.completedAt) : threeZeroedBytes,
-    user.birthdate ? getDateAsBytes(user.birthdate) : threeZeroedBytes,
+    Buffer.concat([Buffer.from(firstName || "")], 14),
+    Buffer.concat([Buffer.from(lastName || "")], 14),
+    Buffer.concat([Buffer.from(middleInitial || "")], 1),
+    Buffer.concat([Buffer.from(countryCode || "")], 3),
+    Buffer.concat([Buffer.from(streetAddr1 || "")], 16),
+    Buffer.concat([Buffer.from(streetAddr2 || "")], 12),
+    Buffer.concat([Buffer.from(city || "")], 16),
+    getStateAsBytes(subdivision), // 2 bytes
+    Buffer.concat([Buffer.from(postalCode || "")], 8),
+    completedAt ? getDateAsBytes(completedAt) : threeZeroedBytes,
+    birthdate ? getDateAsBytes(birthdate) : threeZeroedBytes,
   ];
   const credentials = ethers.utils.arrayify(Buffer.concat(credsArr));
-  // const credentials =
-  //   user.firstName +
-  //   user.lastName +
-  //   user.middleInitial +
-  //   user.countryCode +
-  //   user.streetAddr1 +
-  //   user.streetAddr2 +
-  //   user.city +
-  //   user.subdivision +
-  //   user.postalCode +
-  //   user.completedAt +
-  //   user.birthdate;
   const msg = Uint8Array.from([...arrayifiedAddr, ...arrayifiedSecret, ...credentials]);
   const serverSignature = await sign(msg);
-  user.serverSignature = serverSignature;
 
-  // Delete user's creds+tempSecret from db
+  const completeUser = {
+    // credentials from Persona
+    firstName: firstName,
+    lastName: lastName,
+    middleInitial: middleInitial,
+    countryCode: countryCode,
+    streetAddr1: streetAddr1,
+    streetAddr2: streetAddr2,
+    city: city,
+    subdivision: subdivision,
+    postalCode: postalCode,
+    completedAt: completedAt,
+    birthdate: birthdate,
+    // server-generated info
+    serverSignature: serverSignature,
+    secret: user.secret,
+  };
+
+  // Delete user's tempSecret from db
   // Keep uuid & address to prevent sybil attacks
-  const credsColsArr = [
-    "firstName",
-    "lastName",
-    "middleInitial",
-    "countryCode",
-    "streetAddress1",
-    "streetAddress2",
-    "city",
-    "subdivision",
-    "postalCode",
-    "completedAt",
-    "birthdate",
-  ];
-  const credsColumns = credsColsArr.join("=?, ") + "=?, ";
-  const columns = credsColumns + "tempSecret=?";
-  const params = [...credsColsArr.map((item) => ""), "", uuid];
-  await runSql(`UPDATE Users SET ${columns} WHERE uuid=?`, params);
+  await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
 
-  return res.status(200).json(user);
+  return res.status(200).json(completeUser);
 }
 
 export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };

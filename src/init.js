@@ -16,21 +16,7 @@ sqlDb.serialize(() => {
    * address == blockchain address
    * secret == nullifier. String. Must be converted to bytes for proofs.
    */
-  const credsColumns =
-    [
-      "firstName",
-      "lastName",
-      "middleInitial",
-      "countryCode",
-      "streetAddress1",
-      "streetAddress2",
-      "city",
-      "subdivision",
-      "postalCode",
-      "completedAt",
-      "birthdate",
-    ].join(" TEXT, ") + " TEXT";
-  const columns = `(tempSecret TEXT, uuid BLOB, address TEXT, secret TEXT, ${credsColumns})`;
+  const columns = `(tempSecret TEXT, uuid BLOB, address TEXT, secret TEXT, inquiryId TEXT)`;
   sqlDb.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 
