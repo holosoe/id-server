@@ -3,7 +3,15 @@ import { createHash, randomBytes } from "crypto";
 // import { MerkleTree } from "merkletreejs";
 import express from "express";
 import { cache } from "../init.js";
-import { getUserByUuid, runSql, getUserByTempSecret } from "../utils/dbWrapper.js";
+import {
+  getUserByUuid,
+  runSql,
+  getUserByTempSecret,
+  getLastZeroed,
+  getVerificationCount,
+  setVerificationCountToZero,
+  incrementVerificationCount,
+} from "../utils/dbWrapper.js";
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
 import { stateAbbreviations } from "../utils/constants.js";
 
@@ -51,10 +59,10 @@ function getStateAsBytes(state) {
 }
 
 function handleVerificationCount() {
-  if (dbWrapper.getLastZeroed() < new Date().getMonth()) {
-    dbWrapper.setVerificationCountToZero();
+  if (getLastZeroed() < new Date().getMonth()) {
+    setVerificationCountToZero();
   }
-  dbWrapper.incrementVerificationCount();
+  incrementVerificationCount();
 }
 
 /**
@@ -93,7 +101,7 @@ async function getPersonaVerification(verId) {
 async function startPersonaInquiry(req, res) {
   console.log(`${new Date().toISOString()} startPersonaInquiry: entered`);
   handleVerificationCount();
-  if (dbWrapper.getVerificationCount() >= 500) {
+  if (getVerificationCount() >= 500) {
     return res.status(503).json({ error: "We cannot service any more verifications this month." });
   }
   if (!req.query.address || !req.query.signature) {
