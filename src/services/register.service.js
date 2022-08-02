@@ -2,6 +2,8 @@ import axios from "axios";
 import { createHash, randomBytes } from "crypto";
 // import { MerkleTree } from "merkletreejs";
 import express from "express";
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import { cache } from "../init.js";
 import {
   getUserByUuid,
@@ -74,7 +76,7 @@ function hash(data) {
 }
 
 function generateSecret(numBytes = 16) {
-  return randomBytes(numBytes); // TODO: Generate random bytes in a frontend-friendly way. Use a string or typed integer array
+  return "0x" + randomBytes(numBytes).toString("hex");
 }
 
 /**
@@ -214,7 +216,7 @@ async function acceptPersonaRedirect(req, res) {
     birthdate,
   ];
   // const creds = Buffer.concat(credsArr);
-  const secret = generateSecret().toString();
+  const secret = generateSecret();
   const address = cache.take(inqId);
   const tempSecret = cache.take(address);
   const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber || address)); // TODO: Figure out how to handle scenario in which user doesn't have driver's license or dl number isn't returned
@@ -276,19 +278,36 @@ async function acceptFrontendRedirect(req, res) {
 
   // TODO: Serialize this in a way that the frontend can also serialize it
   // sign(server_address∣∣secret∣∣credentials​)
-  const credentials =
-    user.firstName +
-    user.lastName +
-    user.middleInitial +
-    user.countryCode +
-    user.streetAddr1 +
-    user.streetAddr2 +
-    user.city +
-    user.subdivision +
-    user.postalCode +
-    user.completedAt +
-    user.birthdate;
-  const msg = process.env.ADDRESS + user.secret + credentials;
+  const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
+  const arrayifiedSecret = ethers.utils.arrayify(user.secret);
+  const credsArr = [
+    // Get each cred as bytestream of certain length
+    Buffer.concat([Buffer.from(user.firstName || "")], 14),
+    Buffer.concat([Buffer.from(user.lastName || "")], 14),
+    Buffer.concat([Buffer.from(user.middleInitial || "")], 1),
+    Buffer.concat([Buffer.from(user.countryCode || "")], 3),
+    Buffer.concat([Buffer.from(user.streetAddr1 || "")], 16),
+    Buffer.concat([Buffer.from(user.streetAddr2 || "")], 12),
+    Buffer.concat([Buffer.from(user.city || "")], 16),
+    getStateAsBytes(user.subdivision), // 2 bytes
+    Buffer.concat([Buffer.from(user.postalCode || "")], 8),
+    user.completedAt ? getDateAsBytes(user.completedAt) : threeZeroedBytes,
+    user.birthdate ? getDateAsBytes(user.birthdate) : threeZeroedBytes,
+  ];
+  const credentials = ethers.utils.arrayify(Buffer.concat(credsArr));
+  // const credentials =
+  //   user.firstName +
+  //   user.lastName +
+  //   user.middleInitial +
+  //   user.countryCode +
+  //   user.streetAddr1 +
+  //   user.streetAddr2 +
+  //   user.city +
+  //   user.subdivision +
+  //   user.postalCode +
+  //   user.completedAt +
+  //   user.birthdate;
+  const msg = Uint8Array.from([...arrayifiedAddr, ...arrayifiedSecret, ...credentials]);
   const serverSignature = await sign(msg);
   user.serverSignature = serverSignature;
 

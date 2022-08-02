@@ -30,7 +30,7 @@ sqlDb.serialize(() => {
       "completedAt",
       "birthdate",
     ].join(" TEXT, ") + " TEXT";
-  const columns = `(tempSecret TEXT, uuid BLOB, address TEXT, secret BLOB, ${credsColumns})`;
+  const columns = `(tempSecret TEXT, uuid BLOB, address TEXT, secret TEXT, ${credsColumns})`;
   sqlDb.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 
