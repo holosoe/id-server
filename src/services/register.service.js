@@ -52,6 +52,9 @@ function getDateAsBytes(date) {
   return Buffer.concat([yearsBuffer, daysBuffer], 3);
 }
 
+/**
+ * Convert state (e.g., "California") to a 2-byte representation of its abbreviation.
+ */
 function getStateAsBytes(state) {
   if (!state) {
     return Buffer.concat([Buffer.from("")], 2);
@@ -67,9 +70,6 @@ function handleVerificationCount() {
   incrementVerificationCount();
 }
 
-/**
- * Hash function for Merkle tree
- */
 function hash(data) {
   // returns Buffer
   return createHash("sha256").update(data).digest();
@@ -78,16 +78,6 @@ function hash(data) {
 function generateSecret(numBytes = 16) {
   return "0x" + randomBytes(numBytes).toString("hex");
 }
-
-/**
- * Persona verification
- *
- * Steps:
- * 1. Create Persona inquiry. (Call startPersonaInquiry())
- * 2. Redirect user to the created inquiry. (Accomplished by startPersonaInquiry())
- * 3. User is redirected back to whatever URL we provide. (Should be redirected to acceptPersonaRedirect())
- * 4. User data is collected, encrypted, and stored in db. (Accomplished in acceptPersonaRedirect())
- */
 
 async function getPersonaInquiry(inqId) {
   try {
@@ -115,6 +105,12 @@ async function redactPersonaInquiry(inqId) {
     return {};
   }
 }
+
+/**
+ * End helper functions
+ * ---------------------------------------------------
+ * Persona verification
+ */
 
 // Create inquiry for user's gov id. Return inquiry id
 async function startPersonaInquiry(req, res) {
