@@ -107,6 +107,15 @@ async function getPersonaVerification(verId) {
   }
 }
 
+async function redactPersonaInquiry(inqId) {
+  try {
+    const inqResp = await axios.delete(`https://withpersona.com/api/v1/inquiries/${inqId}`, personaHeaders);
+    return inqResp.data;
+  } catch (err) {
+    return {};
+  }
+}
+
 // Create inquiry for user's gov id. Return inquiry id
 async function startPersonaInquiry(req, res) {
   console.log(`${new Date().toISOString()} startPersonaInquiry: entered`);
@@ -298,6 +307,7 @@ async function acceptFrontendRedirect(req, res) {
   // Delete user's tempSecret from db
   // Keep uuid & address to prevent sybil attacks
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
+  await redactPersonaInquiry(user.inquiryId);
 
   return res.status(200).json(completeUser);
 }
