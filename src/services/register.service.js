@@ -189,7 +189,6 @@ async function acceptPersonaRedirect(req, res) {
   //   return res.status(400).json({ error: "Could not give user a unique identifier" });
   // }
 
-  const secret = generateSecret();
   const address = cache.take(inqId);
   const tempSecret = cache.take(address);
   const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber || address)); // TODO: Figure out how to handle scenario in which user doesn't have driver's license or dl number isn't returned
@@ -201,8 +200,8 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "User has already registered" });
   }
 
-  const columns = "(tempSecret, uuid, address, secret, inquiryId)";
-  const params = [tempSecret, uuid, address, secret, inqId];
+  const columns = "(tempSecret, uuid, inquiryId)";
+  const params = [tempSecret, uuid, inqId];
   const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
   await runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
 
@@ -234,7 +233,6 @@ async function acceptFrontendRedirect(req, res) {
   const uuid = user.uuid;
   user.tempSecret = undefined;
   user.uuid = undefined;
-  user.address = undefined;
   const inquiry = await getPersonaInquiry(user.inquiryId);
 
   // Assert inquiry complete
@@ -262,8 +260,10 @@ async function acceptFrontendRedirect(req, res) {
   const completedAt = verAttrs.completedAt || "";
   const birthdate = verAttrs.birthdate || "";
 
+  const userSecret = generateSecret();
+
   const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
-  const arrayifiedSecret = ethers.utils.arrayify(user.secret);
+  const arrayifiedSecret = ethers.utils.arrayify(userSecret);
   const credsArr = [
     // Get each cred as bytestream of certain length
     Buffer.concat([Buffer.from(firstName || "")], 14),
@@ -297,11 +297,11 @@ async function acceptFrontendRedirect(req, res) {
     birthdate: birthdate,
     // server-generated info
     serverSignature: serverSignature,
-    secret: user.secret,
+    secret: userSecret,
   };
 
   // Delete user's tempSecret from db
-  // Keep uuid & address to prevent sybil attacks
+  // Keep uuid to prevent sybil attacks
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
   await redactPersonaInquiry(user.inquiryId);
 
