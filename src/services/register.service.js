@@ -183,15 +183,20 @@ async function acceptPersonaRedirect(req, res) {
     console.log(`${new Date().toISOString()} acceptPersonaRedirect: User is not from the US.`);
     return res.status(400).json({ error: "User is not from the US" });
   }
-  // TODO: UNCOMMENT this if statement. Figure out how to handle scenario in which user doesn't have a driver's license
-  // if (!verAttrs.driverLicenseNumber) {
-  //   console.log(`${new Date().toISOString()} acceptPersonaRedirect: Driver license number not found.`);
-  //   return res.status(400).json({ error: "Could not give user a unique identifier" });
-  // }
 
   const address = cache.take(inqId);
   const tempSecret = cache.take(address);
-  const uuid = hash(Buffer.from(verAttrs.driverLicenseNumber || address)); // TODO: Figure out how to handle scenario in which user doesn't have driver's license or dl number isn't returned
+  const uuidConstituents =
+    (verAttrs.nameFirst || "") +
+    (verAttrs.nameMiddle || "") +
+    (verAttrs.nameLast || "") +
+    (verAttrs.addressStreet1 || "") +
+    (verAttrs.addressStreet2 || "") +
+    (verAttrs.addressCity || "") +
+    (verAttrs.addressSubdivision || "") +
+    (verAttrs.addressPostalCode || "") +
+    (verAttrs.birthdate || "");
+  const uuid = hash(Buffer.from(uuidConstituents));
 
   // Ensure user hasn't already registered
   const user = await getUserByUuid(uuid);

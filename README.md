@@ -19,3 +19,7 @@ The following is the serialization scheme that our proofs will expect. User cred
 | `postalCode`    | 8               |
 | `completedAt`   | 3               |
 | `birthdate`     | 3               |
+
+## UUID
+
+UUID is hash(firstName + middleInitial + lastName + addressStreet1 + addressStreet2 + addressCity + addressSubdivision + addressPostalCode + birthdate)
