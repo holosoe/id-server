@@ -205,7 +205,7 @@ async function acceptPersonaRedirect(req, res) {
   const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
   await runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
 
-  // TODO: Call contract. Pseudocode:
+  // TODO: (For Snapshot compatibility.) Call contract. Pseudocode:
   // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
 
   console.log(`${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`);
