@@ -20,6 +20,8 @@ The following is the serialization scheme that our proofs will expect. User cred
 | `completedAt`   | 3               |
 | `birthdate`     | 3               |
 
+Total bytes: 92
+
 ## UUID
 
 UUID is hash(firstName + middleInitial + lastName + addressStreet1 + addressStreet2 + addressCity + addressSubdivision + addressPostalCode + birthdate)
