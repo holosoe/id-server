@@ -134,7 +134,7 @@ async function generateSignatures(creds, secrets) {
       ...arrayifiedSecret,
     ]);
     const smallCredsSignature = await sign(credentialMsg);
-    const signatureKey = `${credentialName}Secret`;
+    const signatureKey = `${credentialName}Signature`;
     signatures[signatureKey] = smallCredsSignature;
   }
 
