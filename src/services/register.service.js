@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "crypto";
 import express from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+import blake2 from "blake2";
 import { cache } from "../init.js";
 import {
   getUserByUuid,
@@ -94,9 +95,10 @@ function generateSecret(numBytes = 16) {
 async function generateSignatures(creds, secrets) {
   const signatures = {};
   const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
+  const addrAsBuffer = Buffer.from(arrayifiedAddr);
 
   // Get bigCreds signature
-  const arrayifiedBigCredsSecret = ethers.utils.arrayify(secrets.bigCredsSecret);
+  const bigCredsSecretAsBuffer = Buffer.from(secrets.bigCredsSecret);
   const bigCredsArr = [
     Buffer.concat([Buffer.from(creds.firstName || "")], 14),
     Buffer.concat([Buffer.from(creds.lastName || "")], 14),
@@ -110,30 +112,37 @@ async function generateSignatures(creds, secrets) {
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
   ];
-  const arrayifiedBigCreds = ethers.utils.arrayify(Buffer.concat(bigCredsArr));
-  const bigCredsMsg = Uint8Array.from([
-    ...arrayifiedAddr,
-    ...arrayifiedBigCredsSecret,
-    ...arrayifiedBigCreds,
+  const bigCredsAsBuffer = Buffer.concat(bigCredsArr);
+  const bigCredsMsg = Buffer.concat([
+    addrAsBuffer,
+    bigCredsSecretAsBuffer,
+    bigCredsAsBuffer,
   ]);
-  const bigCredsSignature = await sign(bigCredsMsg);
+  const bigCredsHash = blake2.createHash("blake2s").update(bigCredsMsg);
+  const arrayifiedBigCredsHash = ethers.utils.arrayify(
+    Buffer.from(bigCredsHash.digest("hex"), "hex")
+  );
+  const bigCredsSignature = await sign(arrayifiedBigCredsHash);
   signatures.bigCredsSignature = bigCredsSignature;
 
   // Get a smallCreds signature for every credential
   for (const credentialName of Object.keys(creds)) {
     const secretKey = `${credentialName}Secret`;
-    const arrayifiedSecret = ethers.utils.arrayify(secrets[secretKey]);
+    const smallCredsSecretAsBuffer = Buffer.from(secrets[secretKey]);
     const credentialAsBuffer = Buffer.concat(
       [Buffer.from(creds[credentialName] || "")],
       28
     );
-    const arrayifiedCredential = ethers.utils.arrayify(credentialAsBuffer);
-    const credentialMsg = Uint8Array.from([
-      ...arrayifiedAddr,
-      ...arrayifiedCredential,
-      ...arrayifiedSecret,
+    const credentialMsg = Buffer.concat([
+      addrAsBuffer,
+      credentialAsBuffer,
+      smallCredsSecretAsBuffer,
     ]);
-    const smallCredsSignature = await sign(credentialMsg);
+    const smallCredsHash = blake2.createHash("blake2s").update(credentialMsg);
+    const arrayifiedSmallCredsHash = ethers.utils.arrayify(
+      Buffer.from(smallCredsHash.digest("hex"), "hex")
+    );
+    const smallCredsSignature = await sign(arrayifiedSmallCredsHash);
     const signatureKey = `${credentialName}Signature`;
     signatures[signatureKey] = smallCredsSignature;
   }
