@@ -123,16 +123,13 @@ async function generateSignatures(creds, secrets) {
   // Get a smallCreds signature for every credential
   for (const credentialName of Object.keys(creds)) {
     const secretKey = `${credentialName}Secret`;
-    const arrayifiedSmallCredsSecret = ethers.utils.arrayify(
-      Buffer.from(secrets[secretKey])
-    );
-    const credentialAsBuffer = Buffer.concat(
-      [Buffer.from(creds[credentialName] || "")],
-      28
+    const arrayifiedSmallCredsSecret = ethers.utils.arrayify(secrets[secretKey]);
+    const arrayifiedSmallCreds = ethers.utils.arrayify(
+      Buffer.concat([Buffer.from(creds[credentialName] || "")], 28)
     );
     const credentialMsg = Uint8Array.from([
       ...arrayifiedAddr,
-      ...credentialAsBuffer,
+      ...arrayifiedSmallCreds,
       ...arrayifiedSmallCredsSecret,
     ]);
     const smallCredsHash = blake.blake2s(credentialMsg);
@@ -291,13 +288,13 @@ async function acceptPersonaRedirect(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Ensure user hasn't already registered
-  const user = await getUserByUuid(uuid);
-  if (user) {
-    console.log(
-      `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
-    );
-    return res.status(400).json({ error: "User has already registered" });
-  }
+  // const user = await getUserByUuid(uuid);
+  // if (user) {
+  //   console.log(
+  //     `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
+  //   );
+  //   return res.status(400).json({ error: "User has already registered" });
+  // }
 
   const columns = "(tempSecret, uuid, inquiryId)";
   const params = [tempSecret, uuid, inqId];
