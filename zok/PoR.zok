@@ -1,0 +1,14 @@
+import "hashes/blake2/blake2s" as leafHash;
+// Proves knowledge of leaf preimage and that creds == "US"
+def main(u32[8] leaf, u32[5] address, private u32[7] creds, private u32[4] nullifier) {
+    u32[1][16] preimage = [[...address, ...creds, ...nullifier]];
+    assert(leafHash(preimage) == leaf);
+    // assert(creds == "US")
+    u32 x = 1431502848;
+    assert(creds[0] == x);
+    for u32 i in 1..6 {
+        assert(creds[i] == 0);
+    }
+    return;
+}
+
