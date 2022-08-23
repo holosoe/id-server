@@ -4,3 +4,11 @@ notes.txt
 .env
 
 database/
+
+zok/temp/
+zok/abi.json
+zok/out
+zok/out.r1cs
+zok/*.out
+zok/*.proving.key
+zok/*.verification.key

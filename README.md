@@ -1,5 +1,9 @@
 Backend for Lobby3 ID.
 
+## Requirements
+
+Requires ZoKrates ^8.0.1
+
 ## Creds Serialization
 
 Credentials are temporarilly stored plaintext in the `Users` table near the end of the verification process. At the end of the verification process, the user is given their credentials to store in their browser.
