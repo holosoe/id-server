@@ -1,41 +1,11 @@
-import fs from "fs";
 import { assert } from "console";
-import util from "util";
 import { randomBytes } from "crypto";
 import { zokGlobals } from "../init.js";
-import { exec as nonPromisifiedExec } from "child_process";
-const exec = util.promisify(nonPromisifiedExec);
-
-const zokExecutable = process.env.ZOKRATES_EXECUTABLE;
-const localZokDir = `${process.env.ZOK_DIR_TEMP}/..`;
+import { addLeafSmall, proveResidence } from "./zokWrapper.js";
 
 function assertLengthIs(item, length, itemName) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
   assert(item.length == length, errMsg);
-}
-
-function toU32Array(bytes) {
-  let u32s = chunk(bytes.toString("hex"), 8);
-  return u32s.map((x) => parseInt(x, 16));
-}
-function toU32StringArray(bytes) {
-  let u32s = chunk(bytes.toString("hex"), 8);
-  return u32s.map((x) => parseInt(x, 16).toString());
-}
-function chunk(arr, chunkSize) {
-  let out = [];
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    const chunk = arr.slice(i, i + chunkSize);
-    out.push(chunk);
-  }
-  return out;
-}
-// Expects arguments of type bytes and returns an array of U32s -- all inputs concatenated/flattened, then split up into u32s
-// This is how ZoKrates CLI expects arguments
-function argsToU32CLIArgs(args) {
-  return toU32Array(Buffer.concat(args))
-    .map((x) => parseInt(x))
-    .join(" ");
 }
 
 /**
@@ -58,85 +28,6 @@ function leafFromData(issuer, creds, secret) {
   return Buffer.from(leafAsStr, "hex");
 }
 
-/**
- * @param {Buffer} signedLeaf
- * @param {Buffer} issuer Blockchain address
- * @param {Buffer} creds
- * @param {Buffer} secret
- * @param {Buffer} newSecret
- * @returns {Object} Proof
- */
-async function addLeafSmallCLI(signedLeaf, issuer, creds, secret, newSecret) {
-  assertLengthIs(signedLeaf, 32, "signedLeaf");
-  assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(secret, 16, "secret");
-  const newLeaf = leafFromData(issuer, creds, newSecret);
-  assertLengthIs(newLeaf, 32, "newLeaf");
-
-  const paddedCreds = Buffer.concat([creds], 28);
-  const inFile = process.env.ZOK_PATH_TO_ALS_OUT;
-  // Create a temporary name for current tasks to be deleted once CLI execution is done:
-  const tmpValue = randomBytes(16).toString("hex");
-  const tmpWitnessFile = process.env.ZOK_DIR_TEMP + "/" + tmpValue + ".als.witness";
-  const tmpProofFile = process.env.ZOK_DIR_TEMP + "/" + tmpValue + ".als.proof.json";
-
-  // Execute the command
-  try {
-    const computeWitnessCmd = `${zokExecutable} compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
-      [signedLeaf, newLeaf, issuer, paddedCreds, secret, newSecret]
-    )}`;
-    const generateProofCmd = `${zokExecutable} generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p ${localZokDir}/als.proving.key`;
-    const { stdout, stderr } = await exec(
-      `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
-    );
-  } catch (e) {
-    console.error(e);
-  }
-
-  // Read the proof file, then delete it, then return it
-  const retval = JSON.parse(fs.readFileSync(tmpProofFile));
-  exec(`rm ${tmpProofFile}`);
-  return retval;
-}
-
-/**
- * Prove that creds == "US"
- * @param {Buffer} newLeaf
- * @param {Buffer} issuer Blockchain address
- * @param {Buffer} creds
- * @param {Buffer} newSecret
- * @returns {Object} Proof
- */
-async function proveResidenceCLI(newLeaf, issuer, creds, newSecret) {
-  assertLengthIs(newLeaf, 32, "newLeaf");
-  assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(newSecret, 16, "secret");
-
-  const paddedCreds = Buffer.concat([creds], 28);
-
-  const inFile = process.env.ZOK_PATH_TO_POR_OUT; // "por.out";
-  // Create a temporary name for current tasks to be deleted once CLI execution is done:
-  const tmpValue = randomBytes(16).toString("hex");
-  const tmpWitnessFile = process.env.ZOK_DIR_TEMP + "/" + tmpValue + ".por.witness";
-  const tmpProofFile = process.env.ZOK_DIR_TEMP + "/" + tmpValue + ".por.proof.json";
-
-  // Execute the command
-  try {
-    const { stdout, stderr } = await exec(
-      `${zokExecutable} compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
-        [newLeaf, issuer, paddedCreds, newSecret]
-      )}; ${zokExecutable} generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p ${localZokDir}/por.proving.key; rm ${tmpWitnessFile}`
-    );
-  } catch (e) {
-    console.error(e);
-  }
-
-  // Read the proof file, then delete it, then return it
-  const retval = JSON.parse(fs.readFileSync(tmpProofFile));
-  exec(`rm ${tmpProofFile}`);
-  return retval;
-}
-
 class ProofGenerator {
   /**
    * Generate a US Proof of Residence.
@@ -152,22 +43,25 @@ class ProofGenerator {
     const newLeaf = leafFromData(serverAddress, credsAsBuffer, newNullifierAsBuffer);
 
     // Generate addLeafSmall proof
-    const smallLeafProof = await addLeafSmallCLI(
+    const smallLeafProof = await addLeafSmall(
       signedLeaf,
       serverAddress,
       credsAsBuffer,
       nullifierAsBuffer,
       newNullifierAsBuffer
     );
-    // TODO: Send proof to user
 
-    const residenceProof = await proveResidenceCLI(
+    const residenceProof = await proveResidence(
       newLeaf,
       serverAddress,
       credsAsBuffer,
       newNullifierAsBuffer
     );
-    // TODO: Send proof to user
+
+    return {
+      smallLeafProof: smallLeafProof,
+      residenceProof: residenceProof,
+    };
 
     // ---------------
     // Hub must be presented with:

@@ -392,12 +392,12 @@ async function acceptFrontendRedirect(req, res) {
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
   await redactPersonaInquiry(user.inquiryId);
 
-  ProofGenerator.generateProofOfResidence(
+  const proofs = await ProofGenerator.generateProofOfResidence(
     creds.countryCode,
     secrets.countryCodeSecret
   );
 
-  return res.status(200).json(completeUser);
+  return res.status(200).json({ user: completeUser, proofs: proofs });
 }
 
 export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };
