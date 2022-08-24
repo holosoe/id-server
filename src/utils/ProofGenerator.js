@@ -3,6 +3,13 @@ import { randomBytes } from "crypto";
 import { zokGlobals } from "../init.js";
 import { addLeafSmall, proveResidence } from "./zokWrapper.js";
 
+/**
+ * @typedef UserProofs
+ * @property {Object} smallLeafProof Proof needed to add small leaf to merkle tree // TODO: Should be of type string
+ * @property {Object} residenceProof Proof that creds in small leaf == "US" // TODO: Should be of type string
+ * @property {string} newNullifier Encrypted nullifier
+ */
+
 function assertLengthIs(item, length, itemName) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
   assert(item.length == length, errMsg);
@@ -33,6 +40,9 @@ class ProofGenerator {
    * Generate a US Proof of Residence.
    * @param {string} creds
    * @param {string} nullifier 16-byte hex string
+   * @param {string} publicKey TODO: Implement this. User's public key. Used to encrypt
+   * newNullifier and proofs when this function is executed only in a secure enclave.
+   * @returns {Promise<UserProofs>} Encrypted proofs and newNullifier
    */
   static async generateProofOfResidence(creds, nullifier) {
     const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
@@ -57,6 +67,8 @@ class ProofGenerator {
       credsAsBuffer,
       newNullifierAsBuffer
     );
+
+    // TODO: Encrypt proofs with user's public key
 
     return {
       smallLeafProof: smallLeafProof,

@@ -392,6 +392,7 @@ async function acceptFrontendRedirect(req, res) {
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
   await redactPersonaInquiry(user.inquiryId);
 
+  // TODO: Move to secure enclave
   const proofs = await ProofGenerator.generateProofOfResidence(
     creds.countryCode,
     secrets.countryCodeSecret
