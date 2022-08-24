@@ -16,6 +16,7 @@ import {
 } from "../utils/dbWrapper.js";
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
 import { stateAbbreviations } from "../utils/constants.js";
+import { ProofGenerator } from "../utils/ProofGenerator.js";
 
 const personaHeaders = {
   headers: {
@@ -390,6 +391,11 @@ async function acceptFrontendRedirect(req, res) {
   // Keep uuid to prevent sybil attacks
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
   await redactPersonaInquiry(user.inquiryId);
+
+  ProofGenerator.generateProofOfResidence(
+    creds.countryCode,
+    secrets.countryCodeSecret
+  );
 
   return res.status(200).json(completeUser);
 }

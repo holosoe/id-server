@@ -2,12 +2,15 @@ import fs from "fs";
 import { assert } from "console";
 import util from "util";
 import { randomBytes } from "crypto";
-import { exec as nonPromisifiedExec } from "child_prcess";
+import { zokGlobals } from "../init.js";
+import { exec as nonPromisifiedExec } from "child_process";
 const exec = util.promisify(nonPromisifiedExec);
-import { zokGlobals } from "../init";
+
+const zokExecutable = process.env.ZOKRATES_EXECUTABLE;
+const localZokDir = `${process.env.ZOK_DIR_TEMP}/..`;
 
 function assertLengthIs(item, length, itemName) {
-  const errMsg = `${itemName} must be ${length} bytes but is ${issuer.length} bytes`;
+  const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
   assert(item.length == length, errMsg);
 }
 
@@ -39,8 +42,9 @@ function argsToU32CLIArgs(args) {
  * Takes Buffer, properly formats them (according to spec), and returns a hash.
  * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} creds Credentials (e.g., "Alice" or "US")
+ * @param {Buffer} creds Credentials (e.g., "Alice" or "US" as Buffer)
  * @param {Buffer} secret Hex string representation of 16 bytes
+ * @returns {Buffer} 32-byte blake2s hash
  */
 function leafFromData(issuer, creds, secret) {
   assertLengthIs(issuer, 20, "issuer");
@@ -50,7 +54,8 @@ function leafFromData(issuer, creds, secret) {
     zokGlobals.leafgen,
     [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
   );
-  return output;
+  const leafAsStr = JSON.parse(output).join("").replaceAll("0x", "");
+  return Buffer.from(leafAsStr, "hex");
 }
 
 /**
@@ -65,12 +70,11 @@ async function addLeafSmallCLI(signedLeaf, issuer, creds, secret, newSecret) {
   assertLengthIs(signedLeaf, 32, "signedLeaf");
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  const lfd = JSON.parse(leafFromData(issuer, creds, newSecret));
-  const newLeaf = Buffer.from(lfd.join("").replaceAll("0x", ""), "hex");
+  const newLeaf = leafFromData(issuer, creds, newSecret);
   assertLengthIs(newLeaf, 32, "newLeaf");
 
   const paddedCreds = Buffer.concat([creds], 28);
-  const inFile = process.env.ZOK_PATH_TO_ALS_OUT; // "als.out";
+  const inFile = process.env.ZOK_PATH_TO_ALS_OUT;
   // Create a temporary name for current tasks to be deleted once CLI execution is done:
   const tmpValue = randomBytes(16).toString("hex");
   const tmpWitnessFile = process.env.ZOK_DIR_TEMP + "/" + tmpValue + ".als.witness";
@@ -78,10 +82,12 @@ async function addLeafSmallCLI(signedLeaf, issuer, creds, secret, newSecret) {
 
   // Execute the command
   try {
+    const computeWitnessCmd = `${zokExecutable} compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
+      [signedLeaf, newLeaf, issuer, paddedCreds, secret, newSecret]
+    )}`;
+    const generateProofCmd = `${zokExecutable} generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p ${localZokDir}/als.proving.key`;
     const { stdout, stderr } = await exec(
-      `zokrates compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
-        [signedLeaf, newLeaf, issuer, paddedCreds, secret, newSecret]
-      )}; zokrates generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p als.proving.key; rm ${tmpWitnessFile}`
+      `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
     );
   } catch (e) {
     console.error(e);
@@ -104,7 +110,7 @@ async function addLeafSmallCLI(signedLeaf, issuer, creds, secret, newSecret) {
 async function proveResidenceCLI(newLeaf, issuer, creds, newSecret) {
   assertLengthIs(newLeaf, 32, "newLeaf");
   assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(secret, 16, "secret");
+  assertLengthIs(newSecret, 16, "secret");
 
   const paddedCreds = Buffer.concat([creds], 28);
 
@@ -117,9 +123,9 @@ async function proveResidenceCLI(newLeaf, issuer, creds, newSecret) {
   // Execute the command
   try {
     const { stdout, stderr } = await exec(
-      `zokrates compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
+      `${zokExecutable} compute-witness -i ${inFile} -o ${tmpWitnessFile} -a ${argsToU32CLIArgs(
         [newLeaf, issuer, paddedCreds, newSecret]
-      )}; zokrates generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p als.proving.key; rm ${tmpWitnessFile}`
+      )}; ${zokExecutable} generate-proof -i ${inFile} -w ${tmpWitnessFile} -j ${tmpProofFile} -p ${localZokDir}/por.proving.key; rm ${tmpWitnessFile}`
     );
   } catch (e) {
     console.error(e);
