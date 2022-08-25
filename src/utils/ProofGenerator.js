@@ -1,6 +1,7 @@
 import { assert } from "console";
 import { randomBytes } from "crypto";
 import { zokGlobals } from "../init.js";
+import { toU32StringArray } from "./utils.js";
 import { addLeafSmall, proveResidence } from "./zokWrapper.js";
 
 /**

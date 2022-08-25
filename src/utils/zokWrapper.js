@@ -8,35 +8,12 @@ import { assert } from "console";
 import util from "util";
 import { randomBytes } from "crypto";
 import { zokGlobals } from "../init.js";
+import { toU32StringArray, argsToU32CLIArgs } from "./utils.js";
 import { exec as nonPromisifiedExec } from "child_process";
 const exec = util.promisify(nonPromisifiedExec);
 
 const zokExecutable = process.env.ZOKRATES_EXECUTABLE;
 const localZokDir = process.env.ZOK_DIR; // Dir with .zok files, proving keys, etc.
-
-function toU32Array(bytes) {
-  let u32s = chunk(bytes.toString("hex"), 8);
-  return u32s.map((x) => parseInt(x, 16));
-}
-function toU32StringArray(bytes) {
-  let u32s = chunk(bytes.toString("hex"), 8);
-  return u32s.map((x) => parseInt(x, 16).toString());
-}
-function chunk(arr, chunkSize) {
-  let out = [];
-  for (let i = 0; i < arr.length; i += chunkSize) {
-    const chunk = arr.slice(i, i + chunkSize);
-    out.push(chunk);
-  }
-  return out;
-}
-// Expects arguments of type bytes and returns an array of U32s -- all inputs concatenated/flattened, then split up into u32s
-// This is how ZoKrates CLI expects arguments
-function argsToU32CLIArgs(args) {
-  return toU32Array(Buffer.concat(args))
-    .map((x) => parseInt(x))
-    .join(" ");
-}
 
 /**
  * @param {string} binPath Path to the compiled zokrates program
@@ -47,7 +24,7 @@ function argsToU32CLIArgs(args) {
 function getComputeWitnessCmd(binPath = "out", witnessPath = "witness", args = []) {
   const baseCmd = `${zokExecutable} compute-witness`;
   const options = `-i ${binPath} -o ${witnessPath}`;
-  const formattedArgs = `-a ${argsToU32CLIArgs(...args)}`;
+  const formattedArgs = `-a ${argsToU32CLIArgs(args)}`;
   return `${baseCmd} ${options} ${formattedArgs}`;
 }
 
