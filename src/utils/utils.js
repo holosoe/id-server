@@ -1,4 +1,3 @@
-import web3 from "web3";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 // import { verifyMessage } from 'ethers/lib/utils'
