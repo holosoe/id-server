@@ -289,13 +289,15 @@ async function acceptPersonaRedirect(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Ensure user hasn't already registered
-  // const user = await getUserByUuid(uuid);
-  // if (user) {
-  //   console.log(
-  //     `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
-  //   );
-  //   return res.status(400).json({ error: "User has already registered" });
-  // }
+  if (process.env.ENVIRONMENT != "dev") {
+    const user = await getUserByUuid(uuid);
+    if (user) {
+      console.log(
+        `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
+      );
+      return res.status(400).json({ error: "User has already registered" });
+    }
+  }
 
   const columns = "(tempSecret, uuid, inquiryId)";
   const params = [tempSecret, uuid, inqId];
