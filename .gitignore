@@ -1,13 +1,14 @@
 node_modules
 .vscode
 notes.txt
+what-is-revealed.txt
 .env
 
 database/
 
-zok/temp/
-zok/abi.json
-zok/out*
-zok/*.out
-zok/*.proving.key
-zok/*.verification.key
+src/zok/temp/
+src/zok/abi.json
+src/zok/out*
+src/zok/*.out
+src/zok/*.proving.key
+src/zok/*.verification.key

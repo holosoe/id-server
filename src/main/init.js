@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // NOTE: stdTTL of 10 min might not be enough. User might take >10 min to complete Persona verification
+// TODO: Use something other than node-cache. node-cache sometimes throws unexpected errors
 const cache = new NodeCache({ stdTTL: 600, checkperiod: 100 });
 
 const sqlDb = new sqlite3.Database(process.env.PATH_TO_SQLITE_DB);

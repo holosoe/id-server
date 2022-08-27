@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node src/server --trace-warnings "
+    "start": "node src/main/server --trace-warnings "
   },
   "type": "module",
   "dependencies": {

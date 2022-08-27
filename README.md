@@ -2,7 +2,23 @@ Backend for Lobby3 ID.
 
 ## Requirements
 
-Requires ZoKrates ^8.0.1
+- Node.js ^16.14.2
+- Python ^3.10
+- ZoKrates ^8.0.1
+
+(Other versions might work too, but the above versions were the ones used for testing.)
+
+## Environment Setup
+
+TODO: Env vars
+
+Use the correct node version.
+
+        nvm use
+
+Use the correct python version.
+
+    conda activate py3.10
 
 ## Creds Serialization
 
