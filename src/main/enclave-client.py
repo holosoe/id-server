@@ -54,6 +54,7 @@ def gen_proofs_handler(args):
     encrypted_args = args['encrypted-args']
     client.send_data(encrypted_args.encode())
 
+    client.recv_data()
     # wait for response from secure enclave
     required_close_time = time.time() + client.conn_timeout
     while not client.received_proofs and time.time() < required_close_time:
