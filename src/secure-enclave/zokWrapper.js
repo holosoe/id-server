@@ -7,7 +7,7 @@ import fs from "fs";
 import { assert } from "console";
 import util from "util";
 import { randomBytes } from "crypto";
-import { zokGlobals } from "../init.js";
+import { zokGlobals } from "./init.js";
 import { toU32StringArray, argsToU32CLIArgs } from "./utils.js";
 import { exec as nonPromisifiedExec } from "child_process";
 const exec = util.promisify(nonPromisifiedExec);

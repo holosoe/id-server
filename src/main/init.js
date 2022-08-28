@@ -3,7 +3,6 @@ import fs from "fs";
 import sqlite3 from "sqlite3";
 import { LowSync, JSONFileSync } from "lowdb";
 import NodeCache from "node-cache";
-import { initialize } from "zokrates-js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -36,22 +35,4 @@ if (!jsonDb.data?.lastZeroed) {
   jsonDb.write();
 }
 
-// Initialize global ZoKrates variables
-const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
-const addBigCredPath = process.env.ZOK_PATH_TO_ADD_BIG_CRED;
-const albProvingKeyPath = process.env.ZOK_PATH_TO_ALB_PROVING_KEY;
-const zokGlobals = {};
-if (process.env.DISABLE_ZOKRATES != "true") {
-  initialize().then((zokratesProvider) => {
-    zokGlobals.zokratesProvider = zokratesProvider;
-    zokGlobals.leafgen = zokratesProvider.compile(
-      `${fs.readFileSync(createLeafPath)}`
-    );
-    zokGlobals.addLeafBig = zokratesProvider.compile(
-      `${fs.readFileSync(addBigCredPath)}`
-    );
-    zokGlobals.addLeafBigKey = fs.readFileSync(albProvingKeyPath);
-  });
-}
-
-export { sqlDb, jsonDb, cache, zokGlobals };
+export { sqlDb, jsonDb, cache };
