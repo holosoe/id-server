@@ -12,11 +12,11 @@ Backend for Lobby3 ID.
 
 TODO: Env vars
 
-Use the correct node version.
+Use the correct node version. For nvm users...
 
         nvm use
 
-Use the correct python version.
+Use the correct python version. For conda users...
 
     conda activate py3.10
 

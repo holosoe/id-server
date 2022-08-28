@@ -41,8 +41,6 @@ class ProofGenerator {
    * Generate a US Proof of Residence.
    * @param {string} creds
    * @param {string} nullifier 16-byte hex string
-   * @param {string} publicKey TODO: Implement this. User's public key. Used to encrypt
-   * newNullifier and proofs when this function is executed only in a secure enclave.
    * @returns {Promise<UserProofs>} Encrypted proofs and newNullifier
    */
   static async generateProofOfResidence(creds, nullifier) {

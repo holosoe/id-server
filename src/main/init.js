@@ -41,13 +41,17 @@ const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
 const addBigCredPath = process.env.ZOK_PATH_TO_ADD_BIG_CRED;
 const albProvingKeyPath = process.env.ZOK_PATH_TO_ALB_PROVING_KEY;
 const zokGlobals = {};
-initialize().then((zokratesProvider) => {
-  zokGlobals.zokratesProvider = zokratesProvider;
-  zokGlobals.leafgen = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
-  zokGlobals.addLeafBig = zokratesProvider.compile(
-    `${fs.readFileSync(addBigCredPath)}`
-  );
-  zokGlobals.addLeafBigKey = fs.readFileSync(albProvingKeyPath);
-});
+if (process.env.DISABLE_ZOKRATES != "true") {
+  initialize().then((zokratesProvider) => {
+    zokGlobals.zokratesProvider = zokratesProvider;
+    zokGlobals.leafgen = zokratesProvider.compile(
+      `${fs.readFileSync(createLeafPath)}`
+    );
+    zokGlobals.addLeafBig = zokratesProvider.compile(
+      `${fs.readFileSync(addBigCredPath)}`
+    );
+    zokGlobals.addLeafBigKey = fs.readFileSync(albProvingKeyPath);
+  });
+}
 
 export { sqlDb, jsonDb, cache, zokGlobals };
