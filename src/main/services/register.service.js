@@ -393,7 +393,7 @@ async function acceptFrontendRedirect(req, res) {
   await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
   await redactPersonaInquiry(user.inquiryId);
 
-  return res.status(200).json({ user: completeUser, proofs: proofs });
+  return res.status(200).json({ user: completeUser });
 }
 
 export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };
