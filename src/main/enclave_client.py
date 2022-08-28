@@ -38,7 +38,7 @@ class VsockStream:
                 self.latest_message = bytearray()
                 self.received_proofs = False
             elif 'end_message' in data.decode():
-                print(self.latest_message.decode(), flush=True)
+                print(self.latest_message.decode().rstrip('\x00'), flush=True)
                 self.received_proofs = True
                 break
             else:
