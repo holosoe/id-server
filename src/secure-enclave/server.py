@@ -7,7 +7,16 @@
 import argparse
 import socket
 import sys
+import os
+import subprocess
+import pathlib
+from dotenv import load_dotenv
 
+load_dotenv()
+
+CURRENT_DIR = pathlib.Path().resolve()
+NODE_EXECUTABLE = os.getenv('NODE_EXECUTABLE')
+GEN_PROOFS_NODE_SCRIPT = os.getenv('GEN_PROOFS_NODE_SCRIPT', f'{CURRENT_DIR}/generateProofs.js')
 
 PORT = 5005
 BUFF_SIZE = 1024
@@ -39,25 +48,32 @@ class VsockListener:
                 if 'start_message' in data.decode():
                     self.latest_message = bytearray()
                 elif 'end_message' in data.decode():
-                    print(self.latest_message.decode(), flush=True)
-                    # TODO: 
-                    # Send latest_message to node script. 
-                    # Generate proofs.
-                    # Encrypt and return.
+                    encrypted_args = self.latest_message.decode().replace('\x00', '')
+                    cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, encrypted_args]
+                    out = subprocess.run(cmd, capture_output=True)
+                    # TODO: Generate proofs. Do this in node script?
+                    # TODO: Encrypt and return. Do this in node script?
+                    self.send_response(from_client, out.stdout.decode())
                     break
                 else:
                     self.latest_message.extend(data)
             from_client.close()
 
-    def send_data(self, data):
-        """Send data to a remote endpoint"""
-        while True:
-            (to_client, (remote_cid, remote_port)) = self.sock.accept()
-            to_client.sendall(data)
-            to_client.close()
+    def send_response(self, from_client, message):
+        from_client.sendall('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
+        from_client.sendall(message.encode().ljust(BUFF_SIZE, b'\0'))
+        from_client.sendall('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
+
+    # def send_data(self, data):
+    #     """Send data to a remote endpoint"""
+    #     while True:
+    #         (to_client, (remote_cid, remote_port)) = self.sock.accept()
+    #         to_client.sendall(data)
+    #         to_client.close()
 
 
 def server_handler(args):
+    print(f'VSOCK server listening on port {PORT}')
     server = VsockListener()
     server.bind(PORT)
     server.recv_data()
@@ -67,7 +83,7 @@ def main():
     parser = argparse.ArgumentParser(prog='vsock-sample')
     subparsers = parser.add_subparsers(title="options")
 
-    server_parser = subparsers.add_parser("server", description="Server",
+    server_parser = subparsers.add_parser("serve", description="Server",
                                           help="Listen on a given port.")
     server_parser.set_defaults(func=server_handler)
 

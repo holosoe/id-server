@@ -36,6 +36,7 @@ class VsockStream:
                 break
             if 'start_message' in data.decode():
                 self.latest_message = bytearray()
+                self.received_proofs = False
             elif 'end_message' in data.decode():
                 print(self.latest_message.decode(), flush=True)
                 self.received_proofs = True
@@ -52,19 +53,17 @@ def gen_proofs_handler(args):
     client = VsockStream()
     endpoint = (1, PORT) # == (cid, port)
     client.connect(endpoint)
-    encrypted_args = args['encrypted-args']
     client.send_data('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
-    client.send_data(encrypted_args.encode())
+    client.send_data(args.encrypted_args.encode().ljust(BUFF_SIZE, b'\0'))
     client.send_data('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
 
-    client.recv_data()
     # wait for response from secure enclave
     required_close_time = time.time() + client.conn_timeout
     while not client.received_proofs and time.time() < required_close_time:
+        client.recv_data()
         time.sleep(1)
 
     client.disconnect()
-    client.received_proofs = True
 
 def main():
     parser = argparse.ArgumentParser()
@@ -73,7 +72,7 @@ def main():
     gen_proofs_parser = subparsers.add_parser("generate-proofs", 
                                                description="Generate proofs",
                                                help="Generate addSmallLeaf proof and creds=='US' proof.")
-    gen_proofs_parser.add_argument("encrypted-args", help="")
+    gen_proofs_parser.add_argument("encrypted_args", help="")
     gen_proofs_parser.set_defaults(func=gen_proofs_handler)
 
     if len(sys.argv) < 2:
