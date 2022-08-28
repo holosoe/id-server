@@ -8,6 +8,8 @@ import socket
 import sys
 import time
 
+PORT = 5005
+BUFF_SIZE = 1024
 
 class VsockStream:
     """Client"""
@@ -29,15 +31,15 @@ class VsockStream:
     def recv_data(self):
         """Receive data from a remote endpoint"""
         while True:
-            data = self.sock.recv(1024)
+            data = self.sock.recv(BUFF_SIZE)
             if not data:
                 break
             if 'start_message' in data.decode():
-                self.latest_message = ""
+                self.latest_message = bytearray()
             elif 'end_message' in data.decode():
-                print(self.latest_message.decode())
-                sys.stdout.flush()
+                print(self.latest_message.decode(), flush=True)
                 self.received_proofs = True
+                break
             else:
                 self.latest_message.extend(data)
 
@@ -48,11 +50,12 @@ class VsockStream:
 
 def gen_proofs_handler(args):
     client = VsockStream()
-    # endpoint = (args.cid, args.port)
-    endpoint = (1, 5005)
+    endpoint = (1, PORT) # == (cid, port)
     client.connect(endpoint)
     encrypted_args = args['encrypted-args']
+    client.send_data('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
     client.send_data(encrypted_args.encode())
+    client.send_data('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
 
     client.recv_data()
     # wait for response from secure enclave
@@ -61,12 +64,10 @@ def gen_proofs_handler(args):
         time.sleep(1)
 
     client.disconnect()
+    client.received_proofs = True
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="version",
-                        help="Prints version information.",
-                        version='%(prog)s 0.1.0')
     subparsers = parser.add_subparsers(title="options")
 
     gen_proofs_parser = subparsers.add_parser("generate-proofs", 
