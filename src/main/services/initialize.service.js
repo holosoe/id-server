@@ -7,12 +7,14 @@ import { cache } from "../init.js";
 export async function initialize(req, res) {
   console.log(`${new Date().toISOString()} initialize: entered`);
   if (!req.query.address) {
-    return res.status(400).json({ error: `No address found in query string. Please specify address.` });
-  }
-  if (req.query.address.length != 42 || req.query.address.substring(0, 2) != "0x") {
     return res
       .status(400)
-      .json({ error: `Address invalid. Address must be 42 characters long and must start with '0x'` });
+      .json({ error: `No address found in query string. Please specify address.` });
+  }
+  if (req.query.address.length != 42 || req.query.address.substring(0, 2) != "0x") {
+    return res.status(400).json({
+      error: `Address invalid. Address must be 42 characters long and must start with '0x'`,
+    });
   }
   const address = req.query.address.toLowerCase();
   const randStr = Math.random().toString(16).substring(7);

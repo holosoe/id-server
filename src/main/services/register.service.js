@@ -15,7 +15,7 @@ import {
   incrementVerificationCount,
 } from "../utils/dbWrapper.js";
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
-import { stateAbbreviations } from "../utils/constants.js";
+import { frontendOrigin, stateAbbreviations } from "../utils/constants.js";
 
 const personaHeaders = {
   headers: {
@@ -309,7 +309,7 @@ async function acceptPersonaRedirect(req, res) {
   console.log(
     `${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`
   );
-  return res.redirect("http://localhost:3002/verified");
+  return res.redirect(`${frontendOrigin}/zk-id/verified`);
 }
 
 /**

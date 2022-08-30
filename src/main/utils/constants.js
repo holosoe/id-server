@@ -1,3 +1,5 @@
+export const frontendOrigin = "http://localhost:3002";
+
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",
