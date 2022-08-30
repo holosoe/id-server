@@ -29,9 +29,11 @@ export async function residenceProof(req, res) {
       `${pyExecutable} ${enclaveClientScript} generate-proofs ${args}`
     );
 
-    // TODO: Delete these logs
-    console.log(stdout);
-    console.log(stderr);
+    // (original call to ProofGenerator (for reference))
+    // const proofs = await ProofGenerator.generateProofOfResidence(
+    //   creds.countryCode,
+    //   secrets.countryCodeSecret
+    // );
 
     return res.status(200).json({ data: stdout });
   } catch (err) {

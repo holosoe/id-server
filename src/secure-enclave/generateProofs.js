@@ -89,17 +89,11 @@ async function generateProofs(creds, nullifier) {
 async function handler(argv) {
   const encryptedArgs = argv.args;
 
-  // TODO: Delete these logs
-  console.log("encryptedArgs...");
-  console.log(encryptedArgs);
-
   // TODO: Decrypt...
 
-  // const proofs = await generateProofs();
+  // const proofs = await generateProofs(creds, secret);
 
   // console.log(proofs);
-
-  console.log("reached end of program");
 }
 
 const argv = yargs(hideBin(process.argv)).command(
