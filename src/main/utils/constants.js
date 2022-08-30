@@ -1,4 +1,4 @@
-export const frontendOrigin = "http://localhost:3002";
+export const frontendOrigin = process.env.FRONT_END_ORIGIN;
 
 export const stateAbbreviations = {
   ALABAMA: "AL",
