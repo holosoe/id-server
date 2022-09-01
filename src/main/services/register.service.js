@@ -15,7 +15,11 @@ import {
   incrementVerificationCount,
 } from "../utils/dbWrapper.js";
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
-import { frontendOrigin, stateAbbreviations } from "../utils/constants.js";
+import {
+  frontendOrigin,
+  dummyUserCreds,
+  stateAbbreviations,
+} from "../utils/constants.js";
 
 const personaHeaders = {
   headers: {
@@ -354,7 +358,7 @@ async function acceptFrontendRedirect(req, res) {
   const verAttrs = verification["data"]["attributes"];
 
   // Get each credential
-  const creds = {
+  const realCreds = {
     firstName: verAttrs.nameFirst || "",
     lastName: verAttrs.nameLast || "",
     middleInitial: verAttrs.nameMiddle || "",
@@ -367,6 +371,8 @@ async function acceptFrontendRedirect(req, res) {
     completedAt: verAttrs.completedAt || "",
     birthdate: verAttrs.birthdate || "",
   };
+
+  const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
 
   // Get one secret for bigCreds and one for every credential
   const secrets = {

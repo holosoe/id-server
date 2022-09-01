@@ -1,5 +1,19 @@
 export const frontendOrigin = process.env.FRONT_END_ORIGIN;
 
+export const dummyUserCreds = {
+  firstName: "",
+  lastName: "",
+  middleInitial: "",
+  countryCode: "",
+  streetAddr1: "",
+  streetAddr2: "",
+  city: "",
+  subdivision: "",
+  postalCode: "",
+  completedAt: "",
+  birthdate: "",
+};
+
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",
