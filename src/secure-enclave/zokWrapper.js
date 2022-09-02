@@ -170,4 +170,4 @@ async function proveResidence(newLeaf, issuer, creds, newSecret) {
   return retval;
 }
 
-export { addLeafSmall, proveResidence };
+export { leafFromData, addLeafSmall, proveResidence };

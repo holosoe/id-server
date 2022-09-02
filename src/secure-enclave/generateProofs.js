@@ -1,10 +1,7 @@
-import { assert } from "console";
 import { randomBytes } from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { zokGlobals } from "./init.js";
-import { toU32StringArray } from "./utils.js";
-import { addLeafSmall, proveResidence } from "./zokWrapper.js";
+import { leafFromData, addLeafSmall, proveResidence } from "./zokWrapper.js";
 
 /**
  * @typedef UserProofs
@@ -12,31 +9,6 @@ import { addLeafSmall, proveResidence } from "./zokWrapper.js";
  * @property {Object} residenceProof Proof that creds in small leaf == "US" // TODO: Should be of type string
  * @property {string} newNullifier Encrypted nullifier
  */
-
-function assertLengthIs(item, length, itemName) {
-  const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
-  assert(item.length == length, errMsg);
-}
-
-/**
- * Takes Buffer, properly formats them (according to spec), and returns a hash.
- * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
- * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} creds Credentials (e.g., "Alice" or "US" as Buffer)
- * @param {Buffer} secret Hex string representation of 16 bytes
- * @returns {Buffer} 32-byte blake2s hash
- */
-function leafFromData(issuer, creds, secret) {
-  assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(secret, 16, "secret");
-  const paddedCreds = Buffer.concat([creds], 28);
-  const { witness, output } = zokGlobals.zokratesProvider.computeWitness(
-    zokGlobals.leafgen,
-    [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
-  );
-  const leafAsStr = JSON.parse(output).join("").replaceAll("0x", "");
-  return Buffer.from(leafAsStr, "hex");
-}
 
 /**
  * Generate an addLeafSmall proof and a proof that creds=="US".
