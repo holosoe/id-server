@@ -1,3 +1,5 @@
+// TODO: Replace with updated circuit
+
 import "hashes/blake2/blake2s" as leafHash;
 // Proves knowledge of leaf preimage and that creds == "US"
 def main(u32[8] leaf, u32[5] address, private u32[7] creds, private u32[4] nullifier) {
