@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import {
-  leafFromData,
+  createSmallLeaf,
   addLeafSmall,
   proveResidence,
 } from "../zok/JavaScript/zokWrapper.js";
@@ -24,9 +24,9 @@ async function generateProofs(creds, nullifier) {
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const credsAsBuffer = Buffer.from(creds);
   const nullifierAsBuffer = Buffer.from(nullifier.replace("0x", ""), "hex");
-  const signedLeaf = leafFromData(serverAddress, credsAsBuffer, nullifierAsBuffer);
+  const signedLeaf = createSmallLeaf(serverAddress, credsAsBuffer, nullifierAsBuffer);
   const newNullifierAsBuffer = randomBytes(16); // TODO: Encrypt newNullifier and send it to user
-  const newLeaf = leafFromData(serverAddress, credsAsBuffer, newNullifierAsBuffer);
+  const newLeaf = createSmallLeaf(serverAddress, credsAsBuffer, newNullifierAsBuffer);
 
   // Generate addLeafSmall proof
   const smallLeafProof = await addLeafSmall(

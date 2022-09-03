@@ -2,7 +2,7 @@ export function toU32StringArray(bytes) {
   let u32s = chunk(bytes.toString("hex"), 8);
   return u32s.map((x) => parseInt(x, 16).toString());
 }
-function chunk(arr, chunkSize) {
+export function chunk(arr, chunkSize) {
   let out = [];
   for (let i = 0; i < arr.length; i += chunkSize) {
     const chunk = arr.slice(i, i + chunkSize);

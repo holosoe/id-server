@@ -5,6 +5,7 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import blake from "blakejs";
 import { cache } from "../init.js";
+import { createSmallLeaf, createBigLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {
   getUserByUuid,
   runSql,
@@ -97,13 +98,14 @@ function generateSecret(numBytes = 16) {
  */
 async function generateSignatures(creds, secrets) {
   const signatures = {};
-  const arrayifiedAddr = ethers.utils.arrayify(process.env.ADDRESS);
+  const serverAddress = process.env.ADDRESS;
 
   // Get bigCreds signature
-  const arrayifiedBigCredsSecret = ethers.utils.arrayify(secrets.bigCredsSecret);
-  const bigCredsArr = [
+  const bigCredsArr1 = [
     Buffer.concat([Buffer.from(creds.firstName || "")], 14),
     Buffer.concat([Buffer.from(creds.lastName || "")], 14),
+  ];
+  const bigCredsArr2 = [
     Buffer.concat([Buffer.from(creds.middleInitial || "")], 1),
     Buffer.concat([Buffer.from(creds.countryCode || "")], 3),
     Buffer.concat([Buffer.from(creds.streetAddr1 || "")], 16),
@@ -114,30 +116,26 @@ async function generateSignatures(creds, secrets) {
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
   ];
-  const arrayifiedBigCreds = ethers.utils.arrayify(Buffer.concat(bigCredsArr));
-  const bigCredsMsg = Uint8Array.from([
-    ...arrayifiedAddr,
-    ...arrayifiedBigCredsSecret,
-    ...arrayifiedBigCreds,
-  ]);
-  const bigCredsHash = blake.blake2s(bigCredsMsg);
-  const bigCredsSignature = await sign(bigCredsHash);
+  const leafAsBuffer = await createBigLeaf(
+    Buffer.from(serverAddress.replace("0x", ""), "hex"),
+    Buffer.from(secrets.bigCredsSecret.replace("0x", ""), "hex"),
+    Buffer.concat(bigCredsArr1),
+    Buffer.concat(bigCredsArr2)
+  );
+  const leaf = ethers.utils.arrayify(leafAsBuffer);
+  const bigCredsSignature = await sign(leaf);
   signatures.bigCredsSignature = bigCredsSignature;
 
   // Get a smallCreds signature for every credential
   for (const credentialName of Object.keys(creds)) {
     const secretKey = `${credentialName}Secret`;
-    const arrayifiedSmallCredsSecret = ethers.utils.arrayify(secrets[secretKey]);
-    const arrayifiedSmallCreds = ethers.utils.arrayify(
-      Buffer.concat([Buffer.from(creds[credentialName] || "")], 28)
+    const leafAsBuffer = await createSmallLeaf(
+      Buffer.from(serverAddress.replace("0x", ""), "hex"),
+      Buffer.concat([Buffer.from(creds[credentialName] || "")], 28),
+      Buffer.from(secrets[secretKey].replace("0x", ""), "hex")
     );
-    const credentialMsg = Uint8Array.from([
-      ...arrayifiedAddr,
-      ...arrayifiedSmallCreds,
-      ...arrayifiedSmallCredsSecret,
-    ]);
-    const smallCredsHash = blake.blake2s(credentialMsg);
-    const smallCredsSignature = await sign(smallCredsHash);
+    const leaf = ethers.utils.arrayify(leafAsBuffer);
+    const smallCredsSignature = await sign(leaf);
     const signatureKey = `${credentialName}Signature`;
     signatures[signatureKey] = smallCredsSignature;
   }
@@ -362,6 +360,9 @@ async function acceptFrontendRedirect(req, res) {
     firstName: verAttrs.nameFirst || "",
     lastName: verAttrs.nameLast || "",
     middleInitial: verAttrs.nameMiddle || "",
+    // TODO: Represent countryCode as a prime number. Use the first 195 prime numbers,
+    // one for each country. Can prove country is valid by proving that the country's
+    // number divides the product of the first 195 prime numbers.
     countryCode: verAttrs.countryCode || "",
     streetAddr1: verAttrs.addressStreet1 || "",
     streetAddr2: verAttrs.addressStreet2 || "",
