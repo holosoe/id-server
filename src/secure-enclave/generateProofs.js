@@ -1,7 +1,11 @@
 import { randomBytes } from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { leafFromData, addLeafSmall, proveResidence } from "./zokWrapper.js";
+import {
+  leafFromData,
+  addLeafSmall,
+  proveResidence,
+} from "../zok/JavaScript/zokWrapper.js";
 
 /**
  * @typedef UserProofs

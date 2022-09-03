@@ -7,9 +7,11 @@ import fs from "fs";
 import { assert } from "console";
 import util from "util";
 import { randomBytes } from "crypto";
-import { zokGlobals } from "./init.js";
-import { toU32StringArray, argsToU32CLIArgs } from "./utils.js";
+import { initialize } from "zokrates-js";
+import { toU32StringArray, argsToU32CLIArgs } from "./zokUtils.js";
 import { exec as nonPromisifiedExec } from "child_process";
+import dotenv from "dotenv";
+dotenv.config();
 const exec = util.promisify(nonPromisifiedExec);
 
 const zokExecutable = process.env.ZOKRATES_EXECUTABLE;
@@ -59,12 +61,16 @@ function assertLengthIs(item, length, itemName) {
  * @param {Buffer} secret Hex string representation of 16 bytes
  * @returns {Buffer} 32-byte blake2s hash
  */
-function leafFromData(issuer, creds, secret) {
+async function leafFromData(issuer, creds, secret) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
   const paddedCreds = Buffer.concat([creds], 28);
-  const { witness, output } = zokGlobals.zokratesProvider.computeWitness(
-    zokGlobals.leafgen,
+
+  const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
+  const zokratesProvider = await initialize();
+  const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
+  const { witness, output } = zokratesProvider.computeWitness(
+    createLeaf,
     [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
   );
   const leafAsStr = JSON.parse(output).join("").replaceAll("0x", "");
@@ -83,7 +89,7 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
   assertLengthIs(signedLeaf, 32, "signedLeaf");
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  const newLeaf = leafFromData(issuer, creds, newSecret);
+  const newLeaf = await leafFromData(issuer, creds, newSecret);
   assertLengthIs(newLeaf, 32, "newLeaf");
 
   const paddedCreds = Buffer.concat([creds], 28);
