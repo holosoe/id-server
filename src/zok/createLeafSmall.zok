@@ -1,15 +1,6 @@
 import "hashes/blake2/blake2s" as blake2s; //NOTE: must use quantum- and length-extension- resistant hash function
-import "hashes/poseidon/poseidon" as poseidon;
-import "utils/pack/u32/pack128" as pack128;
 
-// Use poseidon to hash a u32[8] value (such as a blake2s output)
-// @param bh - blake2s hash
-def poseidonHashU328(u32[8] bh) -> field {
-    return poseidon([pack128(bh[0..4]), pack128(bh[4..8])]);
-}
-
-def main(u32[5] address, private u32[7] creds, private u32[4] secret) -> field {
+def main(u32[5] address, private u32[7] creds, private u32[4] secret) -> u32[8] {
     u32[1][16] preimage = [[...address, ...creds, ...secret]];
-    u32[8] bh = blake2s(preimage);
-    return poseidonHashU328(bh);
+    return blake2s(preimage);
 }

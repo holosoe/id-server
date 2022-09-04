@@ -7,6 +7,7 @@ import fs from "fs";
 import { assert } from "console";
 import util from "util";
 import { randomBytes } from "crypto";
+import { ethers } from "ethers";
 import zokrates from "zokrates-js";
 import { toU32StringArray, argsToU32CLIArgs, chunk } from "./zokUtils.js";
 import { exec as nonPromisifiedExec } from "child_process";
@@ -60,7 +61,7 @@ function assertLengthIs(item, length, itemName) {
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
  * @param {Buffer} creds Credentials (e.g., "Alice" or "US" as Buffer)
  * @param {Buffer} secret Hex string representation of 16 bytes
- * @returns {Promise<Buffer>} Poseidon hash of blake2s hash of input data
+ * @returns {Promise<Buffer>} Blake2s hash (of input data) right-shifted 3 bits with left padding to fill 32 bytes
  */
 async function createSmallLeaf(issuer, creds, secret) {
   assertLengthIs(issuer, 20, "issuer");
@@ -71,12 +72,19 @@ async function createSmallLeaf(issuer, creds, secret) {
     const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF_SMALL;
     const zokratesProvider = await initialize();
     const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
-    // TODO: Use CLI instead of zokrates-js. Can we get output when we use CLI?
     const { witness, output } = zokratesProvider.computeWitness(
       createLeaf,
       [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
     );
-    return Buffer.from(parseInt(output).toString(16), "hex");
+    const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
+    const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
+
+    // Add left padding if necessary
+    const hashStr = hashRightShifted.toHexString().replace("0x", "");
+    const missingZeros = 64 - hashStr.length;
+    const formattedHashStr = "0".repeat(missingZeros) + hashStr;
+
+    return Buffer.from(formattedHashStr, "hex");
   } catch (err) {
     console.log(err);
   }
@@ -89,7 +97,7 @@ async function createSmallLeaf(issuer, creds, secret) {
  * @param {Buffer} secret Hex string representation of 16 bytes
  * @param {Buffer} creds1 Credentials array. Must be 28 bytes
  * @param {Buffer} creds2 Credentials array. Must be 64 bytes
- * @returns {Promise<Buffer>} Poseidon hash of blake2s hash of input data
+ * @returns {Promise<Buffer>} Blake2s hash (of input data) right-shifted 3 bits
  */
 async function createBigLeaf(issuer, secret, creds1, creds2) {
   assertLengthIs(issuer, 20, "issuer");
@@ -100,12 +108,19 @@ async function createBigLeaf(issuer, secret, creds1, creds2) {
     const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF_BIG;
     const zokratesProvider = await initialize();
     const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
-    // TODO: Use CLI instead of zokrates-js. Can we get output when we use CLI?
     const { witness, output } = zokratesProvider.computeWitness(
       createLeaf,
       [issuer, secret, creds1, creds2].map((x) => toU32StringArray(x))
     );
-    return Buffer.from(parseInt(output).toString(16), "hex");
+    const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
+    const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
+
+    // Add left padding if necessary
+    const hashStr = hashRightShifted.toHexString().replace("0x", "");
+    const missingZeros = 64 - hashStr.length;
+    const formattedHashStr = "0".repeat(missingZeros) + hashStr;
+
+    return Buffer.from(formattedHashStr, "hex");
   } catch (err) {
     console.log(err);
   }
