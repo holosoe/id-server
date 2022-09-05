@@ -4,7 +4,7 @@ export const dummyUserCreds = {
   firstName: "",
   lastName: "",
   middleInitial: "",
-  countryCode: "",
+  countryCode: 0,
   streetAddr1: "",
   streetAddr2: "",
   city: "",
@@ -92,7 +92,9 @@ const primes = [
 ]; // 1171, 1181, 1187,
 
 export const countryCodeToPrime = {
+  // Used
   US: 2, // United States
+  // Unused
   AL: 3, // Albania
   DZ: 5, // Algeria
   AD: 7, // Andorra

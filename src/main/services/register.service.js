@@ -20,6 +20,7 @@ import {
   frontendOrigin,
   dummyUserCreds,
   stateAbbreviations,
+  countryCodeToPrime,
 } from "../utils/constants.js";
 
 const personaHeaders = {
@@ -105,9 +106,13 @@ async function generateSignatures(creds, secrets) {
     Buffer.concat([Buffer.from(creds.firstName || "")], 14),
     Buffer.concat([Buffer.from(creds.lastName || "")], 14),
   ];
+  // TODO: We only need 2 (not 3) bytes to represent the 195th prime. Change schema and code
+  let countryBuffer = Buffer.alloc(2);
+  countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
+  countryBuffer = Buffer.from("00" + countryBuffer.toString("hex"), "hex"); // Add left padding (to get to 3 bytes)
   const bigCredsArr2 = [
     Buffer.concat([Buffer.from(creds.middleInitial || "")], 1),
-    Buffer.concat([Buffer.from(creds.countryCode || "")], 3),
+    countryBuffer,
     Buffer.concat([Buffer.from(creds.streetAddr1 || "")], 16),
     Buffer.concat([Buffer.from(creds.streetAddr2 || "")], 12),
     Buffer.concat([Buffer.from(creds.city || "")], 16),
@@ -360,10 +365,7 @@ async function acceptFrontendRedirect(req, res) {
     firstName: verAttrs.nameFirst || "",
     lastName: verAttrs.nameLast || "",
     middleInitial: verAttrs.nameMiddle || "",
-    // TODO: Represent countryCode as a prime number. Use the first 195 prime numbers,
-    // one for each country. Can prove country is valid by proving that the country's
-    // number divides the product of the first 195 prime numbers.
-    countryCode: verAttrs.countryCode || "",
+    countryCode: countryCodeToPrime[verAttrs.countryCode] || 0,
     streetAddr1: verAttrs.addressStreet1 || "",
     streetAddr2: verAttrs.addressStreet2 || "",
     city: verAttrs.addressCity || "",
