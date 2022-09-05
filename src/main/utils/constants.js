@@ -92,7 +92,7 @@ const primes = [
 ]; // 1171, 1181, 1187,
 
 export const countryCodeToPrime = {
-  AF: 2, // Afghanistan
+  US: 2, // United States
   AL: 3, // Albania
   DZ: 5, // Algeria
   AD: 7, // Andorra
@@ -279,7 +279,7 @@ export const countryCodeToPrime = {
   UA: 1087, // Ukraine,
   AE: 1091, // United Arab Emirates,
   GB: 1093, // United Kingdom,
-  US: 1097, // United States,
+  AF: 1097, // Afghanistan
   UY: 1103, // Uruguay,
   UZ: 1109, // Uzbekistan,
   VU: 1117, // Vanuatu,
