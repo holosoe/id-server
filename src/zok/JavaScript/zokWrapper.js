@@ -186,6 +186,7 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
  * @returns {Object} Proof
  */
 async function proveResidence(newLeaf, issuer, creds, newSecret) {
+  throw new Error("Not implemented");
   assertLengthIs(newLeaf, 32, "newLeaf");
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(newSecret, 16, "secret");
