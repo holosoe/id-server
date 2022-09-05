@@ -4,7 +4,7 @@
  */
 
 import fs from "fs";
-import { assert } from "console";
+import assert from "assert";
 import util from "util";
 import { randomBytes } from "crypto";
 import { ethers } from "ethers";
@@ -22,14 +22,13 @@ const localZokDir = process.env.ZOK_DIR; // Dir with .zok files, proving keys, e
 /**
  * @param {string} binPath Path to the compiled zokrates program
  * @param {string} witnessPath Path to the witness file that will be written
- * @param {Array<Buffer>} args Each Buffer will be converted to a uint32 string
+ * @param {string} args
  * @returns {string}
  */
-function getComputeWitnessCmd(binPath = "out", witnessPath = "witness", args = []) {
+function getComputeWitnessCmd(binPath = "out", witnessPath = "witness", args = "") {
   const baseCmd = `${zokExecutable} compute-witness`;
   const options = `-i ${binPath} -o ${witnessPath}`;
-  const formattedArgs = `-a ${argsToU32CLIArgs(args)}`;
-  return `${baseCmd} ${options} ${formattedArgs}`;
+  return `${baseCmd} ${options} -a ${args}`;
 }
 
 /**
@@ -52,19 +51,21 @@ function getGenProofCmd(
 
 function assertLengthIs(item, length, itemName) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
-  assert(item.length == length, errMsg);
+  assert.equal(item.length, length, errMsg);
 }
 
 /**
  * Takes Buffer, properly formats them (according to spec), and returns a hash.
  * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} creds Credentials (e.g., "Alice" or "US" as Buffer)
+ * @param {Buffer} creds Credentials (e.g., "Alice" or 2 as Buffer)
  * @param {Buffer} secret Hex string representation of 16 bytes
- * @returns {Promise<Buffer>} Blake2s hash (of input data) right-shifted 3 bits with left padding to fill 32 bytes
+ * @returns {Promise<string>} Blake2s hash (of input data) right-shifted 3 bits. Base 10 number
+ * represented as a string.
  */
 async function createSmallLeaf(issuer, creds, secret) {
   assertLengthIs(issuer, 20, "issuer");
+  assertLengthIs(creds, 28, "creds");
   assertLengthIs(secret, 16, "secret");
   try {
     const paddedCreds = Buffer.concat([creds], 28);
@@ -78,13 +79,7 @@ async function createSmallLeaf(issuer, creds, secret) {
     );
     const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
     const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
-
-    // Add left padding if necessary
-    const hashStr = hashRightShifted.toHexString().replace("0x", "");
-    const missingZeros = 64 - hashStr.length;
-    const formattedHashStr = "0".repeat(missingZeros) + hashStr;
-
-    return Buffer.from(formattedHashStr, "hex");
+    return hashRightShifted.toString();
   } catch (err) {
     console.log(err);
   }
@@ -127,7 +122,7 @@ async function createBigLeaf(issuer, secret, creds1, creds2) {
 }
 
 /**
- * @param {Buffer} signedLeaf
+ * @param {string} signedLeaf String representation of a number
  * @param {Buffer} issuer Blockchain address
  * @param {Buffer} creds
  * @param {Buffer} secret
@@ -135,11 +130,9 @@ async function createBigLeaf(issuer, secret, creds1, creds2) {
  * @returns {Object} Proof
  */
 async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
-  assertLengthIs(signedLeaf, 32, "signedLeaf");
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
   const newLeaf = await createSmallLeaf(issuer, creds, newSecret);
-  assertLengthIs(newLeaf, 32, "newLeaf");
 
   const paddedCreds = Buffer.concat([creds], 28);
   const inFile = process.env.ZOK_PATH_TO_ALS_OUT;
@@ -150,14 +143,13 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
 
   // Execute the command
   try {
-    const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, [
-      signedLeaf,
-      newLeaf,
+    const args = `${signedLeaf} ${newLeaf} ${argsToU32CLIArgs([
       issuer,
       paddedCreds,
       secret,
       newSecret,
-    ]);
+    ])}`;
+    const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, args);
     const generateProofCmd = getGenProofCmd(
       inFile,
       tmpWitnessFile,
@@ -182,10 +174,10 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
  * @param {Buffer} issuer Blockchain address. Public input to proof.
  * @param {Buffer} creds Public input to proof. Public so that verifier can check it outside proof.
  * Must be left-padded (so that the rightmost u32 is the prime, in the case of countryCode).
- * @param {Buffer} root Merkle root. Public input to proof.
- * @param {Buffer} leaf Leaf of merkle tree. Private input to proof.
- * @param {Buffer} directionSelector (See proof.) Private input to proof.
- * @param {Buffer} path (See proof.) Private input to proof.
+ * @param {string} root uint256 represented as string. Merkle root. Public input to proof.
+ * @param {string} leaf uint256 represented as string. Leaf of merkle tree. Private input to proof.
+ * @param {Array<bool>} directionSelector (See proof.) Private input to proof.
+ * @param {Array<string>} path (See proof.) Private input to proof.
  * @param {Buffer} secret I.e., nullifier. Private input to proof.
  * @returns {Object} Proof
  */
@@ -200,7 +192,6 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
 ) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(creds, 32, "creds");
-  assertLengthIs(leaf, 32, "leaf");
   assertLengthIs(secret, 16, "secret");
 
   const inFile = process.env.ZOK_PATH_TO_LOBBY3_PROOF_OUT;
@@ -209,17 +200,15 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.witness";
   const tmpProofFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.proof.json";
 
+  // Format args for command line
+  let args = argsToU32CLIArgs([issuer, creds]);
+  args += " " + root + " " + leaf;
+  args += " " + directionSelector.map((x) => (x ? 1 : 0).toString()).join(" ");
+  args += " " + path.join(" ") + " " + argsToU32CLIArgs([secret]);
+
   // Execute the command
   try {
-    const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, [
-      issuer,
-      creds,
-      root,
-      leaf,
-      directionSelector,
-      path,
-      secret,
-    ]);
+    const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, args);
     const generateProofCmd = getGenProofCmd(
       inFile,
       tmpWitnessFile,
