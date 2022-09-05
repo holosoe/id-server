@@ -1,3 +1,6 @@
+/**
+ * For ad hoc tests.
+ */
 import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
 import { createSmallLeaf } from "../zokWrapper.js";
