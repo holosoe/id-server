@@ -1,0 +1,92 @@
+// TODO: Replace with updated circuit
+
+// import "hashes/blake2/blake2s" as leafHash;
+// // Proves knowledge of leaf preimage and that creds == "US"
+// def main(u32[8] leaf, u32[5] address, private u32[7] creds, private u32[4] nullifier) {
+//     u32[1][16] preimage = [[...address, ...creds, ...nullifier]];
+//     assert(leafHash(preimage) == leaf);
+//     // assert(creds == "US")
+//     u32 x = 1431502848;
+//     assert(creds[0] == x);
+//     for u32 i in 1..6 {
+//         assert(creds[i] == 0);
+//     }
+//     return;
+// }
+
+
+// Updated circuit...
+
+// This is intended to be the complete proof used for Lobby3. It is slightly more 
+// abstract than Lobby3's use case requires. This more abstract version simply
+// allows for more use cases to be built with it.
+// The general proof scheme here should do the following:
+// 1. Prove, via a Merkle proof, that the user's credentials have been signed by Holonym
+// 2. Prove that the creds field in the user's preimage equals some verifier-determined 
+//    value (e.g., "US")
+// 3. Prove that hash(nullifier+message_chosen_by_verifier)  is valid. This allows
+//    verifier to check that the user is not double spending their credentials wtihin
+//    the context determined by the verifier (e.g., in a certain election)
+
+
+import "hashes/blake2/blake2s" as blake2s;
+import "hashes/poseidon/poseidon" as poseidon;
+import "utils/casts/u32_array_to_bool_array" as to_bits;
+
+const u32 DEPTH = 32;
+
+def shiftRight3Bits(u32[8] input) -> field {
+    bool[256] input_as_bits = to_bits(input);
+    // Shift right 3 bits, and convert to field
+    // Forked from: https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_stdlib/stdlib/utils/pack/bool/pack.zok
+    field mut out = 0;
+    for u32 j in 0..253 {
+        u32 i = 253 - (j + 1);
+        out = out + (input_as_bits[i] ? 2 ** j : 0);
+    }
+    return out;
+}
+
+// Proves that user knows preimage and that preimage includes publicly known address and creds
+def assertValidPreimage(field leaf, u32[5] address, u32[7] creds, u32[4] nullifier) {
+    u32[1][16] preimage = [[...address, ...creds, ...nullifier]];
+    u32[8] blake2sHash = blake2s(preimage);
+    assert(shiftRight3Bits(blake2sHash) == leaf);
+}
+
+// Proves that user's leaf is in set of leaves signed by Holonym
+// Forked from https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_cli/examples/merkleTree/pedersenPathProof3.zok
+def merkleProof(field root, field leaf, bool[DEPTH] directionSelector, field[DEPTH] path) -> bool {
+    // Start from the leaf
+    field mut digest = leaf;
+
+    // Loop up the tree
+    for u32 i in 0..DEPTH {
+        field[2] preimage = directionSelector[i] ? [path[i], digest] : [digest, path[i]];
+        digest = poseidon(preimage);
+    }
+
+    assert(digest == root);
+}
+
+// Proves that user_nullifier+verifier_message is indeed the preimage of publicly provided nullifierHash
+// This allows verifier to prevent sybil attacks
+// @param nullifierHash - blake2s hash of nullifier+verifier_message
+def assertValidNullifier(u32[8] nullifierHash, u32[4] nullifier, u32[12] message) {
+    u32[1][16] preimage = [[...nullifier, ...message]];
+    assert(blake2s(preimage) == nullifierHash);
+}
+
+
+def main(u32[5] address, u32[7] creds, field root, u32[8] nullifierHash, u32[12] message, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private u32[4] nullifier) {
+    assertValidPreimage(leaf, address, creds, nullifier);
+    merkleProof(root, leaf, bool[DEPTH] directionSelector, field[DEPTH] path);
+    // TODO: Assert something about creds?? E.g., creds == 2
+    assertValidNullifier(nullifierHash, nullifier, message);
+    return;
+}
+
+// NOTE: We need standardization of the possible creds and message values.
+// What is the correct integer representation of, e.g., "US"? What other countries
+// should we have an integer representation of? What verifier messages, if any,
+// should we allow/encourage?
