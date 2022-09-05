@@ -178,40 +178,53 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
 }
 
 /**
- * Prove that creds == "US"
- * @param {Buffer} newLeaf
- * @param {Buffer} issuer Blockchain address
- * @param {Buffer} creds
- * @param {Buffer} newSecret
+ * Prove that user knows the preimage of a leaf that belongs in the merkle tree.
+ * @param {Buffer} issuer Blockchain address. Public input to proof.
+ * @param {Buffer} creds Public input to proof. Public so that verifier can check it outside proof.
+ * Must be left-padded (so that the rightmost u32 is the prime, in the case of countryCode).
+ * @param {Buffer} root Merkle root. Public input to proof.
+ * @param {Buffer} leaf Leaf of merkle tree. Private input to proof.
+ * @param {Buffer} directionSelector (See proof.) Private input to proof.
+ * @param {Buffer} path (See proof.) Private input to proof.
+ * @param {Buffer} secret I.e., nullifier. Private input to proof.
  * @returns {Object} Proof
  */
-async function proveResidence(newLeaf, issuer, creds, newSecret) {
-  throw new Error("Not implemented");
-  assertLengthIs(newLeaf, 32, "newLeaf");
+async function proveKnowledgeOfPreimageOfMemberLeaf(
+  issuer,
+  creds,
+  root,
+  leaf,
+  directionSelector,
+  path,
+  secret
+) {
   assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(newSecret, 16, "secret");
+  assertLengthIs(creds, 32, "creds");
+  assertLengthIs(leaf, 32, "leaf");
+  assertLengthIs(secret, 16, "secret");
 
-  const paddedCreds = Buffer.concat([creds], 28);
-
-  const inFile = process.env.ZOK_PATH_TO_POR_OUT;
+  const inFile = process.env.ZOK_PATH_TO_LOBBY3_PROOF_OUT;
   // Create a temporary name for current tasks to be deleted once CLI execution is done:
   const tmpValue = randomBytes(16).toString("hex");
-  const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".por.witness";
-  const tmpProofFile = localZokDir + "/temp/" + tmpValue + ".por.proof.json";
+  const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.witness";
+  const tmpProofFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.proof.json";
 
   // Execute the command
   try {
     const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, [
-      newLeaf,
       issuer,
-      paddedCreds,
-      newSecret,
+      creds,
+      root,
+      leaf,
+      directionSelector,
+      path,
+      secret,
     ]);
     const generateProofCmd = getGenProofCmd(
       inFile,
       tmpWitnessFile,
       tmpProofFile,
-      `${localZokDir}/por.proving.key`
+      `${localZokDir}/lobby3Proof.proving.key`
     );
     const { stdout, stderr } = await exec(
       `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
@@ -226,4 +239,9 @@ async function proveResidence(newLeaf, issuer, creds, newSecret) {
   return retval;
 }
 
-export { createSmallLeaf, createBigLeaf, addLeafSmall, proveResidence };
+export {
+  createSmallLeaf,
+  createBigLeaf,
+  addLeafSmall,
+  proveKnowledgeOfPreimageOfMemberLeaf,
+};
