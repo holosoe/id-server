@@ -13,11 +13,6 @@ const cache = new NodeCache({ stdTTL: 600, checkperiod: 100 });
 const sqlDb = new sqlite3.Database(process.env.PATH_TO_SQLITE_DB);
 process.on("SIGTERM", () => sqlDb.close());
 sqlDb.serialize(() => {
-  /**
-   * uuid == hash(user's driver license number)
-   * address == blockchain address
-   * secret == nullifier. String. Must be converted to bytes for proofs.
-   */
   const columns = `(tempSecret TEXT, uuid BLOB, inquiryId TEXT)`;
   sqlDb.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
