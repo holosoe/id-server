@@ -1,32 +1,9 @@
-// TODO: Replace with updated circuit
-
-// import "hashes/blake2/blake2s" as leafHash;
-// // Proves knowledge of leaf preimage and that creds == "US"
-// def main(u32[8] leaf, u32[5] address, private u32[7] creds, private u32[4] nullifier) {
-//     u32[1][16] preimage = [[...address, ...creds, ...nullifier]];
-//     assert(leafHash(preimage) == leaf);
-//     // assert(creds == "US")
-//     u32 x = 1431502848;
-//     assert(creds[0] == x);
-//     for u32 i in 1..6 {
-//         assert(creds[i] == 0);
-//     }
-//     return;
-// }
-
-
-// Updated circuit...
-
-// This is intended to be the complete proof used for Lobby3. It is slightly more 
-// abstract than Lobby3's use case requires. This more abstract version simply
-// allows for more use cases to be built with it.
-// The general proof scheme here should do the following:
-// 1. Prove, via a Merkle proof, that the user's credentials have been signed by Holonym
-// 2. Prove that the creds field in the user's preimage equals some verifier-determined 
-//    value (e.g., "US")
-// 3. Prove that hash(nullifier+message_chosen_by_verifier)  is valid. This allows
-//    verifier to check that the user is not double spending their credentials wtihin
-//    the context determined by the verifier (e.g., in a certain election)
+// This is intended to be the complete proof used for Lobby3 (after the leaf is added
+// to the merkle tree). It is slightly more abstract than Lobby3's use case requires. 
+// This more abstract version simply allows for more use cases to be built with it.
+// The general proof scheme here does the following: Prove that the user knows the 
+// preimage of a leaf was signed by Holonym. Proof that their credentials were signed
+// by Holonym is accomplished via a merkle proof.
 
 
 import "hashes/blake2/blake2s" as blake2s;
@@ -69,24 +46,20 @@ def merkleProof(field root, field leaf, bool[DEPTH] directionSelector, field[DEP
     assert(digest == root);
 }
 
+// NOTE: Not needed for Lobby3
 // Proves that user_nullifier+verifier_message is indeed the preimage of publicly provided nullifierHash
 // This allows verifier to prevent sybil attacks
 // @param nullifierHash - blake2s hash of nullifier+verifier_message
-def assertValidNullifier(u32[8] nullifierHash, u32[4] nullifier, u32[12] message) {
-    u32[1][16] preimage = [[...nullifier, ...message]];
-    assert(blake2s(preimage) == nullifierHash);
-}
+// def assertValidNullifier(u32[8] nullifierHash, u32[4] nullifier, u32[12] message) {
+//     u32[1][16] preimage = [[...nullifier, ...message]];
+//     assert(blake2s(preimage) == nullifierHash);
+// }
 
 
-def main(u32[5] address, u32[7] creds, field root, u32[8] nullifierHash, u32[12] message, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private u32[4] nullifier) {
+def main(u32[5] address, u32[7] creds, field root, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private u32[4] nullifier) {
     assertValidPreimage(leaf, address, creds, nullifier);
     merkleProof(root, leaf, bool[DEPTH] directionSelector, field[DEPTH] path);
-    // TODO: Assert something about creds?? E.g., creds == 2
-    assertValidNullifier(nullifierHash, nullifier, message);
     return;
 }
 
-// NOTE: We need standardization of the possible creds and message values.
-// What is the correct integer representation of, e.g., "US"? What other countries
-// should we have an integer representation of? What verifier messages, if any,
-// should we allow/encourage?
+// NOTE: For Lobby3, creds should be checked in smart contract
