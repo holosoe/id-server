@@ -283,13 +283,6 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "verification status !== passed" });
   }
 
-  if (verAttrs?.countryCode != "US") {
-    console.log(
-      `${new Date().toISOString()} acceptPersonaRedirect: User is not from the US.`
-    );
-    return res.status(400).json({ error: "User is not from the US" });
-  }
-
   const address = cache.take(inqId);
   const tempSecret = cache.take(address);
   const uuidConstituents =
