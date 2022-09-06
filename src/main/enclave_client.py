@@ -54,6 +54,8 @@ def gen_proofs_handler(args):
     endpoint = (1, PORT) # == (cid, port)
     client.connect(endpoint)
     client.send_data('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
+    client.send_data(args.proof_type.encode())
+    client.send_data(' '.encode())
     client.send_data(args.encrypted_args.encode().ljust(BUFF_SIZE, b'\0'))
     client.send_data('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
 
@@ -69,9 +71,10 @@ def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(title="options")
 
-    gen_proofs_parser = subparsers.add_parser("generate-proofs", 
-                                               description="Generate proofs",
-                                               help="Generate addSmallLeaf proof and creds=='US' proof.")
+    gen_proofs_parser = subparsers.add_parser("generate-proof", 
+                                               description="Generate proof",
+                                               help="Generate a proof")
+    gen_proofs_parser.add_argument("proof_type", help="e.g., addSmallLeaf")
     gen_proofs_parser.add_argument("encrypted_args", help="")
     gen_proofs_parser.set_defaults(func=gen_proofs_handler)
 

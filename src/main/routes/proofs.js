@@ -1,8 +1,8 @@
 import express from "express";
-import { residenceProof } from "../services/proofs.service.js";
+import { addSmallLeaf } from "../services/proofs.service.js";
 
 const router = express.Router();
 
-router.get("/residence", residenceProof);
+router.get("/addSmallLeaf", addSmallLeaf);
 
 export default router;

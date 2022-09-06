@@ -48,8 +48,9 @@ class VsockListener:
                 if 'start_message' in data.decode():
                     self.latest_message = bytearray()
                 elif 'end_message' in data.decode():
-                    encrypted_args = self.latest_message.decode().replace('\x00', '')
-                    cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, encrypted_args]
+                    args = self.latest_message.decode().replace('\x00', '')
+                    proof_type, encrypted_args = args.split(' ')
+                    cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, proof_type, encrypted_args]
                     out = subprocess.run(cmd, capture_output=True)
                     # TODO: Generate proofs. Do this in node script?
                     # TODO: Encrypt and return. Do this in node script?
