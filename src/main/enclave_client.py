@@ -54,9 +54,11 @@ def gen_proofs_handler(args):
     endpoint = (1, PORT) # == (cid, port)
     client.connect(endpoint)
     client.send_data('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
-    client.send_data(args.proof_type.encode())
-    client.send_data(' '.encode())
-    client.send_data(args.encrypted_args.encode().ljust(BUFF_SIZE, b'\0'))
+    msg = args.proof_type.encode()
+    msg += ' '.encode()
+    msg += args.encrypted_args.encode()
+    total_msg_bytes = len(msg) + (BUFF_SIZE - (len(msg) % BUFF_SIZE))
+    client.send_data(msg.ljust(total_msg_bytes, b'\0'))
     client.send_data('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
 
     # wait for response from secure enclave
