@@ -49,8 +49,12 @@ class VsockListener:
                     self.latest_message = bytearray()
                 elif 'end_message' in data.decode():
                     args = self.latest_message.decode().replace('\x00', '')
-                    proof_type, encrypted_args = args.split(' ')
-                    cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, proof_type, encrypted_args]
+                    if len(args.split(' ')) == 3:
+                        proof_type, encrypted_args, sharded = args.split(' ')
+                    else:
+                        proof_type, encrypted_args = args.split(' ')
+                        sharded = False
+                    cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, proof_type, encrypted_args, sharded]
                     out = subprocess.run(cmd, capture_output=True)
                     # TODO: Generate proofs. Do this in node script?
                     # TODO: Encrypt and return. Do this in node script?

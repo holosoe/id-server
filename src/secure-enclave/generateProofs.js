@@ -2,6 +2,7 @@ import assert from "assert";
 import { randomBytes, webcrypto } from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { chunk } from "../zok/JavaScript/zokUtils.js";
 import {
   createSmallLeaf,
   addLeafSmall,
@@ -9,6 +10,7 @@ import {
 } from "../zok/JavaScript/zokWrapper.js";
 
 // NOTE: privateKey and publicKey are for tests only. Use AWS KMS for production
+const maxEncryptableLength = 446;
 const privateKey = {
   key_ops: ["decrypt"],
   ext: true,
@@ -34,7 +36,7 @@ const publicKey = {
 /**
  * @returns {Promise<string>}
  */
-async function decrypt(input) {
+async function decryptShard(input) {
   const algo = {
     name: "RSA-OAEP",
     modulusLength: 4096,
@@ -58,6 +60,27 @@ async function decrypt(input) {
   const decodedMessage = decoder.decode(decryptedShard);
   return decodedMessage;
 }
+/**
+ *
+ * @param {*} input
+ * @param {*} sharded
+ * @returns
+ */
+async function decrypt(input, sharded) {
+  let shards;
+  if (sharded) {
+    // Re-stringify the singly nested arrays
+    shards = JSON.parse(input).map((shard) => JSON.stringify(shard));
+  } else {
+    shards = [input];
+  }
+  const decryptedShards = [];
+  for (const shard of shards) {
+    const decryptedShard = await decryptShard(shard);
+    decryptedShards.push(decryptedShard);
+  }
+  return decryptedShards.join("");
+}
 
 /**
  * @typedef UserProofs
@@ -75,13 +98,15 @@ const unitedStatesCredsBuffer = Buffer.from("00".repeat(26) + "0002", "hex");
 
 /**
  * Proof for Lobby3.
- * Generate an addLeafSmall proof and a proof that creds==2 (2 represents "US").
+ * Generate a proof that creds==2 (2 represents "US").
+ * NOTE: Not generic. Only supports case where creds == 2.
+ * TODO: Make it generic.
  * @param {number} creds
  * @param {string} secret 16-byte hex string
  * @param {string} root Merkle root. String representation of a number
  * @param {Array<bool>} directionSelector For merkle proof path
  * @param {Array<string>} path Array of siblings in merkle proof path
- * @returns {Promise<UserProofs>} Encrypted proofs and newSecret
+ * @returns {Promise<Proof>} Encrypted proof // TODO: write typedef for this proof
  */
 async function genKnowledgeOfPreimageProof(
   creds,
@@ -94,7 +119,7 @@ async function genKnowledgeOfPreimageProof(
   const credsAsBuffer = unitedStatesCredsBuffer;
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const leaf = createSmallLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
+  const leaf = await createSmallLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
 
   const proofOfKnowledgeOfPreimage = await proveKnowledgeOfPreimageOfMemberLeaf(
     serverAddress,
@@ -157,14 +182,27 @@ async function genAddSmallLeafProof(creds, secret) {
 async function handler(argv) {
   const proofType = argv.proofType;
   const encryptedArgs = argv.args;
+  const sharded = argv.sharded; // whether the encrypted args were encrypted in shards
+
+  // console.log(`sharded: ${sharded}`);
 
   // TODO: Decrypt with AWS KMS
-  const decryptedArgs = await decrypt(encryptedArgs);
+  const decryptedArgs = await decrypt(encryptedArgs, sharded);
   const decryptedArgsJson = JSON.parse(decryptedArgs);
 
   if (proofType == "addSmallLeaf") {
     const { creds, secret } = decryptedArgsJson;
     const proof = await genAddSmallLeafProof(creds, secret);
+    console.log(JSON.stringify(proof));
+  } else if (proofType == "proveKnowledgeOfPreimageOfMemberLeaf") {
+    const { creds, secret, root, directionSelector, path } = decryptedArgsJson;
+    const proof = await genKnowledgeOfPreimageProof(
+      creds,
+      secret,
+      root,
+      directionSelector,
+      path
+    );
     console.log(JSON.stringify(proof));
   }
 
@@ -172,7 +210,7 @@ async function handler(argv) {
 }
 
 const argv = yargs(hideBin(process.argv)).command(
-  "$0 <proofType> <args>",
+  "$0 <proofType> <args> <sharded>",
   "Generate proofs",
   () => {},
   handler

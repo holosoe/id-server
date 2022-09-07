@@ -7,14 +7,17 @@ import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { createSmallLeaf } from "../src/zok/JavaScript/zokWrapper.js";
+import dotenv from "dotenv";
+dotenv.config();
 
-// console.log("(initializing zokrates provider...)");
-// const zokProvider = await initialize();
-// const source = `import "hashes/poseidon/poseidon" as poseidon;
-// def main(field[2] input) -> field {
-//   return poseidon(input);
-// }`;
-// const poseidonHashArtifacts = zokProvider.compile(source);
+console.log("(initializing zokrates provider...)");
+const zokProvider = await initialize();
+const source = `import "hashes/poseidon/poseidon" as poseidon;
+def main(field[2] input) -> field {
+  return poseidon(input);
+}`;
+const poseidonHashArtifacts = zokProvider.compile(source);
+console.log("(zokrates provider initialized)");
 
 const privateKey = {
   key_ops: ["decrypt"],
@@ -38,8 +41,11 @@ const publicKey = {
   e: "AQAB",
   alg: "RSA-OAEP-256",
 };
+// Max length of encrypt-able string using RSA-OAEP with SHA256 where
+// modulusLength == 4096: 446 characters.
+const maxEncryptableLength = 446;
 
-async function encrypt(message) {
+async function encryptShard(message) {
   const algo = {
     name: "RSA-OAEP",
     modulusLength: 4096,
@@ -53,6 +59,22 @@ async function encrypt(message) {
   args = ["RSA-OAEP", pubKeyAsCryptoKey, encodedMessage];
   const encryptedMessage = await webcrypto.subtle.encrypt(...args);
   return JSON.stringify(Array.from(new Uint8Array(encryptedMessage)));
+}
+
+async function encrypt(message) {
+  const usingSharding = message.length > maxEncryptableLength;
+  let encryptedMessage; // array<string> if sharding, string if not sharding
+  if (usingSharding) {
+    encryptedMessage = [];
+    for (let i = 0; i < message.length; i += maxEncryptableLength) {
+      const shard = message.substring(i, i + maxEncryptableLength);
+      const encryptedShard = await encryptShard(shard);
+      encryptedMessage.push(encryptedShard);
+    }
+  } else {
+    encryptedMessage = await encryptShard(message);
+  }
+  return { encryptedMessage: encryptedMessage, sharded: usingSharding };
 }
 
 /**
@@ -187,9 +209,44 @@ async function testResidenceProofEndpoint() {
     secret: secret,
   };
   // NOTE: Use AWS KMS in production
-  const encryptedArgs = await encrypt(JSON.stringify(args));
+  const { encryptedMessage: encryptedArgs } = await encrypt(JSON.stringify(args));
   const resp = await axios.get(
     `http://localhost:3000/proofs/addSmallLeaf?args=${encryptedArgs}`
+  );
+  console.log(JSON.stringify(resp.data));
+}
+
+async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
+  // NOTE: Start both servers before running this test
+  const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
+  const creds = 2;
+  const secret = "0x" + "11".repeat(16);
+  const leaf = await createSmallLeaf(
+    issuer,
+    Buffer.from("00".repeat(26) + "0002", "hex"),
+    Buffer.from(secret.replace("0x", ""), "hex")
+  );
+  const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
+  tree.insert(leaf);
+  const index = tree.indexOf(leaf);
+  const proof = tree.createProof(index);
+  const { root, siblings: path } = proof;
+  const directionSelector = proof.pathIndices.map((n) => !!n);
+  const args = {
+    creds,
+    secret,
+    root,
+    directionSelector,
+    path,
+  };
+  // NOTE: Use AWS KMS in production
+  const { encryptedMessage, sharded } = await encrypt(JSON.stringify(args));
+
+  const encryptedArgs = Array.isArray(encryptedMessage)
+    ? JSON.stringify(encryptedMessage)
+    : encryptedMessage;
+  const resp = await axios.get(
+    `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf?args=${encryptedArgs}&sharded=${sharded}`
   );
   console.log(JSON.stringify(resp.data));
 }
@@ -201,9 +258,9 @@ async function testResidenceProofEndpoint() {
 // tree.insert("1");
 // const index = tree.indexOf("1");
 // const proof = tree.createProof(index);
-// // console.log(proof);
+// console.log(proof);
 // const directionSelector = proof.pathIndices;
 // const path = proof.siblings;
 // console.log(path.length);
 
-// TODO: Add endpoint for other Lobby3 proof (proving knowledge of preimage) and test it
+testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
