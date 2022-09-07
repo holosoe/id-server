@@ -57,6 +57,8 @@ def gen_proofs_handler(args):
     msg = args.proof_type.encode()
     msg += ' '.encode()
     msg += args.encrypted_args.encode()
+    msg += ' '.encode()
+    msg += args.sharded.encode()
     total_msg_bytes = len(msg) + (BUFF_SIZE - (len(msg) % BUFF_SIZE))
     client.send_data(msg.ljust(total_msg_bytes, b'\0'))
     client.send_data('end_message'.encode().ljust(BUFF_SIZE, b'\0'))
@@ -78,6 +80,7 @@ def main():
                                                help="Generate a proof")
     gen_proofs_parser.add_argument("proof_type", help="e.g., addSmallLeaf")
     gen_proofs_parser.add_argument("encrypted_args", help="")
+    gen_proofs_parser.add_argument("sharded", help="Whether encrypted_args were sharded for encryption")
     gen_proofs_parser.set_defaults(func=gen_proofs_handler)
 
     if len(sys.argv) < 2:
