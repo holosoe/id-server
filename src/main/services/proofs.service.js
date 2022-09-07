@@ -57,8 +57,9 @@ export async function addSmallLeaf(req, res) {
     const { stdout, stderr } = await exec(
       `${pyExecutable} ${enclaveClientScript} generate-proof addSmallLeaf ${args}`
     );
+    const parsedStdout = JSON.parse(stdout);
 
-    return res.status(200).json({ data: stdout });
+    return res.status(200).json({ data: parsedStdout });
   } catch (err) {
     console.log(err);
     return res.status(500).json({ error: "An unknown error occurred" });

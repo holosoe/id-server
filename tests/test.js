@@ -191,7 +191,7 @@ async function testResidenceProofEndpoint() {
   const resp = await axios.get(
     `http://localhost:3000/proofs/addSmallLeaf?args=${encryptedArgs}`
   );
-  console.log(resp.data);
+  console.log(JSON.stringify(resp.data));
 }
 
 // console.log(getZeroedMerkleRoot());
@@ -206,12 +206,4 @@ async function testResidenceProofEndpoint() {
 // const path = proof.siblings;
 // console.log(path.length);
 
-testResidenceProofEndpoint();
-
-/**
- * Procedure:
- * 1. Get leaves from smart contract
- * 2. Construct IncrementalMerkleTree with leaves
- * 3. Get index of user's leaf
- * 4. createProof with index
- */
+// TODO: Add endpoint for other Lobby3 proof (proving knowledge of preimage) and test it

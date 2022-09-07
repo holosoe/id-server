@@ -162,11 +162,10 @@ async function handler(argv) {
   const decryptedArgs = await decrypt(encryptedArgs);
   const decryptedArgsJson = JSON.parse(decryptedArgs);
 
-  // TODO: Convert args into correct types
   if (proofType == "addSmallLeaf") {
     const { creds, secret } = decryptedArgsJson;
     const proof = await genAddSmallLeafProof(creds, secret);
-    console.log(proof);
+    console.log(JSON.stringify(proof));
   }
 
   // console.log(proofs);
