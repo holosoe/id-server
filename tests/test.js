@@ -8,12 +8,13 @@ import { ethers } from "ethers";
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { createSmallLeaf } from "../src/zok/JavaScript/zokWrapper.js";
 
-const zokProvider = await initialize();
-const source = `import "hashes/poseidon/poseidon" as poseidon;
-def main(field[2] input) -> field {
-  return poseidon(input);
-}`;
-const poseidonHashArtifacts = zokProvider.compile(source);
+// console.log("(initializing zokrates provider...)");
+// const zokProvider = await initialize();
+// const source = `import "hashes/poseidon/poseidon" as poseidon;
+// def main(field[2] input) -> field {
+//   return poseidon(input);
+// }`;
+// const poseidonHashArtifacts = zokProvider.compile(source);
 
 const privateKey = {
   key_ops: ["decrypt"],
@@ -46,11 +47,11 @@ async function encrypt(message) {
     hash: "SHA-256",
   };
   let args = ["jwk", publicKey, algo, false, ["encrypt"]];
-  const pubKeyAsCryptoKey = await window.crypto.subtle.importKey(...args);
+  const pubKeyAsCryptoKey = await webcrypto.subtle.importKey(...args);
   const encoder = new TextEncoder();
   const encodedMessage = encoder.encode(message);
   args = ["RSA-OAEP", pubKeyAsCryptoKey, encodedMessage];
-  const encryptedMessage = await window.crypto.subtle.encrypt(...args);
+  const encryptedMessage = await webcrypto.subtle.encrypt(...args);
   return JSON.stringify(Array.from(new Uint8Array(encryptedMessage)));
 }
 
@@ -184,30 +185,28 @@ async function testResidenceProofEndpoint() {
   const args = {
     creds: creds,
     secret: secret,
-    root: root,
-    directionSelector: directionSelector,
-    path: path,
   };
   // NOTE: Use AWS KMS in production
   const encryptedArgs = await encrypt(JSON.stringify(args));
-  axios.get(`http://localhost:3000/proofs/residence?args=${encryptedArgs}`);
+  const resp = await axios.get(
+    `http://localhost:3000/proofs/addSmallLeaf?args=${encryptedArgs}`
+  );
+  console.log(resp.data);
 }
 
 // console.log(getZeroedMerkleRoot());
 
-console.log("constructing merkle tree...");
-const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
-tree.insert("1");
-tree.insert("2");
-tree.insert("3");
-tree.insert("4");
-tree.insert("5");
-const index = tree.indexOf("4");
-const proof = tree.createProof(index);
-console.log(proof);
-const directionSelector = proof.pathIndices;
-const path = proof.siblings;
-console.log(path.length);
+// IncrementalMerkleTree playground
+// const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
+// tree.insert("1");
+// const index = tree.indexOf("1");
+// const proof = tree.createProof(index);
+// // console.log(proof);
+// const directionSelector = proof.pathIndices;
+// const path = proof.siblings;
+// console.log(path.length);
+
+testResidenceProofEndpoint();
 
 /**
  * Procedure:

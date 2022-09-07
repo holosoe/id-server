@@ -45,8 +45,7 @@ const enclaveClientScript = process.env.PATH_TO_ENCLAVE_CLIENT_SCRIPT;
  * need to be present in the decrypted object.
  */
 export async function addSmallLeaf(req, res) {
-  //
-  console.log(`${new Date().toISOString()} residenceUSProof: entered`);
+  console.log(`${new Date().toISOString()} addSmallLeaf: entered`);
 
   const args = req.query.args;
   if (!args) {

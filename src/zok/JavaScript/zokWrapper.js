@@ -78,8 +78,9 @@ async function createSmallLeaf(issuer, creds, secret) {
       [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
     );
     const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
-    const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
-    return hashRightShifted.toString();
+    return hashAsBigNum;
+    // const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
+    // return hashRightShifted.toString();
   } catch (err) {
     console.log(err);
   }
@@ -143,12 +144,8 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
 
   // Execute the command
   try {
-    const args = `${signedLeaf} ${newLeaf} ${argsToU32CLIArgs([
-      issuer,
-      paddedCreds,
-      secret,
-      newSecret,
-    ])}`;
+    const u32Args = argsToU32CLIArgs([issuer, paddedCreds, secret, newSecret]);
+    const args = `${signedLeaf} ${newLeaf} ${u32Args}`;
     const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, args);
     const generateProofCmd = getGenProofCmd(
       inFile,
@@ -160,7 +157,7 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
       `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
     );
   } catch (e) {
-    console.error(e);
+    console.log(e);
   }
 
   // Read the proof file, then delete it, then return it
