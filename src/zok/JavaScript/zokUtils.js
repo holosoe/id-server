@@ -14,7 +14,7 @@ export function chunk(arr, chunkSize) {
 // Expects arguments of type bytes and returns an array of U32s -- all inputs concatenated/flattened, then split up into u32s
 // This is how ZoKrates CLI expects arguments
 export function argsToU32CLIArgs(args) {
-  return toU32Array(Buffer.concat(args))
+  return toU32StringArray(Buffer.concat(args))
     .map((x) => parseInt(x))
     .join(" ");
 }
