@@ -78,7 +78,7 @@ async function createSmallLeaf(issuer, creds, secret) {
       [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
     );
     const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
-    return hashAsBigNum;
+    return hashAsBigNum.toString();
     // const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
     // return hashRightShifted.toString();
   } catch (err) {
@@ -188,7 +188,7 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   secret
 ) {
   assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(creds, 32, "creds");
+  assertLengthIs(creds, 28, "creds");
   assertLengthIs(secret, 16, "secret");
 
   const inFile = process.env.ZOK_PATH_TO_LOBBY3_PROOF_OUT;
