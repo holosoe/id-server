@@ -1,0 +1,50 @@
+// Prove that some publicly known (and, ideally, verifier-determined) number is divisible by creds
+import "hashes/blake2/blake2s" as blake2s;
+import "hashes/poseidon/poseidon" as poseidon;
+import "utils/casts/u32_array_to_bool_array" as to_bits;
+
+const u32 DEPTH = 32;
+
+def shiftRight3Bits(u32[8] input) -> field {
+    bool[256] input_as_bits = to_bits(input);
+    // Shift right 3 bits, and convert to field
+    // Forked from: https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_stdlib/stdlib/utils/pack/bool/pack.zok
+    field mut out = 0;
+    for u32 j in 0..253 {
+        u32 i = 253 - (j + 1);
+        out = out + (input_as_bits[i] ? 2 ** j : 0);
+    }
+    return out;
+}
+
+// NOTE: Not needed for Lobby3
+// Proves that user_nullifier+verifier_message is indeed the preimage of publicly provided nullifierHash
+// This allows verifier to prevent sybil attacks
+// @param nullifierHash - blake2s hash of nullifier+verifier_message
+// def assertValidNullifier(u32[8] nullifierHash, u32[4] nullifier, u32[12] message) {
+//     u32[1][16] preimage = [[...nullifier, ...message]];
+//     assert(blake2s(preimage) == nullifierHash);
+// }
+
+
+def main(u32[5] address, u32 accumulator, field root, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private u32[7] creds, private u32[4] nullifier) {
+    // assertValidPreimage(leaf, address, creds, nullifier);
+    u32[1][16] preimage1 = [[...address, ...creds, ...nullifier]];
+    u32[8] blake2sHash = blake2s(preimage1);
+    assert(shiftRight3Bits(blake2sHash) == leaf);
+    
+    // Forked from https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_cli/examples/merkleTree/pedersenPathProof3.zok
+    // merkleProof(root, leaf, bool[DEPTH] directionSelector, field[DEPTH] path);
+    field mut digest = leaf;
+    for u32 i in 0..DEPTH {
+        field[2] preimage2 = directionSelector[i] ? [path[i], digest] : [digest, path[i]];
+        digest = poseidon(preimage2);
+    }
+
+    // Prove creds is in country whitelist
+    u32 remainder = accumulator % creds[6];
+    assert(remainder == 0);
+
+    assert(digest == root);
+    return;
+}
