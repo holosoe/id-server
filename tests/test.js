@@ -195,15 +195,10 @@ function getZeroedMerkleRoot(leaves) {
   return heightToHash;
 }
 
-async function testResidenceProofEndpoint() {
+async function testAddSmallLeafEndpoint() {
   // NOTE: Start both servers before running this test
   const creds = 2;
   const secret = "0x" + "11".repeat(16);
-  // TODO: Get root
-  const root = 1;
-  // TODO: Get path
-  const path = [0];
-  const directionSelector = [true, false];
   const args = {
     creds: creds,
     secret: secret,
