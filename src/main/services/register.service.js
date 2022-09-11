@@ -133,7 +133,7 @@ async function generateSignatures(creds, secrets) {
 
   // Get a smallCreds signature for every credential
   for (const credentialName of Object.keys(creds)) {
-    let credsBuffer = Buffer.concat([Buffer.from(creds[credentialName] || "")], 28);
+    let credsBuffer;
     if (credentialName == "countryCode") {
       countryBuffer = Buffer.alloc(2);
       countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
@@ -142,6 +142,8 @@ async function generateSignatures(creds, secrets) {
         "hex"
       );
       credsBuffer = countryBuffer;
+    } else {
+      credsBuffer = Buffer.concat([Buffer.from(creds[credentialName] || "")], 28);
     }
     const secretKey = `${credentialName}Secret`;
     const leafAsStr = await createSmallLeaf(
