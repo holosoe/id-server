@@ -29,6 +29,7 @@ export async function addSmallLeaf(req, res) {
     );
     const parsedStdout = JSON.parse(stdout);
 
+    console.log(`${new Date().toISOString()} addSmallLeaf: returning proof`);
     return res.status(200).json({ data: parsedStdout });
   } catch (err) {
     console.log(err);
@@ -61,6 +62,9 @@ export async function proveKnowledgeOfPreimageOfMemberLeaf(req, res) {
     );
     const parsedStdout = JSON.parse(stdout);
 
+    console.log(
+      `${new Date().toISOString()} proveKnowledgeOfPreimageOfMemberLeaf: returning proof`
+    );
     return res.status(200).json({ data: parsedStdout });
   } catch (err) {
     console.log(err);
