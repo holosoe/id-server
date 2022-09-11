@@ -121,13 +121,13 @@ async function generateSignatures(creds, secrets) {
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
   ];
-  const leafAsBuffer = await createBigLeaf(
+  const leafAsStr = await createBigLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secrets.bigCredsSecret.replace("0x", ""), "hex"),
     Buffer.concat(bigCredsArr1),
     Buffer.concat(bigCredsArr2)
   );
-  const leaf = ethers.utils.arrayify(leafAsBuffer);
+  const leaf = ethers.utils.arrayify(leafAsStr);
   const bigCredsSignature = await sign(leaf);
   signatures.bigCredsSignature = bigCredsSignature;
 
@@ -144,12 +144,15 @@ async function generateSignatures(creds, secrets) {
       credsBuffer = countryBuffer;
     }
     const secretKey = `${credentialName}Secret`;
-    const leafAsBuffer = await createSmallLeaf(
+    const leafAsStr = await createSmallLeaf(
       Buffer.from(serverAddress.replace("0x", ""), "hex"),
       credsBuffer,
       Buffer.from(secrets[secretKey].replace("0x", ""), "hex")
     );
-    const leaf = ethers.utils.arrayify(leafAsBuffer);
+    const leafAsHexStr = ethers.BigNumber.from(leafAsStr).toHexString();
+    const leaf = ethers.utils.arrayify(
+      Buffer.from(leafAsHexStr.replace("0x", ""), "hex")
+    );
     const smallCredsSignature = await sign(leaf);
     const signatureKey = `${credentialName}Signature`;
     signatures[signatureKey] = smallCredsSignature;

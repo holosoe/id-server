@@ -93,7 +93,7 @@ async function createSmallLeaf(issuer, creds, secret) {
  * @param {Buffer} secret Hex string representation of 16 bytes
  * @param {Buffer} creds1 Credentials array. Must be 28 bytes
  * @param {Buffer} creds2 Credentials array. Must be 64 bytes
- * @returns {Promise<Buffer>} Blake2s hash (of input data) right-shifted 3 bits
+ * @returns {Promise<String>} Blake2s hash (of input data) right-shifted 3 bits
  */
 async function createBigLeaf(issuer, secret, creds1, creds2) {
   assertLengthIs(issuer, 20, "issuer");

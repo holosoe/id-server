@@ -258,4 +258,5 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
 // const path = proof.siblings;
 // console.log(path.length);
 
-testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
+testAddSmallLeafEndpoint();
+// testKnowledgeOfPreimageOfMemberLeafProofEndpoint();

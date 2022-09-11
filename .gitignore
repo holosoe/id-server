@@ -12,3 +12,6 @@ src/zok/out*
 src/zok/*.out
 src/zok/*.proving.key
 src/zok/*.verification.key
+
+out.wtns
+
