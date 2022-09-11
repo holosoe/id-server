@@ -13,7 +13,7 @@ BUFF_SIZE = 1024
 
 class VsockStream:
     """Client"""
-    def __init__(self, conn_timeout=60):
+    def __init__(self, conn_timeout=900):
         self.conn_timeout = conn_timeout
         self.latest_message = bytearray()
         self.received_proofs = False
