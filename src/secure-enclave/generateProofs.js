@@ -182,9 +182,7 @@ async function genAddSmallLeafProof(creds, secret) {
 async function handler(argv) {
   const proofType = argv.proofType;
   const encryptedArgs = argv.args;
-  const sharded = argv.sharded; // whether the encrypted args were encrypted in shards
-
-  // console.log(`sharded: ${sharded}`);
+  const sharded = argv.sharded?.toLowerCase() == "true"; // whether the encrypted args were encrypted in shards
 
   // TODO: Decrypt with AWS KMS
   const decryptedArgs = await decrypt(encryptedArgs, sharded);
