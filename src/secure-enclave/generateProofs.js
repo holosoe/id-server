@@ -2,8 +2,10 @@ import assert from "assert";
 import { randomBytes, webcrypto } from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
+import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { chunk } from "../zok/JavaScript/zokUtils.js";
 import {
+  poseidonHash,
   createSmallLeaf,
   addLeafSmall,
   proveKnowledgeOfPreimageOfMemberLeaf,
@@ -103,23 +105,22 @@ const unitedStatesCredsBuffer = Buffer.from("00".repeat(26) + "0002", "hex");
  * TODO: Make it generic.
  * @param {number} creds
  * @param {string} secret 16-byte hex string
- * @param {string} root Merkle root. String representation of a number
- * @param {Array<bool>} directionSelector For merkle proof path
- * @param {Array<string>} path Array of siblings in merkle proof path
  * @returns {Promise<Proof>} Encrypted proof // TODO: write typedef for this proof
  */
-async function genKnowledgeOfPreimageProof(
-  creds,
-  secret,
-  root,
-  directionSelector,
-  path
-) {
+async function genKnowledgeOfPreimageProof(creds, secret) {
   assert.equal(creds, 2, "User is not a US resident");
   const credsAsBuffer = unitedStatesCredsBuffer;
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
   const leaf = await createSmallLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
+
+  const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
+  tree.insert(leaf);
+  // TODO: Add all leaves from smart contract
+  const index = tree.indexOf(leaf);
+  const proof = tree.createProof(index);
+  const { root, siblings: path } = proof;
+  const directionSelector = proof.pathIndices.map((n) => !!n);
 
   const proofOfKnowledgeOfPreimage = await proveKnowledgeOfPreimageOfMemberLeaf(
     serverAddress,
@@ -193,14 +194,8 @@ async function handler(argv) {
     const proof = await genAddSmallLeafProof(creds, secret);
     console.log(JSON.stringify(proof));
   } else if (proofType == "proveKnowledgeOfPreimageOfMemberLeaf") {
-    const { creds, secret, root, directionSelector, path } = decryptedArgsJson;
-    const proof = await genKnowledgeOfPreimageProof(
-      creds,
-      secret,
-      root,
-      directionSelector,
-      path
-    );
+    const { creds, secret } = decryptedArgsJson;
+    const proof = await genKnowledgeOfPreimageProof(creds, secret);
     console.log(JSON.stringify(proof));
   }
 
