@@ -19,6 +19,24 @@ const { initialize } = zokrates;
 const zokExecutable = process.env.ZOKRATES_EXECUTABLE;
 const localZokDir = process.env.ZOK_DIR; // Dir with .zok files, proving keys, etc.
 
+const zokProvider = await initialize();
+const source = `import "hashes/poseidon/poseidon" as poseidon;
+def main(field[2] input) -> field {
+  return poseidon(input);
+}`;
+const poseidonHashArtifacts = zokProvider.compile(source);
+
+/**
+ * @param {Array<string>} input 2-item array
+ */
+function poseidonHash(input) {
+  const [leftInput, rightInput] = input;
+  const { witness, output } = zokProvider.computeWitness(poseidonHashArtifacts, [
+    [leftInput, rightInput],
+  ]);
+  return output.replaceAll('"', "");
+}
+
 /**
  * @param {string} binPath Path to the compiled zokrates program
  * @param {string} witnessPath Path to the witness file that will be written
@@ -226,6 +244,7 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
 }
 
 export {
+  poseidonHash,
   createSmallLeaf,
   createBigLeaf,
   addLeafSmall,
