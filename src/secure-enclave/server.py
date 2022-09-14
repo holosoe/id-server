@@ -56,9 +56,6 @@ class VsockListener:
                         sharded = False
                     cmd = [NODE_EXECUTABLE, GEN_PROOFS_NODE_SCRIPT, proof_type, encrypted_args, sharded]
                     out = subprocess.run(cmd, capture_output=True)
-                    print(out)
-                    # TODO: Generate proofs. Do this in node script?
-                    # TODO: Encrypt and return. Do this in node script?
                     self.send_response(from_client, out.stdout.decode())
                     break
                 else:
