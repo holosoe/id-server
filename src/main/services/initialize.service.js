@@ -1,5 +1,6 @@
 import express from "express";
-import { cache } from "../init.js";
+import { redisClient } from "../init.js";
+import { stdTTL } from "../utils/constants.js";
 
 /**
  * This endpoint generates a random message that the user can sign.
@@ -18,6 +19,6 @@ export async function initialize(req, res) {
   }
   const address = req.query.address.toLowerCase();
   const randStr = Math.random().toString(16).substring(7);
-  cache.set(address, randStr);
+  await redisClient.set(address, randStr, { EX: stdTTL });
   return res.status(200).json({ message: randStr });
 }

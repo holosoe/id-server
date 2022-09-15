@@ -2,13 +2,16 @@
 import fs from "fs";
 import sqlite3 from "sqlite3";
 import { LowSync, JSONFileSync } from "lowdb";
-import NodeCache from "node-cache";
+import { createClient } from "redis";
 import dotenv from "dotenv";
 dotenv.config();
 
-// NOTE: stdTTL of 10 min might not be enough. User might take >10 min to complete Persona verification
-// TODO: Use something other than node-cache. node-cache sometimes throws unexpected errors
-const cache = new NodeCache({ stdTTL: 600, checkperiod: 100 });
+const redisClient = createClient();
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+redisClient
+  .connect()
+  .then(() => console.log("Connected to redis"))
+  .catch((err) => console.log("Redis Client Error", err));
 
 const sqlDb = new sqlite3.Database(process.env.PATH_TO_SQLITE_DB);
 process.on("SIGTERM", () => sqlDb.close());
@@ -30,4 +33,4 @@ if (!jsonDb.data?.lastZeroed) {
   jsonDb.write();
 }
 
-export { sqlDb, jsonDb, cache };
+export { sqlDb, jsonDb, redisClient };

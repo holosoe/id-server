@@ -4,7 +4,7 @@ import express from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import blake from "blakejs";
-import { cache } from "../init.js";
+import { redisClient } from "../init.js";
 import { createSmallLeaf, createBigLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {
   getUserByUuid,
@@ -18,6 +18,7 @@ import {
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
 import {
   frontendOrigin,
+  stdTTL,
   dummyUserCreds,
   stateAbbreviations,
   countryCodeToPrime,
@@ -219,7 +220,7 @@ async function startPersonaInquiry(req, res) {
   }
   const address = req.query.address.toLowerCase();
   const userSignature = req.query.signature;
-  const secretMessage = cache.get(address);
+  const secretMessage = await redisClient.get(address);
   if (!secretMessage) {
     console.log(
       `${new Date().toISOString()} startPersonaInquiry: secret message expired. Exiting.`
@@ -249,7 +250,7 @@ async function startPersonaInquiry(req, res) {
     personaHeaders
   );
   const inqId = resp.data.data.id;
-  cache.set(inqId, address);
+  await redisClient.set(inqId, address, { EX: stdTTL });
   return res.redirect(`https://withpersona.com/verify?inquiry-id=${inqId}`);
 }
 
@@ -288,8 +289,8 @@ async function acceptPersonaRedirect(req, res) {
     return res.status(400).json({ error: "verification status !== passed" });
   }
 
-  const address = cache.take(inqId);
-  const tempSecret = cache.take(address);
+  const address = await redisClient.get(inqId);
+  const tempSecret = await redisClient.get(address);
   const uuidConstituents =
     (verAttrs.nameFirst || "") +
     (verAttrs.nameMiddle || "") +
@@ -303,15 +304,15 @@ async function acceptPersonaRedirect(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Ensure user hasn't already registered
-  if (process.env.ENVIRONMENT != "dev") {
-    const user = await getUserByUuid(uuid);
-    if (user) {
-      console.log(
-        `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
-      );
-      return res.status(400).json({ error: "User has already registered" });
-    }
-  }
+  // if (process.env.ENVIRONMENT != "dev") {
+  //   const user = await getUserByUuid(uuid);
+  //   if (user) {
+  //     console.log(
+  //       `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
+  //     );
+  //     return res.status(400).json({ error: "User has already registered" });
+  //   }
+  // }
 
   const columns = "(tempSecret, uuid, inquiryId)";
   const params = [tempSecret, uuid, inqId];
