@@ -23,7 +23,11 @@ sqlDb.serialize(() => {
 const lowdbAdapter = new JSONFileSync(process.env.PATH_TO_JSON_DB);
 const jsonDb = new LowSync(lowdbAdapter);
 jsonDb.read();
-if (!jsonDb.data?.verificationCount) {
+if (!jsonDb.data) {
+  jsonDb.data = {};
+  jsonDb.write();
+}
+if (!jsonDb.data.verificationCount) {
   jsonDb.data.verificationCount = 0;
   jsonDb.write();
 }
