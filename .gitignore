@@ -1,8 +1,8 @@
 node_modules
 .vscode
 notes.txt
-what-is-revealed.txt
 .env
+.env.docker
 
 database/
 
