@@ -20,6 +20,7 @@ import {
   frontendOrigin,
   stdTTL,
   dummyUserCreds,
+  emptyCreds,
   stateAbbreviations,
   countryCodeToPrime,
 } from "../utils/constants.js";
@@ -303,8 +304,7 @@ async function acceptPersonaRedirect(req, res) {
     (verAttrs.birthdate || "");
   const uuid = hash(Buffer.from(uuidConstituents));
 
-  // Ensure user hasn't already registered
-  if (process.env.ENVIRONMENT != "dev") {
+  if (process.env.ENVIRONMENT != "dev" && process.env.ENVIRONMENT != "alpha") {
     const user = await getUserByUuid(uuid);
     if (user) {
       console.log(
@@ -384,7 +384,14 @@ async function acceptFrontendRedirect(req, res) {
     birthdate: verAttrs.birthdate || "",
   };
 
-  const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
+  // Use empty creds for alpha so that we don't accidentally sign off on fake
+  // credentials while anons are testing
+  const creds =
+    process.env.ENVIRONMENT == "dev"
+      ? dummyUserCreds
+      : process.env.ENVIRONMENT == "alpha"
+      ? emptyCreds
+      : realCreds;
 
   // Get one secret for bigCreds and one for every credential
   const secrets = {
