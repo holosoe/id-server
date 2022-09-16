@@ -4,7 +4,7 @@ export const dummyUserCreds = {
   firstName: "John",
   lastName: "Doe",
   middleInitial: "A",
-  countryCode: 0,
+  countryCode: 2,
   streetAddr1: "123 MAIN ST",
   streetAddr2: "",
   city: "SOME CITY",
