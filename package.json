@@ -4,7 +4,9 @@
     "start:main": "node src/main/server --trace-warnings",
     "start:enclave": "python3 src/secure-enclave/server.py serve",
     "build:main": "docker build -f Dockerfile.main -t lobby3-id-server-main .",
-    "run:main": "docker run --env-file ./.env.docker --network host lobby3-id-server-main"
+    "run:main": "docker run --env-file ./.env.docker --network host lobby3-id-server-main",
+    "build:enclave": "docker build -f Dockerfile.enclave -t lobby3-id-server-enclave .",
+    "run:enclave": "docker run --env-file ./.env.docker --network host lobby3-id-server-enclave"
   },
   "type": "module",
   "dependencies": {
