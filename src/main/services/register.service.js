@@ -371,15 +371,9 @@ async function acceptFrontendRedirect(req, res) {
 
   // Get each credential
   const realCreds = {
-    firstName: verAttrs.nameFirst || "",
-    lastName: verAttrs.nameLast || "",
-    middleInitial: verAttrs.nameMiddle || "",
     countryCode: countryCodeToPrime[verAttrs.countryCode] || 0,
-    streetAddr1: verAttrs.addressStreet1 || "",
-    streetAddr2: verAttrs.addressStreet2 || "",
     city: verAttrs.addressCity || "",
     subdivision: verAttrs.addressSubdivision || "",
-    postalCode: verAttrs.addressPostalCode || "",
     completedAt: verAttrs.completedAt || "",
     birthdate: verAttrs.birthdate || "",
   };

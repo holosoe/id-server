@@ -1,29 +1,17 @@
 export const frontendOrigin = process.env.FRONT_END_ORIGIN;
 
 export const dummyUserCreds = {
-  firstName: "John",
-  lastName: "Doe",
-  middleInitial: "A",
   countryCode: 2,
-  streetAddr1: "123 MAIN ST",
-  streetAddr2: "",
   city: "SOME CITY",
   subdivision: "NY",
-  postalCode: "00000-0000",
   completedAt: "2022-09-16T02:21:59.510Z",
   birthdate: "01-01-1950",
 };
 
 export const emptyCreds = {
-  firstName: "",
-  lastName: "",
-  middleInitial: "",
   countryCode: 0,
-  streetAddr1: "",
-  streetAddr2: "",
   city: "",
   subdivision: "",
-  postalCode: "",
   completedAt: "",
   birthdate: "",
 };
