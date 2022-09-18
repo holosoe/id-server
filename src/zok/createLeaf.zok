@@ -1,17 +1,5 @@
-import "utils/casts/u32_array_to_bool_array" as to_bits;
 import "hashes/poseidon/poseidon" as poseidon;
 
-def toField(u32[8] input) -> field {
-    bool[256] input_as_bits = to_bits(input);
-    field mut out = 0;
-    for u32 j in 0..256 {
-        u32 i = 256 - (j + 1);
-        out = out + (input_as_bits[i] ? 2 ** j : 0);
-    }
-    return out;
-}
-
-def main(u32[5] address, private u32[4] secret, private u32[7] creds) -> field {
-    u32[16] input = [...address, ...secret, ...creds];
-    return poseidon([toField(input[0..8]), toField(input[8..16])]);
+def main(field address, private field secret, private field countryCode, private field subdivision, private field completedAt, private field birthdate) -> field {
+    return poseidon([address, secret, countryCode, subdivision, completedAt, birthdate]);
 }

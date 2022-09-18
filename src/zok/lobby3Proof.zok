@@ -6,47 +6,9 @@
 // by Holonym is accomplished via a merkle proof.
 
 
-import "hashes/blake2/blake2s" as blake2s;
 import "hashes/poseidon/poseidon" as poseidon;
-import "utils/casts/u32_array_to_bool_array" as to_bits;
 
 const u32 DEPTH = 32;
-
-def shiftRight3Bits(u32[8] input) -> field {
-    bool[256] input_as_bits = to_bits(input);
-    // Shift right 3 bits, and convert to field
-    // Forked from: https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_stdlib/stdlib/utils/pack/bool/pack.zok
-    field mut out = 0;
-    for u32 j in 0..253 {
-        u32 i = 253 - (j + 1);
-        out = out + (input_as_bits[i] ? 2 ** j : 0);
-    }
-    return out;
-}
-
-// Proves that user knows preimage and that preimage includes publicly known address and creds
-def assertValidPreimage(field leaf, u32[5] address, u32[7] creds, u32[4] nullifier) {
-    u32[1][16] preimage = [[...address, ...creds, ...nullifier]];
-    u32[8] blake2sHash = blake2s(preimage);
-    assert(shiftRight3Bits(blake2sHash) == leaf);
-    return;
-}
-
-// Proves that user's leaf is in set of leaves signed by Holonym
-// Forked from https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_cli/examples/merkleTree/pedersenPathProof3.zok
-def merkleProof(field root, field leaf, bool[DEPTH] directionSelector, field[DEPTH] path) {
-    // Start from the leaf
-    field mut digest = leaf;
-
-    // Loop up the tree
-    for u32 i in 0..DEPTH {
-        field[2] preimage = directionSelector[i] ? [path[i], digest] : [digest, path[i]];
-        digest = poseidon(preimage);
-    }
-
-    assert(digest == root);
-    return;
-}
 
 // NOTE: Not needed for Lobby3
 // Proves that user_nullifier+verifier_message is indeed the preimage of publicly provided nullifierHash
@@ -58,13 +20,13 @@ def merkleProof(field root, field leaf, bool[DEPTH] directionSelector, field[DEP
 // }
 
 
-def main(u32[5] address, u32[7] creds, field root, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private u32[4] nullifier) {
-    // assertValidPreimage(leaf, address, creds, nullifier);
-    u32[1][16] preimage1 = [[...address, ...creds, ...nullifier]];
-    u32[8] blake2sHash = blake2s(preimage1);
-    assert(shiftRight3Bits(blake2sHash) == leaf);
+def main(field address, field root, field countryCode, private field subdivision, private field completedAt, private field birthdate, private field leaf, private bool[DEPTH] directionSelector, private field[DEPTH] path, private field nullifier) {
+    // assert valid preimage
+    field[6] preimage = [address, nullifier, countryCode, subdivision, completedAt, birthdate];
+    assert(poseidon(preimage) == leaf);
     
-    // merkleProof(root, leaf, bool[DEPTH] directionSelector, field[DEPTH] path);
+    // TODO: REWRITE THE MERKLE PROOF FOR QUINARY TREE
+    // merkle proof
     field mut digest = leaf;
     for u32 i in 0..DEPTH {
         field[2] preimage2 = directionSelector[i] ? [path[i], digest] : [digest, path[i]];
@@ -75,4 +37,4 @@ def main(u32[5] address, u32[7] creds, field root, private field leaf, private b
     return;
 }
 
-// NOTE: For Lobby3, creds should be checked in smart contract
+// NOTE: For Lobby3, countryCode should be checked in smart contract
