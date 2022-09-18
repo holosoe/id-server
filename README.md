@@ -20,27 +20,19 @@ Use the correct python version. For conda users...
 
     conda activate py3.10
 
-## Creds Serialization
+## Serialization of Credentials
 
-Credentials are temporarilly stored plaintext in the `Users` table near the end of the verification process. At the end of the verification process, the user is given their credentials to store in their browser.
+At the end of the verification process, the user is given their credentials to store in their browser.
 
 The following is the serialization scheme that our proofs will expect. User credentials must be converted to bytes on the frontend prior to proof generation.
 
-| field           | number of bytes |
-| --------------- | --------------- |
-| `nameFirst`     | 14              |
-| `lastName`      | 14              |
-| `middleInitial` | 1               |
-| `countryCode`   | 3               |
-| `streetAddr1`   | 16              |
-| `streetAddr2`   | 12              |
-| `city`          | 16              |
-| `subdivision`   | 2               |
-| `postalCode`    | 8               |
-| `completedAt`   | 3               |
-| `birthdate`     | 3               |
-
-Total bytes: 92
+| Field         | Number of bytes | Additional info                                                                                           |
+| ------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
+| `countryCode` | 2               | Each country is represented as a prime number.                                                            |
+| `city`        | 18              | UTF-8. Right padded.                                                                                      |
+| `subdivision` | 2               | UTF-8. Right padded.                                                                                      |
+| `completedAt` | 3               | 1st byte represents years since 1900. Bytes 2 and 3 represent number of days since beginning of the year. |
+| `birthdate`   | 3               | 1st byte represents years since 1900. Bytes 2 and 3 represent number of days since beginning of the year. |
 
 ## UUID
 
