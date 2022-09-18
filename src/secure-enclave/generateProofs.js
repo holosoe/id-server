@@ -6,8 +6,8 @@ import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import { chunk } from "../zok/JavaScript/zokUtils.js";
 import {
   poseidonHash,
-  createSmallLeaf,
-  addLeafSmall,
+  createLeaf,
+  addLeaf,
   proveKnowledgeOfPreimageOfMemberLeaf,
 } from "../zok/JavaScript/zokWrapper.js";
 
@@ -112,7 +112,7 @@ async function genKnowledgeOfPreimageProof(creds, secret) {
   const credsAsBuffer = unitedStatesCredsBuffer;
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const leaf = await createSmallLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
+  const leaf = await createLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
 
   const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
   tree.insert(leaf);
@@ -140,12 +140,12 @@ async function genKnowledgeOfPreimageProof(creds, secret) {
 }
 
 /**
- * Generate an addLeafSmall proof.
+ * Generate an addLeaf proof.
  * @param {number} creds
  * @param {string} secret 16-byte hex string
  * @returns {Promise<UserProofs>} Encrypted proofs and newSecret
  */
-async function genAddSmallLeafProof(creds, secret) {
+async function genAddLeafProof(creds, secret) {
   let credsAsBuffer;
   // When creds == 2, creds buffer is constructed differently
   if (creds == 2) {
@@ -155,16 +155,11 @@ async function genAddSmallLeafProof(creds, secret) {
   }
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const signedLeaf = await createSmallLeaf(
-    serverAddress,
-    credsAsBuffer,
-    secretAsBuffer
-  );
+  const signedLeaf = await createLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
   const newSecretAsBuffer = randomBytes(16);
-  // const newLeaf = createSmallLeaf(serverAddress, credsAsBuffer, newSecretAsBuffer);
 
-  // Generate addLeafSmall proof
-  const smallLeafProof = await addLeafSmall(
+  // Generate addLeaf proof
+  const smallLeafProof = await addLeaf(
     signedLeaf,
     serverAddress,
     credsAsBuffer,
@@ -189,9 +184,13 @@ async function handler(argv) {
   const decryptedArgs = await decrypt(encryptedArgs, sharded);
   const decryptedArgsJson = JSON.parse(decryptedArgs);
 
-  if (proofType == "addSmallLeaf") {
+  console.log(`proofType == ${proofType}`);
+  console.log("decryptedArgsJson...");
+  console.log(decryptedArgsJson);
+
+  if (proofType == "addLeaf") {
     const { creds, secret } = decryptedArgsJson;
-    const proof = await genAddSmallLeafProof(creds, secret);
+    const proof = await genAddLeafProof(creds, secret);
     console.log(JSON.stringify(proof));
   } else if (proofType == "proveKnowledgeOfPreimageOfMemberLeaf") {
     const { creds, secret } = decryptedArgsJson;

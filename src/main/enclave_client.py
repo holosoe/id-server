@@ -78,7 +78,7 @@ def main():
     gen_proofs_parser = subparsers.add_parser("generate-proof", 
                                                description="Generate proof",
                                                help="Generate a proof")
-    gen_proofs_parser.add_argument("proof_type", help="e.g., addSmallLeaf")
+    gen_proofs_parser.add_argument("proof_type", help="e.g., addLeaf")
     gen_proofs_parser.add_argument("encrypted_args", help="")
     gen_proofs_parser.add_argument("sharded", help="Whether encrypted_args were sharded for encryption")
     gen_proofs_parser.set_defaults(func=gen_proofs_handler)

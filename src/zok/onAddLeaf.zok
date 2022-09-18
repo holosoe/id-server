@@ -1,13 +1,11 @@
-import "hashes/blake2/blake2s" as blake2s; //NOTE: must use quantum- and length-extension- resistant hash function
 import "utils/casts/u32_array_to_bool_array" as to_bits;
+import "hashes/poseidon/poseidon" as poseidon;
 
-def shiftRight3Bits(u32[8] input) -> field {
+def toField(u32[8] input) -> field {
     bool[256] input_as_bits = to_bits(input);
-    // Shift right 3 bits, and convert to field
-    // Forked from: https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_stdlib/stdlib/utils/pack/bool/pack.zok
     field mut out = 0;
-    for u32 j in 0..253 {
-        u32 i = 253 - (j + 1);
+    for u32 j in 0..256 {
+        u32 i = 256 - (j + 1);
         out = out + (input_as_bits[i] ? 2 ** j : 0);
     }
     return out;
@@ -16,12 +14,12 @@ def shiftRight3Bits(u32[8] input) -> field {
 /* Asserts that a leaf's preimage begins with a certain address and it was constructed from a previous leaf by modifying the secret
  * This is useful because the signed leaf can be signed by the authority, but the authority must know the secret and all of its contents to sign off on it
  * With this function, the user can take that old leaf and generate a new leaf and prove everything is the same except the secret
- * This function is called whenever adding a SmallCredential to the Hub
+ * This function is called whenever adding a leaf to the merkle tree
  */
 def main(field signedLeaf, field newLeaf, u32[5] address, private u32[7] creds, private u32[4] oldSecret, private u32[4] newSecret) {
-    u32[1][16] oldPreimage = [[...address, ...creds, ...oldSecret]];
-    u32[1][16] newPreimage = [[...address, ...creds, ...newSecret]];
-    assert(shiftRight3Bits(blake2s(oldPreimage)) == signedLeaf);
-    assert(shiftRight3Bits(blake2s(newPreimage)) == newLeaf);
+    u32[16] oldInput = [...address, ...oldSecret, ...creds];
+    u32[16] newInput = [...address, ...newSecret, ...creds];
+    assert(poseidon([toField(oldInput[0..8]), toField(oldInput[8..16])]) == signedLeaf);
+    assert(poseidon([toField(newInput[0..8]), toField(newInput[8..16])]) == newLeaf);
     return;
 }

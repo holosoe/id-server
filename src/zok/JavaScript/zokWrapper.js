@@ -76,65 +76,25 @@ function assertLengthIs(item, length, itemName) {
  * Takes Buffer, properly formats them (according to spec), and returns a hash.
  * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} creds Credentials (e.g., "Alice" or 2 as Buffer)
+ * @param {Buffer} creds Serialized credentials. Must be 28 bytes
  * @param {Buffer} secret Hex string representation of 16 bytes
- * @returns {Promise<string>} Blake2s hash (of input data) right-shifted 3 bits. Base 10 number
- * represented as a string.
+ * @returns {Promise<string>} Poseidon hash (of input data) right-shifted 3 bits. Represented as
+ * a base 10 number represented as a string.
  */
-async function createSmallLeaf(issuer, creds, secret) {
+async function createLeaf(issuer, creds, secret) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(creds, 28, "creds");
   assertLengthIs(secret, 16, "secret");
   try {
-    const paddedCreds = Buffer.concat([creds], 28);
-
-    const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF_SMALL;
+    const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
     const zokratesProvider = await initialize();
     const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
     const { witness, output } = zokratesProvider.computeWitness(
       createLeaf,
-      [issuer, paddedCreds, secret].map((x) => toU32StringArray(x))
+      [issuer, secret, creds].map((x) => toU32StringArray(x))
     );
     const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
     return hashAsBigNum.toString();
-    // const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
-    // return hashRightShifted.toString();
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-/**
- * Takes Buffer, properly formats them (according to spec), and returns a hash.
- * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
- * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} secret Hex string representation of 16 bytes
- * @param {Buffer} creds1 Credentials array. Must be 28 bytes
- * @param {Buffer} creds2 Credentials array. Must be 64 bytes
- * @returns {Promise<String>} Blake2s hash (of input data) right-shifted 3 bits
- */
-async function createBigLeaf(issuer, secret, creds1, creds2) {
-  assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(secret, 16, "secret");
-  assertLengthIs(creds1, 28, "creds1");
-  assertLengthIs(creds2, 64, "creds2");
-  try {
-    const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF_BIG;
-    const zokratesProvider = await initialize();
-    const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
-    const { witness, output } = zokratesProvider.computeWitness(
-      createLeaf,
-      [issuer, secret, creds1, creds2].map((x) => toU32StringArray(x))
-    );
-    const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
-    const hashRightShifted = hashAsBigNum.div(8); // right shift 3 bits
-
-    // Add left padding if necessary
-    const hashStr = hashRightShifted.toHexString().replace("0x", "");
-    const missingZeros = 64 - hashStr.length;
-    const formattedHashStr = "0".repeat(missingZeros) + hashStr;
-
-    return Buffer.from(formattedHashStr, "hex");
   } catch (err) {
     console.log(err);
   }
@@ -148,17 +108,18 @@ async function createBigLeaf(issuer, secret, creds1, creds2) {
  * @param {Buffer} newSecret
  * @returns {Object} Proof
  */
-async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
+async function addLeaf(signedLeaf, issuer, creds, secret, newSecret) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  const newLeaf = await createSmallLeaf(issuer, creds, newSecret);
+  const newLeaf = await createLeaf(issuer, creds, newSecret);
 
   const paddedCreds = Buffer.concat([creds], 28);
-  const inFile = process.env.ZOK_PATH_TO_ALS_OUT;
+  const inFile = process.env.ZOK_PATH_TOON_ADD_LEAF_OUT;
+  const provingKey = process.env.ZOK_PATH_TO_ON_ADD_LEAF_PROVING_KEY;
   // Create a temporary name for current tasks to be deleted once CLI execution is done:
   const tmpValue = randomBytes(16).toString("hex");
-  const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".als.witness";
-  const tmpProofFile = localZokDir + "/temp" + tmpValue + ".als.proof.json";
+  const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".onAddLeaf.witness";
+  const tmpProofFile = localZokDir + "/temp" + tmpValue + ".onAddLeaf.proof.json";
 
   // Execute the command
   try {
@@ -169,7 +130,7 @@ async function addLeafSmall(signedLeaf, issuer, creds, secret, newSecret) {
       inFile,
       tmpWitnessFile,
       tmpProofFile,
-      `${localZokDir}/als.proving.key`
+      `${provingKey}`
     );
     const { stdout, stderr } = await exec(
       `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
@@ -210,6 +171,7 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   assertLengthIs(secret, 16, "secret");
 
   const inFile = process.env.ZOK_PATH_TO_LOBBY3_PROOF_OUT;
+  const provingKey = process.env.ZOK_PATH_TO_LOBBY3_PROOF_PROVING_KEY;
   // Create a temporary name for current tasks to be deleted once CLI execution is done:
   const tmpValue = randomBytes(16).toString("hex");
   const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.witness";
@@ -228,7 +190,7 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
       inFile,
       tmpWitnessFile,
       tmpProofFile,
-      `${localZokDir}/lobby3Proof.proving.key`
+      `${provingKey}`
     );
     const { stdout, stderr } = await exec(
       `${computeWitnessCmd} && ${generateProofCmd} && rm ${tmpWitnessFile}`
@@ -243,10 +205,4 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   return retval;
 }
 
-export {
-  poseidonHash,
-  createSmallLeaf,
-  createBigLeaf,
-  addLeafSmall,
-  proveKnowledgeOfPreimageOfMemberLeaf,
-};
+export { poseidonHash, createLeaf, addLeaf, proveKnowledgeOfPreimageOfMemberLeaf };

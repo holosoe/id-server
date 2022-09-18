@@ -30,7 +30,7 @@ The following is the serialization scheme that our proofs will expect. User cred
 | ------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
 | `countryCode` | 2               | Each country is represented as a prime number.                                                            |
 | `city`        | 18              | UTF-8. Right padded.                                                                                      |
-| `subdivision` | 2               | UTF-8. Right padded.                                                                                      |
+| `subdivision` | 2               | UTF-8.                                                                                                    |
 | `completedAt` | 3               | 1st byte represents years since 1900. Bytes 2 and 3 represent number of days since beginning of the year. |
 | `birthdate`   | 3               | 1st byte represents years since 1900. Bytes 2 and 3 represent number of days since beginning of the year. |
 

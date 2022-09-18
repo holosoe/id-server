@@ -6,7 +6,7 @@ import { webcrypto } from "crypto";
 import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
-import { createSmallLeaf } from "../src/zok/JavaScript/zokWrapper.js";
+import { createLeaf } from "../src/zok/JavaScript/zokWrapper.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -88,12 +88,8 @@ function poseidonHash(input) {
   return output.replaceAll('"', "");
 }
 
-async function testCreateSmallLeaf() {
-  const hash = await createSmallLeaf(
-    Buffer.alloc(20),
-    Buffer.alloc(2),
-    Buffer.alloc(16)
-  );
+async function testCreateLeaf() {
+  const hash = await createLeaf(Buffer.alloc(20), Buffer.alloc(2), Buffer.alloc(16));
   console.log(hash);
   console.log(parseInt(hash.toString("hex"), 16));
 }
@@ -195,7 +191,7 @@ function getZeroedMerkleRoot(leaves) {
   return heightToHash;
 }
 
-async function testAddSmallLeafEndpoint() {
+async function testAddLeafEndpoint() {
   // NOTE: Start both servers before running this test
   const creds = 2;
   const secret = "0x" + "11".repeat(16);
@@ -206,7 +202,7 @@ async function testAddSmallLeafEndpoint() {
   // NOTE: Use AWS KMS in production
   const { encryptedMessage: encryptedArgs } = await encrypt(JSON.stringify(args));
   const resp = await axios.get(
-    `http://localhost:3000/proofs/addSmallLeaf?args=${encryptedArgs}`
+    `http://localhost:3000/proofs/addLeaf?args=${encryptedArgs}`
   );
   console.log(JSON.stringify(resp.data));
 }
@@ -216,7 +212,7 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
   const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const creds = 2;
   const secret = "0x" + "11".repeat(16);
-  const leaf = await createSmallLeaf(
+  const leaf = await createLeaf(
     issuer,
     Buffer.from("00".repeat(26) + "0002", "hex"),
     Buffer.from(secret.replace("0x", ""), "hex")
@@ -258,5 +254,5 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
 // const path = proof.siblings;
 // console.log(path.length);
 
-testAddSmallLeafEndpoint();
+testAddLeafEndpoint();
 // testKnowledgeOfPreimageOfMemberLeafProofEndpoint();

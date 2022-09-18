@@ -5,7 +5,7 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import blake from "blakejs";
 import { redisClient } from "../init.js";
-import { createSmallLeaf, createBigLeaf } from "../../zok/JavaScript/zokWrapper.js";
+import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {
   getUserByUuid,
   runSql,
@@ -92,77 +92,30 @@ function generateSecret(numBytes = 16) {
 
 /**
  * With the server's blockchain account, sign the given credentials.
- * @param creds Object containing a full string representation
- *                    of every credential.
- * @param secrets Object containing a 16-byte secret (represented as
- *                a Buffer) for every credential.
+ * @param creds Object containing a full string representation of every credential.
+ * @param {string} secret 16-byte secret represented as a hex string
  * @returns Object containing one smallCreds signature for every
  *          credential and one bigCreds signature.
  */
-async function generateSignatures(creds, secrets) {
-  const signatures = {};
+async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
-
-  // Get bigCreds signature
-  const bigCredsArr1 = [
-    Buffer.concat([Buffer.from(creds.firstName || "")], 14),
-    Buffer.concat([Buffer.from(creds.lastName || "")], 14),
-  ];
-  // TODO: We only need 2 (not 3) bytes to represent the 195th prime. Change schema and code
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
-  countryBuffer = Buffer.from("00" + countryBuffer.toString("hex"), "hex"); // Add left padding (to get to 3 bytes)
-  const bigCredsArr2 = [
-    Buffer.concat([Buffer.from(creds.middleInitial || "")], 1),
+  countryBuffer = Buffer.from(countryBuffer.toString("hex"), "hex");
+  const credsArr = [
     countryBuffer,
-    Buffer.concat([Buffer.from(creds.streetAddr1 || "")], 16),
-    Buffer.concat([Buffer.from(creds.streetAddr2 || "")], 12),
-    Buffer.concat([Buffer.from(creds.city || "")], 16),
+    Buffer.concat([Buffer.from(creds.city || "")], 18),
     getStateAsBytes(creds.subdivision), // 2 bytes
-    Buffer.concat([Buffer.from(creds.postalCode || "")], 8),
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
   ];
-  const leafAsStr = await createBigLeaf(
+  const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.from(secrets.bigCredsSecret.replace("0x", ""), "hex"),
-    Buffer.concat(bigCredsArr1),
-    Buffer.concat(bigCredsArr2)
+    Buffer.concat(credsArr),
+    Buffer.from(secret.replace("0x", ""), "hex")
   );
   const leaf = ethers.utils.arrayify(leafAsStr);
-  const bigCredsSignature = await sign(leaf);
-  signatures.bigCredsSignature = bigCredsSignature;
-
-  // Get a smallCreds signature for every credential
-  for (const credentialName of Object.keys(creds)) {
-    let credsBuffer;
-    if (credentialName == "countryCode") {
-      countryBuffer = Buffer.alloc(2);
-      countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
-      countryBuffer = Buffer.from(
-        "00".repeat(26) + countryBuffer.toString("hex"), // 26-bytes of left padding
-        "hex"
-      );
-      credsBuffer = countryBuffer;
-    } else {
-      credsBuffer = Buffer.concat([Buffer.from(creds[credentialName] || "")], 28);
-    }
-    const secretKey = `${credentialName}Secret`;
-    const leafAsStr = await createSmallLeaf(
-      Buffer.from(serverAddress.replace("0x", ""), "hex"),
-      credsBuffer,
-      Buffer.from(secrets[secretKey].replace("0x", ""), "hex")
-    );
-    const leafAsHexStr = ethers.BigNumber.from(leafAsStr).toHexString();
-    const leaf = ethers.utils.arrayify(
-      Buffer.from(leafAsHexStr.replace("0x", ""), "hex")
-    );
-    const smallCredsSignature = await sign(leaf);
-    const signatureKey = `${credentialName}Signature`;
-    signatures[signatureKey] = smallCredsSignature;
-  }
-
-  return signatures;
+  return await sign(leaf);
 }
 
 async function getPersonaInquiry(inqId) {
@@ -387,24 +340,16 @@ async function acceptFrontendRedirect(req, res) {
       ? emptyCreds
       : realCreds;
 
-  // Get one secret for bigCreds and one for every credential
-  const secrets = {
-    bigCredsSecret: generateSecret(),
-  };
-  for (const credentialName of Object.keys(creds)) {
-    const secretKey = `${credentialName}Secret`;
-    secrets[secretKey] = generateSecret();
-  }
-
-  const signatures = await generateSignatures(creds, secrets);
+  const secret = generateSecret();
+  const signature = await generateSignature(creds, secret);
 
   const completeUser = {
     // credentials from Persona
     ...creds,
     // server-generated secrets
-    ...secrets,
-    // server-generated signatures
-    ...signatures,
+    secret: secret,
+    // server-generated signature
+    signature: signature,
   };
 
   // Delete user's tempSecret from db
