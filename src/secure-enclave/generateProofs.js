@@ -184,10 +184,6 @@ async function handler(argv) {
   const decryptedArgs = await decrypt(encryptedArgs, sharded);
   const decryptedArgsJson = JSON.parse(decryptedArgs);
 
-  console.log(`proofType == ${proofType}`);
-  console.log("decryptedArgsJson...");
-  console.log(decryptedArgsJson);
-
   if (proofType == "addLeaf") {
     const { creds, secret } = decryptedArgsJson;
     const proof = await genAddLeafProof(creds, secret);

@@ -63,7 +63,6 @@ class VsockListener:
             from_client.close()
 
     def send_response(self, from_client, message):
-        print(message)
         total_msg_bytes = len(message) + (BUFF_SIZE - (len(message) % BUFF_SIZE))
         from_client.sendall('start_message'.encode().ljust(BUFF_SIZE, b'\0'))
         from_client.sendall(message.encode().ljust(total_msg_bytes, b'\0'))
