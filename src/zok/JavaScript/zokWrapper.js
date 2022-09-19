@@ -192,20 +192,15 @@ async function addLeaf(
 }
 
 /**
- *
- * TODO: REWRITE this function to be compatible with quinary merkle tree
- *
  * Prove that user knows the preimage of a leaf that belongs in the merkle tree.
  * @param {Buffer} issuer Blockchain address. Public input to proof.
  * @param {Buffer} countryCode Public input to proof. Public so that verifier can check it outside proof.
  * @param {Buffer} subdivision Private input to proof.
  * @param {Buffer} completedAt Private input to proof.
  * @param {Buffer} birthdate Private input to proof.
- * @param {string} root uint256 represented as string. Merkle root. Public input to proof.
- * @param {string} leaf uint256 represented as string. Leaf of merkle tree. Private input to proof.
- * @param {Array<bool>} directionSelector (See proof.) Private input to proof.
- * @param {Array<string>} path (See proof.) Private input to proof.
  * @param {Buffer} secret I.e., nullifier. Private input to proof.
+ * @param {Array} merkleProf Nested array. Contains args: root, leaf, path, indices. (Output of
+ * holo-merkle-utils.createSerializedProof.)
  * @returns {Object} Proof
  */
 async function proveKnowledgeOfPreimageOfMemberLeaf(
@@ -214,11 +209,8 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   subdivision,
   completedAt,
   birthdate,
-  root,
-  leaf,
-  directionSelector,
-  path,
-  secret
+  secret,
+  merkleProof
 ) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
@@ -236,15 +228,12 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
 
   const argsArr = [
     ethers.BigNumber.from(issuer),
-    root,
     ethers.BigNumber.from(countryCode),
     ethers.BigNumber.from(subdivision),
     ethers.BigNumber.from(completedAt),
     ethers.BigNumber.from(birthdate),
-    leaf,
-    directionSelector.map((x) => (x ? 1 : 0).toString()).join(" "),
-    path.join(" "),
     ethers.BigNumber.from(secret),
+    merkleProof.flat(2).join(" "),
   ];
   const args = argsArr.join(" ");
 

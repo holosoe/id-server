@@ -5,7 +5,9 @@ import axios from "axios";
 import { webcrypto } from "crypto";
 import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
-import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
+// import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
+import holoMerkleUtils from "holo-merkle-utils";
+const { Tree } = holoMerkleUtils;
 import { createLeaf } from "../src/zok/JavaScript/zokWrapper.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -18,6 +20,8 @@ def main(field[2] input) -> field {
 }`;
 const poseidonHashArtifacts = zokProvider.compile(source);
 console.log("(zokrates provider initialized)");
+
+const treeDepth = 14;
 
 const privateKey = {
   key_ops: ["decrypt"],
@@ -210,67 +214,76 @@ async function testAddLeafEndpoint() {
 }
 
 async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
-  // NOTE: Start both servers before running this test
-  const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
-  const countryCode = 2;
-  const subdivision = "NY";
-  const completedAt = ethers.BigNumber.from(3224115).toHexString();
-  const birthdate = ethers.BigNumber.from(3224115).toHexString();
-  const secret = "0x" + "11".repeat(16);
+  try {
+    // NOTE: Start both servers before running this test
+    const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
+    const countryCode = 2;
+    const subdivision = "NY";
+    const completedAt = ethers.BigNumber.from(3224115).toHexString();
+    const birthdate = ethers.BigNumber.from(3224115).toHexString();
+    const secret = "0x" + "11".repeat(16);
 
-  const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const countryCodeAsBuffer = Buffer.alloc(2);
-  countryCodeAsBuffer.writeUInt16BE(countryCode);
-  const subdivisionAsBuffer = Buffer.from(subdivision);
-  const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
-  const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
-  const leaf = await createLeaf(
-    issuer,
-    secretAsBuffer,
-    countryCodeAsBuffer,
-    subdivisionAsBuffer,
-    completedAtAsBuffer,
-    birthdateAsBuffer
-  );
-  const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
-  tree.insert(leaf);
-  const index = tree.indexOf(leaf);
-  const proof = tree.createProof(index);
-  const { root, siblings: path } = proof;
-  const directionSelector = proof.pathIndices.map((n) => !!n);
-  const args = {
-    countryCode: 2,
-    subdivision: "NY",
-    completedAt: ethers.BigNumber.from(3224115).toHexString(),
-    birthdate: ethers.BigNumber.from(3224115).toHexString(),
-    secret,
-    root,
-    directionSelector,
-    path,
-  };
-  // NOTE: Use AWS KMS in production
-  const { encryptedMessage, sharded } = await encrypt(JSON.stringify(args));
+    const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
+    const countryCodeAsBuffer = Buffer.alloc(2);
+    countryCodeAsBuffer.writeUInt16BE(countryCode);
+    const subdivisionAsBuffer = Buffer.from(subdivision);
+    const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
+    const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
+    const leaf = await createLeaf(
+      issuer,
+      secretAsBuffer,
+      countryCodeAsBuffer,
+      subdivisionAsBuffer,
+      completedAtAsBuffer,
+      birthdateAsBuffer
+    );
 
-  const encryptedArgs = Array.isArray(encryptedMessage)
-    ? JSON.stringify(encryptedMessage)
-    : encryptedMessage;
-  const resp = await axios.get(
-    `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf?args=${encryptedArgs}&sharded=${sharded}`
-  );
-  console.log(JSON.stringify(resp.data));
+    const leavesFromContract = []; // TODO: Get leaves from merkle tree smart contract
+    const leaves = [...leavesFromContract, leaf];
+    const tree = Tree(treeDepth, leaves);
+    const index = tree.indexOf(leaf);
+    const proof = tree.createSerializedProof(index);
+
+    const args = {
+      countryCode: countryCode,
+      subdivision: subdivision,
+      completedAt: completedAt,
+      birthdate: birthdate,
+      secret: secret,
+      merkleProof: proof,
+    };
+    // NOTE: Use AWS KMS in production
+    const { encryptedMessage, sharded } = await encrypt(JSON.stringify(args));
+
+    const encryptedArgs = Array.isArray(encryptedMessage)
+      ? JSON.stringify(encryptedMessage)
+      : encryptedMessage;
+    // const resp = await axios.get(
+    //   `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf?args=${encryptedArgs}&sharded=${sharded}`
+    // );
+    const body = {
+      args: encryptedArgs,
+      sharded: sharded,
+    };
+    const resp = await axios.post(
+      `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf`,
+      body
+    );
+    console.log(JSON.stringify(resp.data));
+  } catch (err) {
+    console.log(err.message);
+  }
 }
 
 // console.log(getZeroedMerkleRoot());
 
 // IncrementalMerkleTree playground
-// const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
-// tree.insert("1");
+// const leavesFromContract = []; // TODO: Get leaves from merkle tree smart contract
+// const leaves = [...leavesFromContract, "1"];
+// const tree = Tree(treeDepth, leaves);
 // const index = tree.indexOf("1");
-// const proof = tree.createProof(index);
+// const proof = tree.createSerializedProof(index);
 // console.log(proof);
-// const directionSelector = proof.pathIndices;
-// const path = proof.siblings;
-// console.log(path.length);
 
 // testAddLeafEndpoint();
 testKnowledgeOfPreimageOfMemberLeafProofEndpoint();

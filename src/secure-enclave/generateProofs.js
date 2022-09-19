@@ -4,7 +4,9 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
+// import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
+import holoMerkleUtils from "holo-merkle-utils";
+const { Tree } = holoMerkleUtils;
 import { chunk } from "../zok/JavaScript/zokUtils.js";
 import {
   poseidonHash,
@@ -112,6 +114,7 @@ const unitedStatesCredsBuffer = Buffer.from("00".repeat(26) + "0002", "hex");
  * @param {number} completedAt
  * @param {number} birthdate
  * @param {string} secret 16-byte hex string
+ * @param {Array} merkleProof Nested array. Output of holo-merkle-utils.createSerializedProof
  * @returns {Promise<Proof>} Encrypted proof // TODO: write typedef for this proof
  */
 async function genKnowledgeOfPreimageProof(
@@ -119,7 +122,8 @@ async function genKnowledgeOfPreimageProof(
   subdivision,
   completedAt,
   birthdate,
-  secret
+  secret,
+  merkleProof
 ) {
   assert.equal(countryCode, 2, "User is not a US resident");
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
@@ -129,22 +133,6 @@ async function genKnowledgeOfPreimageProof(
   const subdivisionAsBuffer = Buffer.from(subdivision);
   const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
   const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
-  const leaf = await createLeaf(
-    serverAddress,
-    secretAsBuffer,
-    countryCodeAsBuffer,
-    subdivisionAsBuffer,
-    completedAtAsBuffer,
-    birthdateAsBuffer
-  );
-
-  const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
-  tree.insert(leaf);
-  // TODO: Add all leaves from smart contract
-  const index = tree.indexOf(leaf);
-  const proof = tree.createProof(index);
-  const { root, siblings: path } = proof;
-  const directionSelector = proof.pathIndices.map((n) => !!n);
 
   const proofOfKnowledgeOfPreimage = await proveKnowledgeOfPreimageOfMemberLeaf(
     serverAddress,
@@ -152,11 +140,8 @@ async function genKnowledgeOfPreimageProof(
     subdivisionAsBuffer,
     completedAtAsBuffer,
     birthdateAsBuffer,
-    root,
-    leaf,
-    directionSelector,
-    path,
-    secretAsBuffer
+    secretAsBuffer,
+    merkleProof
   );
 
   // TODO: Encrypt proofs with user's public key // Use AWS KMS and ACM
@@ -240,16 +225,17 @@ async function handler(argv) {
     );
     console.log(JSON.stringify(proof));
   } else if (proofType == "proveKnowledgeOfPreimageOfMemberLeaf") {
-    const { countryCode, subdivision, completedAt, birthdate, secret } =
+    const { countryCode, subdivision, completedAt, birthdate, secret, merkleProof } =
       decryptedArgsJson;
-    const proof = await genKnowledgeOfPreimageProof(
+    const poKoP = await genKnowledgeOfPreimageProof(
       countryCode,
       subdivision,
       completedAt,
       birthdate,
-      secret
+      secret,
+      merkleProof
     );
-    console.log(JSON.stringify(proof));
+    console.log(JSON.stringify(poKoP));
   }
 
   // console.log(proofs);
