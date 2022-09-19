@@ -186,9 +186,9 @@ async function addLeaf(
   }
 
   // Read the proof file, then delete it, then return it
-  // const retval = JSON.parse(fs.readFileSync(tmpProofFile));
-  // exec(`rm ${tmpProofFile}`);
-  // return retval;
+  const retval = JSON.parse(fs.readFileSync(tmpProofFile));
+  exec(`rm ${tmpProofFile}`);
+  return retval;
 }
 
 /**
