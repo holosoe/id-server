@@ -4,6 +4,7 @@ import cors from "cors";
 import initialize from "./routes/initialize.js";
 import register from "./routes/register.js";
 import proofs from "./routes/proofs.js";
+import hash from "./routes/hash.js";
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/initialize", initialize);
 app.use("/register", register);
 app.use("/proofs", proofs);
+app.use("/hash", hash);
 
 export { app };

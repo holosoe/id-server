@@ -52,7 +52,7 @@ export async function proveKnowledgeOfPreimageOfMemberLeaf(req, res) {
 
   const { args, sharded } = req.body;
   if (!args || !sharded) {
-    return res.status(400).json({ error: `No arguments found in query string.` });
+    return res.status(400).json({ error: `No arguments found in request body.` });
   }
 
   try {

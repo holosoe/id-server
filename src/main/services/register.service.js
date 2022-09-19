@@ -3,7 +3,6 @@ import { createHash, randomBytes } from "crypto";
 import express from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-import blake from "blakejs";
 import { redisClient } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {

@@ -5,7 +5,6 @@ import axios from "axios";
 import { webcrypto } from "crypto";
 import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
-// import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
 import holoMerkleUtils from "holo-merkle-utils";
 const { Tree } = holoMerkleUtils;
 import { createLeaf } from "../src/zok/JavaScript/zokWrapper.js";
@@ -275,6 +274,14 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
   }
 }
 
+async function testPoseidonHashEndpoint() {
+  const body = {
+    args: [1, 2, 3],
+  };
+  const resp = await axios.post(`http://localhost:3000/hash/poseidon`, body);
+  console.log(resp.data);
+}
+
 // console.log(getZeroedMerkleRoot());
 
 // IncrementalMerkleTree playground
@@ -286,4 +293,5 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
 // console.log(proof);
 
 // testAddLeafEndpoint();
-testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
+// testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
+testPoseidonHashEndpoint();
