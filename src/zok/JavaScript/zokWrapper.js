@@ -76,22 +76,37 @@ function assertLengthIs(item, length, itemName) {
  * Takes Buffer, properly formats them (according to spec), and returns a hash.
  * See: https://opsci.gitbook.io/untitled/4alwUHFeMIUzhQ8BnUBD/extras/leaves
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
- * @param {Buffer} creds Serialized credentials. Must be 28 bytes
- * @param {Buffer} secret Hex string representation of 16 bytes
+ * @param {Buffer} secret 16 bytes
+ * @param {Buffer} countryCode
+ * @param {Buffer} subdivision
+ * @param {Buffer} completedAt
+ * @param {Buffer} birthdate
  * @returns {Promise<string>} Poseidon hash (of input data) right-shifted 3 bits. Represented as
  * a base 10 number represented as a string.
  */
-async function createLeaf(issuer, creds, secret) {
+async function createLeaf(
+  issuer,
+  secret,
+  countryCode,
+  subdivision,
+  completedAt,
+  birthdate
+) {
   assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(creds, 28, "creds");
   assertLengthIs(secret, 16, "secret");
+  assertLengthIs(countryCode, 2, "countryCode");
+  assertLengthIs(subdivision, 2, "subdivision");
+  assertLengthIs(completedAt, 3, "completedAt");
+  assertLengthIs(birthdate, 3, "birthdate");
   try {
     const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
     const zokratesProvider = await initialize();
     const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
     const { witness, output } = zokratesProvider.computeWitness(
       createLeaf,
-      [issuer, secret, creds].map((x) => toU32StringArray(x))
+      [issuer, secret, countryCode, subdivision, completedAt, birthdate].map((x) =>
+        ethers.BigNumber.from(x).toString()
+      )
     );
     const hashAsBigNum = ethers.BigNumber.from(output.replaceAll('"', ""));
     return hashAsBigNum.toString();
@@ -103,28 +118,59 @@ async function createLeaf(issuer, creds, secret) {
 /**
  * @param {string} signedLeaf String representation of a number
  * @param {Buffer} issuer Blockchain address
- * @param {Buffer} creds
+ * @param {Buffer} countryCode
+ * @param {Buffer} subdivision
+ * @param {Buffer} completedAt
+ * @param {Buffer} birthdate
  * @param {Buffer} secret
  * @param {Buffer} newSecret
  * @returns {Object} Proof
  */
-async function addLeaf(signedLeaf, issuer, creds, secret, newSecret) {
+async function addLeaf(
+  signedLeaf,
+  issuer,
+  secret,
+  newSecret,
+  countryCode,
+  subdivision,
+  completedAt,
+  birthdate
+) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  const newLeaf = await createLeaf(issuer, creds, newSecret);
+  assertLengthIs(countryCode, 2, "countryCode");
+  assertLengthIs(subdivision, 2, "subdivision");
+  assertLengthIs(completedAt, 3, "completedAt");
+  assertLengthIs(birthdate, 3, "birthdate");
+  const newLeaf = await createLeaf(
+    issuer,
+    newSecret,
+    countryCode,
+    subdivision,
+    completedAt,
+    birthdate
+  );
 
-  const paddedCreds = Buffer.concat([creds], 28);
   const inFile = process.env.ZOK_PATH_TOON_ADD_LEAF_OUT;
   const provingKey = process.env.ZOK_PATH_TO_ON_ADD_LEAF_PROVING_KEY;
   // Create a temporary name for current tasks to be deleted once CLI execution is done:
   const tmpValue = randomBytes(16).toString("hex");
   const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".onAddLeaf.witness";
-  const tmpProofFile = localZokDir + "/temp" + tmpValue + ".onAddLeaf.proof.json";
+  const tmpProofFile = localZokDir + "/temp/" + tmpValue + ".onAddLeaf.proof.json";
 
   // Execute the command
   try {
-    const u32Args = argsToU32CLIArgs([issuer, paddedCreds, secret, newSecret]);
-    const args = `${signedLeaf} ${newLeaf} ${u32Args}`;
+    const args = `${signedLeaf} ${newLeaf} ${[
+      issuer,
+      countryCode,
+      subdivision,
+      completedAt,
+      birthdate,
+      secret,
+      newSecret,
+    ]
+      .map((val) => ethers.BigNumber.from(val).toString())
+      .join(" ")}`;
     const computeWitnessCmd = getComputeWitnessCmd(inFile, tmpWitnessFile, args);
     const generateProofCmd = getGenProofCmd(
       inFile,
@@ -140,16 +186,21 @@ async function addLeaf(signedLeaf, issuer, creds, secret, newSecret) {
   }
 
   // Read the proof file, then delete it, then return it
-  const retval = JSON.parse(fs.readFileSync(tmpProofFile));
-  exec(`rm ${tmpProofFile}`);
-  return retval;
+  // const retval = JSON.parse(fs.readFileSync(tmpProofFile));
+  // exec(`rm ${tmpProofFile}`);
+  // return retval;
 }
 
 /**
+ *
+ * TODO: REWRITE this function to be compatible with quinary merkle tree
+ *
  * Prove that user knows the preimage of a leaf that belongs in the merkle tree.
  * @param {Buffer} issuer Blockchain address. Public input to proof.
- * @param {Buffer} creds Public input to proof. Public so that verifier can check it outside proof.
- * Must be left-padded (so that the rightmost u32 is the prime, in the case of countryCode).
+ * @param {Buffer} countryCode Public input to proof. Public so that verifier can check it outside proof.
+ * @param {Buffer} subdivision Private input to proof.
+ * @param {Buffer} completedAt Private input to proof.
+ * @param {Buffer} birthdate Private input to proof.
  * @param {string} root uint256 represented as string. Merkle root. Public input to proof.
  * @param {string} leaf uint256 represented as string. Leaf of merkle tree. Private input to proof.
  * @param {Array<bool>} directionSelector (See proof.) Private input to proof.
@@ -159,7 +210,10 @@ async function addLeaf(signedLeaf, issuer, creds, secret, newSecret) {
  */
 async function proveKnowledgeOfPreimageOfMemberLeaf(
   issuer,
-  creds,
+  countryCode,
+  subdivision,
+  completedAt,
+  birthdate,
   root,
   leaf,
   directionSelector,
@@ -167,8 +221,11 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   secret
 ) {
   assertLengthIs(issuer, 20, "issuer");
-  assertLengthIs(creds, 28, "creds");
   assertLengthIs(secret, 16, "secret");
+  assertLengthIs(countryCode, 2, "countryCode");
+  assertLengthIs(subdivision, 2, "subdivision");
+  assertLengthIs(completedAt, 3, "completedAt");
+  assertLengthIs(birthdate, 3, "birthdate");
 
   const inFile = process.env.ZOK_PATH_TO_LOBBY3_PROOF_OUT;
   const provingKey = process.env.ZOK_PATH_TO_LOBBY3_PROOF_PROVING_KEY;
@@ -177,11 +234,19 @@ async function proveKnowledgeOfPreimageOfMemberLeaf(
   const tmpWitnessFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.witness";
   const tmpProofFile = localZokDir + "/temp/" + tmpValue + ".lobby3Proof.proof.json";
 
-  // Format args for command line
-  let args = argsToU32CLIArgs([issuer, creds]);
-  args += " " + root + " " + leaf;
-  args += " " + directionSelector.map((x) => (x ? 1 : 0).toString()).join(" ");
-  args += " " + path.join(" ") + " " + argsToU32CLIArgs([secret]);
+  const argsArr = [
+    ethers.BigNumber.from(issuer),
+    root,
+    ethers.BigNumber.from(countryCode),
+    ethers.BigNumber.from(subdivision),
+    ethers.BigNumber.from(completedAt),
+    ethers.BigNumber.from(birthdate),
+    leaf,
+    directionSelector.map((x) => (x ? 1 : 0).toString()).join(" "),
+    path.join(" "),
+    ethers.BigNumber.from(secret),
+  ];
+  const args = argsArr.join(" ");
 
   // Execute the command
   try {

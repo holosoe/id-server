@@ -7,7 +7,7 @@ import "hashes/poseidon/poseidon" as poseidon;
  */
 def main(field signedLeaf, field newLeaf, field address, private field countryCode, private field subdivision, private field completedAt, private field birthdate, private field oldSecret, private field newSecret) {
     field[6] oldPreimage = [address, oldSecret, countryCode, subdivision, completedAt, birthdate];
-    field[6] newPreimage = [address, oldSecret, countryCode, subdivision, completedAt, birthdate];
+    field[6] newPreimage = [address, newSecret, countryCode, subdivision, completedAt, birthdate];
     assert(poseidon(oldPreimage) == signedLeaf);
     assert(poseidon(newPreimage) == newLeaf);
     return;

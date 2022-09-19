@@ -193,10 +193,12 @@ function getZeroedMerkleRoot(leaves) {
 
 async function testAddLeafEndpoint() {
   // NOTE: Start both servers before running this test
-  const creds = 2;
   const secret = "0x" + "11".repeat(16);
   const args = {
-    creds: creds,
+    countryCode: 2,
+    subdivision: "NY",
+    completedAt: ethers.BigNumber.from(3224115).toHexString(),
+    birthdate: ethers.BigNumber.from(3224115).toHexString(),
     secret: secret,
   };
   // NOTE: Use AWS KMS in production

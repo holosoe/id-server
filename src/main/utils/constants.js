@@ -2,7 +2,6 @@ export const frontendOrigin = process.env.FRONT_END_ORIGIN;
 
 export const dummyUserCreds = {
   countryCode: 2,
-  city: "SOME CITY",
   subdivision: "NY",
   completedAt: "2022-09-16T02:21:59.510Z",
   birthdate: "01-01-1950",
@@ -10,7 +9,6 @@ export const dummyUserCreds = {
 
 export const emptyCreds = {
   countryCode: 0,
-  city: "",
   subdivision: "",
   completedAt: "",
   birthdate: "",

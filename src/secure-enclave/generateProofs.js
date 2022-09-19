@@ -1,5 +1,7 @@
 import assert from "assert";
 import { randomBytes, webcrypto } from "crypto";
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { IncrementalMerkleTree } from "@zk-kit/incremental-merkle-tree";
@@ -10,6 +12,8 @@ import {
   addLeaf,
   proveKnowledgeOfPreimageOfMemberLeaf,
 } from "../zok/JavaScript/zokWrapper.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 // NOTE: privateKey and publicKey are for tests only. Use AWS KMS for production
 const maxEncryptableLength = 446;
@@ -103,16 +107,44 @@ const unitedStatesCredsBuffer = Buffer.from("00".repeat(26) + "0002", "hex");
  * Generate a proof that creds==2 (2 represents "US").
  * NOTE: Not generic. Only supports case where creds == 2.
  * TODO: Make it generic.
- * @param {number} creds
+ * @param {number} countryCode
+ * @param {string} subdivision
+ * @param {number} completedAt
+ * @param {number} birthdate
  * @param {string} secret 16-byte hex string
  * @returns {Promise<Proof>} Encrypted proof // TODO: write typedef for this proof
  */
-async function genKnowledgeOfPreimageProof(creds, secret) {
-  assert.equal(creds, 2, "User is not a US resident");
-  const credsAsBuffer = unitedStatesCredsBuffer;
+async function genKnowledgeOfPreimageProof(
+  countryCode,
+  subdivision,
+  completedAt,
+  birthdate,
+  secret
+) {
+  assert.equal(countryCode, 2, "User is not a US resident");
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const leaf = await createLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
+  const countryCodeAsBuffer = Buffer.from(
+    ethers.BigNumber.from(countryCode).toHexString().replace("0x", ""),
+    "hex"
+  );
+  const subdivisionAsBuffer = Buffer.from(subdivision);
+  const completedAtAsBuffer = Buffer.from(
+    ethers.BigNumber.from(completedAt).toHexString().replace("0x", ""),
+    "hex"
+  );
+  const birthdateAsBuffer = Buffer.from(
+    ethers.BigNumber.from(birthdate).toHexString().replace("0x", ""),
+    "hex"
+  );
+  const leaf = await createLeaf(
+    serverAddress,
+    secretAsBuffer,
+    countryCodeAsBuffer,
+    subdivisionAsBuffer,
+    completedAtAsBuffer,
+    birthdateAsBuffer
+  );
 
   const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
   tree.insert(leaf);
@@ -124,7 +156,10 @@ async function genKnowledgeOfPreimageProof(creds, secret) {
 
   const proofOfKnowledgeOfPreimage = await proveKnowledgeOfPreimageOfMemberLeaf(
     serverAddress,
-    credsAsBuffer,
+    countryCodeAsBuffer,
+    subdivisionAsBuffer,
+    completedAtAsBuffer,
+    birthdateAsBuffer,
     root,
     leaf,
     directionSelector,
@@ -141,30 +176,47 @@ async function genKnowledgeOfPreimageProof(creds, secret) {
 
 /**
  * Generate an addLeaf proof.
- * @param {number} creds
+ * @param {number} countryCode
+ * @param {string} subdivision
+ * @param {string} completedAt 3-byte hex string
+ * @param {string} birthdate 3-byte hex string
  * @param {string} secret 16-byte hex string
  * @returns {Promise<UserProofs>} Encrypted proofs and newSecret
  */
-async function genAddLeafProof(creds, secret) {
-  let credsAsBuffer;
-  // When creds == 2, creds buffer is constructed differently
-  if (creds == 2) {
-    credsAsBuffer = unitedStatesCredsBuffer;
-  } else {
-    credsAsBuffer = Buffer.concat([Buffer.from(creds)], 28);
-  }
+async function genAddLeafProof(
+  countryCode,
+  subdivision,
+  completedAt,
+  birthdate,
+  secret
+) {
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const signedLeaf = await createLeaf(serverAddress, credsAsBuffer, secretAsBuffer);
+  const countryCodeAsBuffer = Buffer.alloc(2);
+  countryCodeAsBuffer.writeUInt16BE(countryCode || 0);
+  const subdivisionAsBuffer = Buffer.from(subdivision);
+  const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
+  const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
+  const signedLeaf = await createLeaf(
+    serverAddress,
+    secretAsBuffer,
+    countryCodeAsBuffer,
+    subdivisionAsBuffer,
+    completedAtAsBuffer,
+    birthdateAsBuffer
+  );
   const newSecretAsBuffer = randomBytes(16);
 
   // Generate addLeaf proof
   const smallLeafProof = await addLeaf(
     signedLeaf,
     serverAddress,
-    credsAsBuffer,
     secretAsBuffer,
-    newSecretAsBuffer
+    newSecretAsBuffer,
+    countryCodeAsBuffer,
+    subdivisionAsBuffer,
+    completedAtAsBuffer,
+    birthdateAsBuffer
   );
 
   // TODO: Encrypt proofs with user's public key // Use AWS KMS and ACM
@@ -185,12 +237,26 @@ async function handler(argv) {
   const decryptedArgsJson = JSON.parse(decryptedArgs);
 
   if (proofType == "addLeaf") {
-    const { creds, secret } = decryptedArgsJson;
-    const proof = await genAddLeafProof(creds, secret);
+    const { countryCode, subdivision, completedAt, birthdate, secret } =
+      decryptedArgsJson;
+    const proof = await genAddLeafProof(
+      countryCode,
+      subdivision,
+      completedAt,
+      birthdate,
+      secret
+    );
     console.log(JSON.stringify(proof));
   } else if (proofType == "proveKnowledgeOfPreimageOfMemberLeaf") {
-    const { creds, secret } = decryptedArgsJson;
-    const proof = await genKnowledgeOfPreimageProof(creds, secret);
+    const { countryCode, subdivision, completedAt, birthdate, secret } =
+      decryptedArgsJson;
+    const proof = await genKnowledgeOfPreimageProof(
+      countryCode,
+      subdivision,
+      completedAt,
+      birthdate,
+      secret
+    );
     console.log(JSON.stringify(proof));
   }
 

@@ -101,10 +101,8 @@ async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
-  countryBuffer = Buffer.from(countryBuffer.toString("hex"), "hex");
   const credsArr = [
     countryBuffer,
-    Buffer.concat([Buffer.from(creds.city || "")], 18),
     getStateAsBytes(creds.subdivision), // 2 bytes
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
@@ -325,7 +323,6 @@ async function acceptFrontendRedirect(req, res) {
   // Get each credential
   const realCreds = {
     countryCode: countryCodeToPrime[verAttrs.countryCode] || 0,
-    city: verAttrs.addressCity || "",
     subdivision: verAttrs.addressSubdivision || "",
     completedAt: verAttrs.completedAt || "",
     birthdate: verAttrs.birthdate || "",
