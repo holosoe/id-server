@@ -90,8 +90,8 @@ async function decrypt(input, sharded) {
 
 /**
  * @typedef UserProofs
- * @property {Object} smallLeafProof Proof needed to add small leaf to merkle tree // TODO: Should be of type string
- * @property {Object} residenceProof Proof that creds in small leaf == "US" // TODO: Should be of type string
+ * @property {Object} leafProof Proof needed to add leaf to merkle tree // TODO: Should be of type string
+ * @property {Object} residenceProof Proof that countryCode in leaf == "US" // TODO: Should be of type string
  * @property {string} newSecret Encrypted secret
  */
 
@@ -208,7 +208,7 @@ async function genAddLeafProof(
   const newSecretAsBuffer = randomBytes(16);
 
   // Generate addLeaf proof
-  const smallLeafProof = await addLeaf(
+  const addLeafProof = await addLeaf(
     signedLeaf,
     serverAddress,
     secretAsBuffer,
@@ -222,7 +222,7 @@ async function genAddLeafProof(
   // TODO: Encrypt proofs with user's public key // Use AWS KMS and ACM
 
   return {
-    smallLeafProof: smallLeafProof,
+    addLeafProof: addLeafProof,
     newSecret: newSecretAsBuffer.toString("hex"),
   };
 }
