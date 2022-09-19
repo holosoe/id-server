@@ -7,7 +7,7 @@ import {
 const router = express.Router();
 
 router.get("/addLeaf", addLeaf);
-router.get(
+router.post(
   "/proveKnowledgeOfPreimageOfMemberLeaf", // TODO: Better name
   proveKnowledgeOfPreimageOfMemberLeaf
 );

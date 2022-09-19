@@ -50,7 +50,7 @@ export async function proveKnowledgeOfPreimageOfMemberLeaf(req, res) {
     `${new Date().toISOString()} proveKnowledgeOfPreimageOfMemberLeaf: entered`
   );
 
-  const { args, sharded } = req.query;
+  const { args, sharded } = req.body;
   if (!args || !sharded) {
     return res.status(400).json({ error: `No arguments found in query string.` });
   }
