@@ -124,19 +124,11 @@ async function genKnowledgeOfPreimageProof(
   assert.equal(countryCode, 2, "User is not a US resident");
   const serverAddress = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
   const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-  const countryCodeAsBuffer = Buffer.from(
-    ethers.BigNumber.from(countryCode).toHexString().replace("0x", ""),
-    "hex"
-  );
+  const countryCodeAsBuffer = Buffer.alloc(2);
+  countryCodeAsBuffer.writeUInt16BE(countryCode || 0);
   const subdivisionAsBuffer = Buffer.from(subdivision);
-  const completedAtAsBuffer = Buffer.from(
-    ethers.BigNumber.from(completedAt).toHexString().replace("0x", ""),
-    "hex"
-  );
-  const birthdateAsBuffer = Buffer.from(
-    ethers.BigNumber.from(birthdate).toHexString().replace("0x", ""),
-    "hex"
-  );
+  const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
+  const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
   const leaf = await createLeaf(
     serverAddress,
     secretAsBuffer,

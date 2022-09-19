@@ -212,12 +212,25 @@ async function testAddLeafEndpoint() {
 async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
   // NOTE: Start both servers before running this test
   const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
-  const creds = 2;
+  const countryCode = 2;
+  const subdivision = "NY";
+  const completedAt = ethers.BigNumber.from(3224115).toHexString();
+  const birthdate = ethers.BigNumber.from(3224115).toHexString();
   const secret = "0x" + "11".repeat(16);
+
+  const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
+  const countryCodeAsBuffer = Buffer.alloc(2);
+  countryCodeAsBuffer.writeUInt16BE(countryCode);
+  const subdivisionAsBuffer = Buffer.from(subdivision);
+  const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
+  const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
   const leaf = await createLeaf(
     issuer,
-    Buffer.from("00".repeat(26) + "0002", "hex"),
-    Buffer.from(secret.replace("0x", ""), "hex")
+    secretAsBuffer,
+    countryCodeAsBuffer,
+    subdivisionAsBuffer,
+    completedAtAsBuffer,
+    birthdateAsBuffer
   );
   const tree = new IncrementalMerkleTree(poseidonHash, 32, "0", 2);
   tree.insert(leaf);
@@ -226,7 +239,10 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
   const { root, siblings: path } = proof;
   const directionSelector = proof.pathIndices.map((n) => !!n);
   const args = {
-    creds,
+    countryCode: 2,
+    subdivision: "NY",
+    completedAt: ethers.BigNumber.from(3224115).toHexString(),
+    birthdate: ethers.BigNumber.from(3224115).toHexString(),
     secret,
     root,
     directionSelector,
@@ -256,5 +272,5 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
 // const path = proof.siblings;
 // console.log(path.length);
 
-testAddLeafEndpoint();
-// testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
+// testAddLeafEndpoint();
+testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
