@@ -257,9 +257,6 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
     const encryptedArgs = Array.isArray(encryptedMessage)
       ? JSON.stringify(encryptedMessage)
       : encryptedMessage;
-    // const resp = await axios.get(
-    //   `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf?args=${encryptedArgs}&sharded=${sharded}`
-    // );
     const body = {
       args: encryptedArgs,
       sharded: sharded,
@@ -274,14 +271,6 @@ async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
   }
 }
 
-async function testPoseidonHashEndpoint() {
-  const body = {
-    args: [1, 2, 3],
-  };
-  const resp = await axios.post(`http://localhost:3000/hash/poseidon`, body);
-  console.log(resp.data);
-}
-
 // console.log(getZeroedMerkleRoot());
 
 // IncrementalMerkleTree playground
@@ -294,4 +283,3 @@ async function testPoseidonHashEndpoint() {
 
 // testAddLeafEndpoint();
 // testKnowledgeOfPreimageOfMemberLeafProofEndpoint();
-testPoseidonHashEndpoint();
