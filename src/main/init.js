@@ -1,5 +1,3 @@
-// const sqlite3 = require("sqlite3").verbose();
-import fs from "fs";
 import sqlite3 from "sqlite3";
 import { LowSync, JSONFileSync } from "lowdb";
 import { createClient } from "redis";

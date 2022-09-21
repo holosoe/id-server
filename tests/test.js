@@ -2,7 +2,6 @@
  * For ad hoc tests.
  */
 import axios from "axios";
-import { webcrypto } from "crypto";
 import { initialize } from "zokrates-js";
 import { ethers } from "ethers";
 import holoMerkleUtils from "holo-merkle-utils";
@@ -22,64 +21,6 @@ console.log("(zokrates provider initialized)");
 
 const treeDepth = 14;
 
-const privateKey = {
-  key_ops: ["decrypt"],
-  ext: true,
-  kty: "RSA",
-  n: "wZQBp5vWiFTU9ORIzlySpULJQB7XuZIZ46CH3DKweg-eukKfU1YGX8H_aNLFzDThSR_Gv7xnZ2AfoN_-EAqrLGf0T310j-FfAbe5JUMvxrH02Zk5LhZw5tu5n4XEJRHIAqJPUy_0vFS4-zfmGLIDpDgidRFh8eg_ghTEkOWybe99cg2qo_sa1m-ANr5j4qzpUFnOjZwvaWyhmBdlu7gtOC15BRwBP97Rp0bNeGEulEpoxPtks8XjgWXJ4MM7L8m2SkyHOTKGrrTXmAStvlbolWnq27S1QqTznMec4s2r9pUpfNwQGbbi7xTruTic-_zuvcvYqJwx-mpG7EQrwNIFK2KvM1PogezS6_2zYRy2uQTqpsLTEsaP-o-J4cylWQ3fikGh2EShzVKhgr1DWOy2Bmv9pZq5C7R_5OpApfwvTt3lFAWFjOez0ggHM9UbuKuUNay_D4bTEOaupBzDbkrn1hymgFuQtO97Wh6bFQKTHqpFiEy-LbPkoTKq6K0wNzsTne8-laBOPpYzTgtV9V_XFnR7EjsAYOaqLYU2pnr8UrhcMqsY1AIQDWvKqKMzDo25g6wQFtYnKQ8xEnVC1pT2P4Dt3Fx4Y6Uzg866rifn7MRpZBfXc5vsOnN46rSQLksWJrt8noxEbBGzi7Qi67O9EE9gWYSW2vWp3N6v81Isx9k",
-  e: "AQAB",
-  d: "uYR28YLQX2etj-UYQW1GvUr8RI9Kf3YdiaFXkxihONmvbSJcPym6ghsSBAu7tLEZF1N0zlxpXREqPqtseUNAORaHdYbuJtX-j07cCXISX4I8_i1yN1EacqUxiEhSapRX8u5Kx5a2Hae0gE5aHmC8TK3fmAJIs-W4t5nfqF36WpGiz6N5Xh5Q4iGJ5u0gHSVJlM_8vIpqhcauN2x0-yrPa39o9BSavfN1SbL5R90bHtMRBXdIU2HbXy-GAfoYxvux0BL3pUFfAiAeXnpdaIUx8b_IbTcKYAxlzGMhX9tsaq0ZTag5Zet4IVkTcDdpe7Yzt4Gc6jqHS05_Gf9bTzf36qmhNuifsbpitBiC-HvunCkT2lOmfKNg5Ns0pTv5IvejTY_6tjUAinoILgcpFYJrWCZaRhG1E7b9kaYDVcgDDltxip0Rsu4pGpUk-ET7gynjadHo60vSTn-7PVJTkf12c_Bx22gKOg35ruMV4ZW9iNKIGnVgAEzt1OIwLL-tGJ1kcRixWSK3iNhphAki_FJQKb9d3PWFbtqfYYpIfy9gCOMC1TP7OatVEr9MEiDMCXe2zcLg2souH-0qzx6NkfGCf24mT8n3eQg4R3mdq9vyTLGtiwAd4JO4cOlBi_dieIsGPZ7QTkwTV0F18_wtI2eszOa-QQG3p3UIy1Fam-MsuAE",
-  p: "4_hPwZpEC6yP8eYssi29sE8o4LnvNbdvJy-8eAm_s2tJVABbqE31CRSlo3vyR6a90zRpLfdtApcTePwYNKEe37d9GHYeshOMoAPLok2GlY-zYqVXH6tth-mHPA-_-yLsp7hQtLdFqp-OnbhMpa-gTkiMtszOyFBXHcjwgUWARj4MDj5LGNs_QTZEzvujDje36XQ1ErRqELZGEAUKFbpyEuEHZBirCCtSsMvwPbmpb2wgmmMQxo4y-1kqPge5s2wt7XfWMSlWkEk3GAoQKSgyABhyDq619bNLdD-G38j4ch-AAkRnnnZ-mLEOFMbYGEAlc7LwzKa25np7fBqNmo1VeQ",
-  q: "2WEpgbbWHVMrDotd1PgTEeSNA9fsUkhSS6bNxwA6waF1cfuWkTap2BDj82-za7Mwp_ihCOZg_D-2yaVZdrfudVNbU1TzBQZUN5fg73S4eKkYdQAijZN2Cahl1IkktFxmWOWo8XbrXx_0_j3V-lpaZKhxu3a-gTjJL059qp8QhL4IlMmy9CjExPwjNoUlM4pSL9NkVWIFgkHJOVnf_bMfJGf-vZd3sjHzjBPxHP7hTehplWpA30UN1bceiLKNJtgoyi9wC0JBvmcWzleC_Vq1oZzmw2A8UnuQZXAmImPS1E47XBGm4nNMX31VNp7TUZlVFArlLkRtDEgxcY8M1rpNYQ",
-  dp: "xzaYy8A5MlJrv6G68UGTf9zNBgS1iyVvFrlaYzNxuCJLBAMEFcF6HaNTU9feUsrdGxGz0B1lv1uyAomZxXP-_NTllliyXj9DJhnq-zvwHgZjZhLCXcR6hMiICu5gf993GuGwdRuq331rLVx-blNZLM-tV5kGInpChp6vvOe1Pqy98Dxzd5cwYZZA7vdq9-Os7W9FacEK5uvBsgIVXAN_6AuJX-lGnG7vZdvxZp81905v9zoW0Mw2tPqoNWie2LHyOI_-Nxu-r3urj3BLywt7FiZGlZoLHFi_2SgifrCqm1_3hwOr4Qf_fQNMIM_ayuZTVBXM46nULvhdrIevsp1LUQ",
-  dq: "zUhmbCr_9N2PscKHMBG94I3XZaPJdsL5hJvXhHCBDE6vnJ6cyDG5H2SEAGaiJ7km39l6Ke9184Ev2ymdXPHB7WZ0vjNg9IPPkFiLgVbWxovZntQrzUtOkzxGPfntga4osRbg_nbxO_nv4REAO9aLurcgAIrYySuZQmV7Y1-nt9PGQsxfhRfjCquZjWkbgprDloqpG8DftuztXI21a952MGlNNjoOPWfSuZwzfNBucKZk30diT_bkY8j0ut7zUZWcn6NAykEd2PN9pAsclqnNEPwdKLB_Bt3NtR29xYhDl17xy7aXxQ5hN2Qiztwab9q_b5gCajkQSiL7HmSbGUUCwQ",
-  qi: "ODvEylqBCSdyZ6EiPIpovv-mdn8J9xJOdqSry6uxfSyNvahqxpCBwLVGxZC3i_T8yRLdHaTgMEWDW8menacphGBF0cFTA8H7lNJVHWS_296Nf69sEct9n4yTetJPZFxGY0rnCamkjla7bHpkHPMKf-6GcimKQnDCvrk7XWORquElFxAH4iGf2lRMn-OQlaP9eoM1QvbTkSszTmL3Il_v35b1-83RvwF7gY-gGmvv60BYQs-1MrB4kkjxdSRWS7K-M0Rz_NQXFi63fO1_v0PVhG6Awc13TAQE1grzXrJN9CwHuKEAGdlzhea6JgMcqH2pV8NOuGDg69LuBVDuGjtQ3w",
-  alg: "RSA-OAEP-256",
-};
-const publicKey = {
-  key_ops: ["encrypt"],
-  ext: true,
-  kty: "RSA",
-  n: "wZQBp5vWiFTU9ORIzlySpULJQB7XuZIZ46CH3DKweg-eukKfU1YGX8H_aNLFzDThSR_Gv7xnZ2AfoN_-EAqrLGf0T310j-FfAbe5JUMvxrH02Zk5LhZw5tu5n4XEJRHIAqJPUy_0vFS4-zfmGLIDpDgidRFh8eg_ghTEkOWybe99cg2qo_sa1m-ANr5j4qzpUFnOjZwvaWyhmBdlu7gtOC15BRwBP97Rp0bNeGEulEpoxPtks8XjgWXJ4MM7L8m2SkyHOTKGrrTXmAStvlbolWnq27S1QqTznMec4s2r9pUpfNwQGbbi7xTruTic-_zuvcvYqJwx-mpG7EQrwNIFK2KvM1PogezS6_2zYRy2uQTqpsLTEsaP-o-J4cylWQ3fikGh2EShzVKhgr1DWOy2Bmv9pZq5C7R_5OpApfwvTt3lFAWFjOez0ggHM9UbuKuUNay_D4bTEOaupBzDbkrn1hymgFuQtO97Wh6bFQKTHqpFiEy-LbPkoTKq6K0wNzsTne8-laBOPpYzTgtV9V_XFnR7EjsAYOaqLYU2pnr8UrhcMqsY1AIQDWvKqKMzDo25g6wQFtYnKQ8xEnVC1pT2P4Dt3Fx4Y6Uzg866rifn7MRpZBfXc5vsOnN46rSQLksWJrt8noxEbBGzi7Qi67O9EE9gWYSW2vWp3N6v81Isx9k",
-  e: "AQAB",
-  alg: "RSA-OAEP-256",
-};
-// Max length of encrypt-able string using RSA-OAEP with SHA256 where
-// modulusLength == 4096: 446 characters.
-const maxEncryptableLength = 446;
-
-async function encryptShard(message) {
-  const algo = {
-    name: "RSA-OAEP",
-    modulusLength: 4096,
-    publicExponent: new Uint8Array([1, 0, 1]),
-    hash: "SHA-256",
-  };
-  let args = ["jwk", publicKey, algo, false, ["encrypt"]];
-  const pubKeyAsCryptoKey = await webcrypto.subtle.importKey(...args);
-  const encoder = new TextEncoder();
-  const encodedMessage = encoder.encode(message);
-  args = ["RSA-OAEP", pubKeyAsCryptoKey, encodedMessage];
-  const encryptedMessage = await webcrypto.subtle.encrypt(...args);
-  return JSON.stringify(Array.from(new Uint8Array(encryptedMessage)));
-}
-
-async function encrypt(message) {
-  const usingSharding = message.length > maxEncryptableLength;
-  let encryptedMessage; // array<string> if sharding, string if not sharding
-  if (usingSharding) {
-    encryptedMessage = [];
-    for (let i = 0; i < message.length; i += maxEncryptableLength) {
-      const shard = message.substring(i, i + maxEncryptableLength);
-      const encryptedShard = await encryptShard(shard);
-      encryptedMessage.push(encryptedShard);
-    }
-  } else {
-    encryptedMessage = await encryptShard(message);
-  }
-  return { encryptedMessage: encryptedMessage, sharded: usingSharding };
-}
-
 /**
  * @param {Array<string>} input 2-item array
  */
@@ -95,28 +36,6 @@ async function testCreateLeaf() {
   const hash = await createLeaf(Buffer.alloc(20), Buffer.alloc(2), Buffer.alloc(16));
   console.log(hash);
   console.log(parseInt(hash.toString("hex"), 16));
-}
-
-async function testZoKratesToBits() {
-  const zokProvider = await initialize();
-  const source = `import "utils/casts/u32_array_to_bool_array" as to_bits;
-  def main() -> field {
-    u32[8] input = [0, 0, 0, 0, 0, 0, 0, 72];
-    
-    bool[256] input_as_bits = to_bits(input);
-
-    // Shift right 3 bits, and convert to field
-    // Forked from: https://github.com/Zokrates/ZoKrates/blob/deploy/zokrates_stdlib/stdlib/utils/pack/bool/pack.zok
-    field mut out = 0;
-    for u32 j in 0..253 {
-        u32 i = 253 - (j + 1);
-        out = out + (input_as_bits[i] ? 2 ** j : 0);
-    }
-    return out;
-  }`;
-  const artifacts = zokProvider.compile(source);
-  const { witness, output } = zokProvider.computeWitness(artifacts, []);
-  console.log(output);
 }
 
 function testPrimesProduct() {
@@ -192,83 +111,6 @@ function getZeroedMerkleRoot(leaves) {
     heightToHash[`${i}`] = poseidonHash(lastHash, lastHash);
   }
   return heightToHash;
-}
-
-async function testAddLeafEndpoint() {
-  // NOTE: Start both servers before running this test
-  const secret = "0x" + "11".repeat(16);
-  const args = {
-    countryCode: 2,
-    subdivision: "NY",
-    completedAt: ethers.BigNumber.from(3224115).toHexString(),
-    birthdate: ethers.BigNumber.from(3224115).toHexString(),
-    secret: secret,
-  };
-  // NOTE: Use AWS KMS in production
-  const { encryptedMessage: encryptedArgs } = await encrypt(JSON.stringify(args));
-  const resp = await axios.get(
-    `http://localhost:3000/proofs/addLeaf?args=${encryptedArgs}`
-  );
-  console.log(JSON.stringify(resp.data));
-}
-
-async function testKnowledgeOfPreimageOfMemberLeafProofEndpoint() {
-  try {
-    // NOTE: Start both servers before running this test
-    const issuer = Buffer.from(process.env.ADDRESS.replace("0x", ""), "hex");
-    const countryCode = 2;
-    const subdivision = "NY";
-    const completedAt = ethers.BigNumber.from(3224115).toHexString();
-    const birthdate = ethers.BigNumber.from(3224115).toHexString();
-    const secret = "0x" + "11".repeat(16);
-
-    const secretAsBuffer = Buffer.from(secret.replace("0x", ""), "hex");
-    const countryCodeAsBuffer = Buffer.alloc(2);
-    countryCodeAsBuffer.writeUInt16BE(countryCode);
-    const subdivisionAsBuffer = Buffer.from(subdivision);
-    const completedAtAsBuffer = Buffer.from(completedAt.replace("0x", ""), "hex");
-    const birthdateAsBuffer = Buffer.from(birthdate.replace("0x", ""), "hex");
-    const leaf = await createLeaf(
-      issuer,
-      secretAsBuffer,
-      countryCodeAsBuffer,
-      subdivisionAsBuffer,
-      completedAtAsBuffer,
-      birthdateAsBuffer
-    );
-
-    const leavesFromContract = []; // TODO: Get leaves from merkle tree smart contract
-    const leaves = [...leavesFromContract, leaf];
-    const tree = Tree(treeDepth, leaves);
-    const index = tree.indexOf(leaf);
-    const proof = tree.createSerializedProof(index);
-
-    const args = {
-      countryCode: countryCode,
-      subdivision: subdivision,
-      completedAt: completedAt,
-      birthdate: birthdate,
-      secret: secret,
-      merkleProof: proof,
-    };
-    // NOTE: Use AWS KMS in production
-    const { encryptedMessage, sharded } = await encrypt(JSON.stringify(args));
-
-    const encryptedArgs = Array.isArray(encryptedMessage)
-      ? JSON.stringify(encryptedMessage)
-      : encryptedMessage;
-    const body = {
-      args: encryptedArgs,
-      sharded: sharded,
-    };
-    const resp = await axios.post(
-      `http://localhost:3000/proofs/proveKnowledgeOfPreimageOfMemberLeaf`,
-      body
-    );
-    console.log(JSON.stringify(resp.data));
-  } catch (err) {
-    console.log(err.message);
-  }
 }
 
 // console.log(getZeroedMerkleRoot());
