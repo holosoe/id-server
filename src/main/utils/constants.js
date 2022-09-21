@@ -3,7 +3,7 @@ export const frontendOrigin = process.env.FRONT_END_ORIGIN;
 export const dummyUserCreds = {
   countryCode: 2,
   subdivision: "NY",
-  completedAt: "2022-09-16T02:21:59.510Z",
+  completedAt: "2022-09-16", // "2022-09-16T02:21:59.510Z",
   birthdate: "1950-01-01",
 };
 

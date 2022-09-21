@@ -320,7 +320,7 @@ async function acceptFrontendRedirect(req, res) {
   const realCreds = {
     countryCode: countryCodeToPrime[verAttrs.countryCode] || 0,
     subdivision: verAttrs.addressSubdivision || "",
-    completedAt: verAttrs.completedAt || "",
+    completedAt: verAttrs?.completedAt?.split("T")[0] || "",
     birthdate: verAttrs.birthdate || "",
   };
 
