@@ -4,7 +4,7 @@ export const dummyUserCreds = {
   countryCode: 2,
   subdivision: "NY",
   completedAt: "2022-09-16T02:21:59.510Z",
-  birthdate: "01-01-1950",
+  birthdate: "1950-01-01",
 };
 
 export const emptyCreds = {
