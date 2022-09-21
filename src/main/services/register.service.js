@@ -100,18 +100,15 @@ async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
-  const credsArr = [
+  const leafAsStr = await createLeaf(
+    Buffer.from(serverAddress.replace("0x", ""), "hex"),
+    Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
     getStateAsBytes(creds.subdivision), // 2 bytes
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
-    creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes,
-  ];
-  const leafAsStr = await createLeaf(
-    Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.concat(credsArr),
-    Buffer.from(secret.replace("0x", ""), "hex")
+    creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes
   );
-  const leaf = ethers.utils.arrayify(leafAsStr);
+  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
   return await sign(leaf);
 }
 
