@@ -20,6 +20,12 @@ Copy .env.example to .env, and then set the environment variables.
 
         cp .env.example .env
 
+You will need to create a .env.docker.ENVIRONMENT file for every environment you want to run. For a local development environment, create the following file.
+
+        cp .env .env.docker.dev
+
+Then set `ENVIRONMENT` to `dev`.
+
 Use the correct node version. For nvm users...
 
         nvm use
