@@ -8,10 +8,6 @@ database/
 
 src/zok/temp/
 src/zok/abi.json
-src/zok/out*
-src/zok/*.out
-src/zok/*.proving.key
-src/zok/*.verification.key
 
 out.wtns
 
