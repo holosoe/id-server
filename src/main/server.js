@@ -1,4 +1,5 @@
 import { app } from "./index.js";
+import { sqlDb, redisClient } from "./init.js";
 
 const PORT = 3000;
 const server = app.listen(PORT, (err) => {
@@ -6,15 +7,23 @@ const server = app.listen(PORT, (err) => {
   console.log(`Server running in http://127.0.0.1:${PORT}`);
 });
 
-process.on("SIGTERM", () =>
+process.on("SIGTERM", async () => {
+  sqlDb.close();
+  console.log(`\nClosed sqlite database`);
+  await redisClient.quit();
+  console.log(`Disconnected from redis database`);
   server.close(() => {
-    console.log(`\nClosed server`);
+    console.log(`Closed server`);
     process.exit(0);
-  })
-);
-process.on("SIGINT", () =>
+  });
+});
+process.on("SIGINT", async () => {
+  sqlDb.close();
+  console.log(`\nClosed sqlite database`);
+  await redisClient.quit();
+  console.log(`Disconnected from redis database`);
   server.close(() => {
-    console.log(`\nClosed server`);
+    console.log(`Closed server`);
     process.exit(0);
-  })
-);
+  });
+});
