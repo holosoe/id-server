@@ -2,18 +2,37 @@ Backend for Lobby3 ID.
 
 ## Requirements
 
+Option 1:
+
+- Docker ^20.10.18
+
+Option 2:
+
 - Node.js ^16.14.2
 - ZoKrates ^8.0.1
+- Redis ^7.0.5
 
 (Other versions might work too, but the above versions were the ones used for testing.)
 
 ## Environment Setup
 
-TODO: Env vars
+Copy .env.example to .env, and then set the environment variables.
+
+        cp .env.example .env
 
 Use the correct node version. For nvm users...
 
         nvm use
+
+## Run
+
+First, start redis. (Using `--network host` assumes you are not using your local redis for anything else.)
+
+        docker run --network host redis
+
+Open a separate terminal, navigate to the directory of this repo, and run:
+
+        npm run start:dev
 
 ## Serialization of Credentials
 
