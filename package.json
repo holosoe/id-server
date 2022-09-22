@@ -1,8 +1,9 @@
 {
   "scripts": {
-    "start": "node src/main/server --trace-warnings",
-    "build-alpha": "docker build -f Dockerfile -t lobby3-id-server-main-alpha .",
-    "run-docker-alpha": "docker run --env-file ./.env.docker.alpha --network host lobby3-id-server-main"
+    "start": "node src/main/server",
+    "start:dev": "bash scripts/run.sh dev",
+    "start:alpha": "bash scripts/run.sh alpha",
+    "start:prod": "bash scripts/run.sh prod"
   },
   "type": "module",
   "dependencies": {
