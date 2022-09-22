@@ -9,6 +9,7 @@ import util from "util";
 import { ethers } from "ethers";
 import zokrates from "zokrates-js";
 import { exec as nonPromisifiedExec } from "child_process";
+import config from "../../../config.js";
 import dotenv from "dotenv";
 dotenv.config();
 const exec = util.promisify(nonPromisifiedExec);
@@ -46,7 +47,7 @@ async function createLeaf(
   assertLengthIs(completedAt, 3, "completedAt");
   assertLengthIs(birthdate, 3, "birthdate");
   try {
-    const createLeafPath = process.env.ZOK_PATH_TO_CREATE_LEAF;
+    const createLeafPath = config.ZOK_PATH_TO_CREATE_LEAF;
     const zokratesProvider = await initialize();
     const createLeaf = zokratesProvider.compile(`${fs.readFileSync(createLeafPath)}`);
     const { witness, output } = zokratesProvider.computeWitness(

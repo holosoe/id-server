@@ -1,12 +1,11 @@
 import express from "express";
 import fs from "fs";
+import config from "../../../config.js";
 
 export async function onAddLeaf(req, res) {
   console.log(`${new Date().toISOString()} proving-keys/onAddLeaf: entered`);
   try {
-    const file = fs.readFileSync(
-      `${process.env.ZOK_DIR}/keys/onAddLeaf.proving.key.json`
-    );
+    const file = fs.readFileSync(`${config.ZOK_DIR}/keys/onAddLeaf.proving.key.json`);
     const provingKey = JSON.parse(file.toString()).data;
     return res.status(200).json(provingKey);
   } catch (err) {
@@ -19,7 +18,7 @@ export async function lobby3(req, res) {
   console.log(`${new Date().toISOString()} proving-keys/lobby3: entered`);
   try {
     const file = fs.readFileSync(
-      `${process.env.ZOK_DIR}/keys/lobby3Proof.proving.key.json`
+      `${config.ZOK_DIR}/keys/lobby3Proof.proving.key.json`
     );
     const provingKey = JSON.parse(file.toString()).data;
     return res.status(200).json(provingKey);

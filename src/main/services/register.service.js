@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "crypto";
 import express from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+import config from "../../../config.js";
 import { redisClient } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {
@@ -16,7 +17,6 @@ import {
 } from "../utils/dbWrapper.js";
 import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils.js";
 import {
-  frontendOrigin,
   stdTTL,
   dummyUserCreds,
   emptyCreds,
@@ -188,7 +188,7 @@ async function startPersonaInquiry(req, res) {
     data: {
       attributes: {
         "inquiry-template-id": "itmpl_q7otFYTBCsjBXCcNfcvw42QU", // Government ID template
-        "redirect-uri": `${process.env.THIS_URL}/register/redirect/`, // Persona redirects user to "<redirect-uri>/redirect"
+        "redirect-uri": `${config.THIS_URL}/register/redirect/`, // Persona redirects user to "<redirect-uri>/redirect"
       },
     },
   };
@@ -272,7 +272,7 @@ async function acceptPersonaRedirect(req, res) {
   console.log(
     `${new Date().toISOString()} acceptPersonaRedirect: Redirecting user to frontend`
   );
-  return res.redirect(`${frontendOrigin}/zk-id/verified`);
+  return res.redirect(`${config.FRONT_END_ORIGIN}/zk-id/verified`);
 }
 
 /**

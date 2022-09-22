@@ -1,6 +1,7 @@
 import sqlite3 from "sqlite3";
 import { LowSync, JSONFileSync } from "lowdb";
 import { createClient } from "redis";
+import config from "../../config.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -11,13 +12,13 @@ redisClient
   .then(() => console.log("Connected to redis"))
   .catch((err) => console.log("Redis Client Error", err));
 
-const sqlDb = new sqlite3.Database(process.env.PATH_TO_SQLITE_DB);
+const sqlDb = new sqlite3.Database(config.PATH_TO_SQLITE_DB);
 sqlDb.serialize(() => {
   const columns = `(tempSecret TEXT, uuid BLOB, inquiryId TEXT)`;
   sqlDb.prepare(`CREATE TABLE IF NOT EXISTS Users ${columns}`).run().finalize();
 });
 
-const lowdbAdapter = new JSONFileSync(process.env.PATH_TO_JSON_DB);
+const lowdbAdapter = new JSONFileSync(config.PATH_TO_JSON_DB);
 const jsonDb = new LowSync(lowdbAdapter);
 jsonDb.read();
 if (!jsonDb.data) {

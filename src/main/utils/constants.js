@@ -1,5 +1,3 @@
-export const frontendOrigin = process.env.FRONT_END_ORIGIN;
-
 export const dummyUserCreds = {
   countryCode: 2,
   subdivision: "NY",
