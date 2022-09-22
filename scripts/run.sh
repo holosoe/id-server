@@ -24,10 +24,6 @@ if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "alpha" && "$TARGET_ENV" != "pr
     exit 1;
 fi
 
-mkdir -p $REPO_DIR/database
-touch $REPO_DIR/database/db.json
-touch $REPO_DIR/database/db.sqlite3
-
 docker build -f Dockerfile -t lobby3-id-server $REPO_DIR
 printf "\n"
 docker run -v $REPO_DIR/database:/app/database --env-file $REPO_DIR/.env.docker.$TARGET_ENV --network host lobby3-id-server

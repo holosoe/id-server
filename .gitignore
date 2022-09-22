@@ -4,8 +4,6 @@ notes.txt
 .env
 .env.docker*
 
-database/
-
 src/zok/temp/
 src/zok/abi.json
 
