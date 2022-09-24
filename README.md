@@ -35,7 +35,7 @@ Use the correct node version. For nvm users...
 
 Start the MySQL server.
 
-Create a database. Set `MYSQL_DB_NAME` in config.js to the name of the database.
+Create a database under the user 'root'. Set `MYSQL_DB_NAME` in config.js to the name of the database.
 
 ## Run
 
