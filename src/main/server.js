@@ -12,6 +12,7 @@ process.on("SIGTERM", async () => {
   console.log(`\nClosed SQL database`);
   await redisClient.quit();
   console.log(`Disconnected from redis database`);
+  console.log(`Closing server`);
   server.close(() => {
     console.log(`Closed server`);
     process.exit(0);
@@ -22,6 +23,7 @@ process.on("SIGINT", async () => {
   console.log(`\nClosed SQL database`);
   await redisClient.quit();
   console.log(`Disconnected from redis database`);
+  console.log(`Closing server`);
   server.close(() => {
     console.log(`Closed server`);
     process.exit(0);

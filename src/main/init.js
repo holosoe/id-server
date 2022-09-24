@@ -23,18 +23,26 @@ sequelize
   .then(() => console.log("Connected to SQL database."))
   .catch((err) => console.error("Unable to connect to SQL database:", err));
 // Model name == "User". Table name == "Users"
-const User = sequelize.define("User", {
-  uuid: {
-    type: DataTypes.BLOB,
-    allowNull: false,
+const User = sequelize.define(
+  "User",
+  {
+    uuid: {
+      type: DataTypes.BLOB,
+      allowNull: false,
+      primaryKey: true,
+    },
+    inquiryId: {
+      type: DataTypes.STRING,
+    },
+    tempSecret: {
+      type: DataTypes.STRING,
+    },
   },
-  inquiryId: {
-    type: DataTypes.STRING,
-  },
-  tempSecret: {
-    type: DataTypes.STRING,
-  },
-});
+  {
+    createdAt: false,
+    updatedAt: false,
+  }
+);
 sequelize.sync();
 
 // Setup jsonDb
