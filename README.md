@@ -8,8 +8,8 @@ Option 1:
 
 Option 2:
 
-- Node.js ^16.14.2
-- ZoKrates ^8.0.1
+- Node.js ^18.9.0
+- ZoKrates ^8.0.2
 - Redis ^7.0.5
 
 (Other versions might work too, but the above versions were the ones used for testing.)

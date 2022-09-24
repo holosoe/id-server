@@ -1,6 +1,6 @@
 # TODO Multistage build?
 FROM zokrates/zokrates:0.8.2 AS zokrates
-FROM node:16.17.0-bullseye-slim
+FROM node:18.9.0-bullseye-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
 
