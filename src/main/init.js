@@ -14,7 +14,6 @@ redisClient
   .catch((err) => console.log("Redis Client Error", err));
 
 // Setup sequelize
-// const sequelize = new Sequelize("mysql://localhost:3306/database");
 async function initializeSequelize() {
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
