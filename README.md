@@ -10,6 +10,7 @@ Option 2:
 
 - Node.js ^18.9.0
 - ZoKrates ^8.0.2
+- MySQL ^8.0.30
 - Redis ^7.0.5
 
 (Other versions might work too, but the above versions were the ones used for testing.)
@@ -30,9 +31,15 @@ Use the correct node version. For nvm users...
 
         nvm use
 
+## Database Setup
+
+Start the MySQL server.
+
+Create a database. Set `MYSQL_DB_NAME` in config.js to the name of the database.
+
 ## Run
 
-First, start redis. (Using `--network host` assumes you are not using your local redis for anything else.)
+First, start the redis cache. (Using `--network host` assumes you are not using your local redis for anything else.)
 
         docker run --network host redis
 

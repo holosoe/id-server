@@ -14,36 +14,55 @@ redisClient
   .catch((err) => console.log("Redis Client Error", err));
 
 // Setup sequelize
-const sequelize = new Sequelize({
-  dialect: "sqlite",
-  storage: config.PATH_TO_SQLITE_DB,
-});
-sequelize
-  .authenticate()
-  .then(() => console.log("Connected to SQL database."))
-  .catch((err) => console.error("Unable to connect to SQL database:", err));
-// Model name == "User". Table name == "Users"
-const User = sequelize.define(
-  "User",
-  {
-    uuid: {
-      type: DataTypes.BLOB,
-      allowNull: false,
-      primaryKey: true,
-    },
-    inquiryId: {
-      type: DataTypes.STRING,
-    },
-    tempSecret: {
-      type: DataTypes.STRING,
-    },
-  },
-  {
-    createdAt: false,
-    updatedAt: false,
+// const sequelize = new Sequelize("mysql://localhost:3306/database");
+async function initializeSequelize() {
+  const sequelize = new Sequelize(
+    config.MYSQL_DB_NAME,
+    "root",
+    process.env.MYSQL_PASSWORD,
+    {
+      host: "localhost",
+      dialect: "mysql",
+    }
+  );
+  try {
+    await sequelize.authenticate();
+    console.log("Connected to SQL database.");
+  } catch (err) {
+    console.error("Unable to connect to SQL database:", err);
   }
-);
-sequelize.sync();
+  // Model name == "User". Table name == "Users"
+  const User = sequelize.define(
+    "User",
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+      },
+      uuid: {
+        type: DataTypes.BLOB,
+        allowNull: false,
+      },
+      inquiryId: {
+        type: DataTypes.STRING,
+      },
+      tempSecret: {
+        type: DataTypes.STRING,
+      },
+    },
+    {
+      createdAt: false,
+      updatedAt: false,
+    }
+  );
+  sequelize.sync();
+  return sequelize;
+}
+let sequelize;
+initializeSequelize().then((result) => {
+  sequelize = result;
+});
 
 // Setup jsonDb
 const lowdbAdapter = new JSONFileSync(config.PATH_TO_JSON_DB);
