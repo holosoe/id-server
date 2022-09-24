@@ -18,16 +18,16 @@ redisClient
 async function initializeSequelize() {
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
-    "root",
+    process.env.MYSQL_USERNAME,
     process.env.MYSQL_PASSWORD,
     {
-      host: "localhost",
+      host: process.env.MYSQL_HOST,
       dialect: "mysql",
     }
   );
   try {
     await sequelize.authenticate();
-    console.log("Connected to SQL database.");
+    console.log(`Connected to SQL database at ${process.env.MYSQL_HOST}.`);
   } catch (err) {
     console.error("Unable to connect to SQL database:", err);
   }
