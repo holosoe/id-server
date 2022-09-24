@@ -4,12 +4,9 @@ import express from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import config from "../../../config.js";
-import { redisClient } from "../init.js";
+import { sequelize, redisClient } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
 import {
-  getUserByUuid,
-  runSql,
-  getUserByTempSecret,
   getLastZeroed,
   getVerificationCount,
   setVerificationCountToZero,
@@ -252,7 +249,11 @@ async function acceptPersonaRedirect(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents));
 
   if (process.env.ENVIRONMENT != "dev" && process.env.ENVIRONMENT != "alpha") {
-    const user = await getUserByUuid(uuid);
+    const user = await sequelize.models.User.findOne({
+      where: {
+        uuid: uuid,
+      },
+    });
     if (user) {
       console.log(
         `${new Date().toISOString()} acceptPersonaRedirect: User has already registered. Exiting.`
@@ -261,10 +262,11 @@ async function acceptPersonaRedirect(req, res) {
     }
   }
 
-  const columns = "(tempSecret, uuid, inquiryId)";
-  const params = [tempSecret, uuid, inqId];
-  const valuesStr = "(" + params.map((item) => "?").join(", ") + ")";
-  await runSql(`INSERT INTO Users ${columns} VALUES ${valuesStr}`, params);
+  await sequelize.models.User.create({
+    uuid: uuid,
+    inquiryId: inqId,
+    tempSecret: tempSecret,
+  });
 
   // TODO: (For Snapshot compatibility.) Call contract. Pseudocode:
   // if (verAttrs.countryCode == 'US') contract.setIsFromUS(address, true)
@@ -290,7 +292,11 @@ async function acceptFrontendRedirect(req, res) {
 
   // Get user's info from db
   // Remove from return value the fields user doesn't need
-  const user = await getUserByTempSecret(tempSecret);
+  const user = await sequelize.models.User.findOne({
+    where: {
+      tempSecret: tempSecret,
+    },
+  });
   if (!user) {
     console.log(
       `${new Date().toISOString()} acceptFrontendRedirect: Could not find user. Exiting.`
@@ -347,7 +353,16 @@ async function acceptFrontendRedirect(req, res) {
 
   // Delete user's tempSecret from db
   // Keep uuid to prevent sybil attacks
-  await runSql(`UPDATE Users SET tempSecret=? WHERE uuid=?`, ["", uuid]);
+  await sequelize.models.User.update(
+    {
+      tempSecret: "",
+    },
+    {
+      where: {
+        uuid: uuid,
+      },
+    }
+  );
   await redactPersonaInquiry(user.inquiryId);
 
   return res.status(200).json({ user: completeUser });
