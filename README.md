@@ -33,9 +33,21 @@ Use the correct node version. For nvm users...
 
 ## Database Setup
 
+### MySQL Server
+
 Start the MySQL server.
 
 Create a database. Set `MYSQL_DB_NAME` in config.js to the name of the database hosted on the MySQL server (default: 'db').
+
+### Redis Server
+
+Start the redis server.
+
+For production, the `REDIS_ENDPOINT` environment variable must be set. Do not include the port number. The port must be specified in config.js. It defaults to port 6379.
+
+For local development, `REDIS_ENDPOINT` does not need to be set. You must run a redis server at localhost:6379. The easiest way to do this is with the redis docker image:
+
+        docker run --network host redis
 
 ## Run
 

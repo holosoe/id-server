@@ -6,7 +6,17 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Setup redis
-const redisClient = createClient();
+const redisConfig =
+  process.env.ENVIRONMENT == "dev"
+    ? {
+        url: "http://localhost:6379",
+      }
+    : {
+        host: process.env.REDIS_ENDPOINT,
+        port: config.REDIS_PORT.toString(),
+        tls: {},
+      };
+const redisClient = createClient(redisConfig);
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
 redisClient
   .connect()
