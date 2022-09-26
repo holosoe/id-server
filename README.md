@@ -49,15 +49,21 @@ For local development, `REDIS_ENDPOINT` does not need to be set. You must run a 
 
         docker run --network host redis
 
+(Using `--network host` assumes you are not using your local redis for anything else.)
+
 ## Run
 
-First, start the redis cache. (Using `--network host` assumes you are not using your local redis for anything else.)
+Ensure the database servers are running and environment variables are set.
 
-        docker run --network host redis
+**With Docker**
 
-Open a separate terminal, navigate to the directory of this repo, and run:
+Open a terminal window, navigate to the directory of this repo, and run:
 
         npm run start:dev
+
+**Without docker**
+
+        npm run start
 
 ## Serialization of Credentials
 
