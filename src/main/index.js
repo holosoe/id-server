@@ -3,7 +3,6 @@ import cors from "cors";
 // import init from "./init.js";
 import initialize from "./routes/initialize.js";
 import register from "./routes/register.js";
-import provingKeys from "./routes/provingKeys.js";
 
 const app = express();
 
@@ -18,6 +17,5 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/initialize", initialize);
 app.use("/register", register);
-app.use("/proving-keys", provingKeys);
 
 export { app };
