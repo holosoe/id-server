@@ -12,19 +12,30 @@ const redisConfig =
         url: "http://localhost:6379",
       }
     : {
-        host: process.env.REDIS_ENDPOINT,
-        port: config.REDIS_PORT.toString(),
-        tls: {},
+        socket: {
+          host: process.env.REDIS_ENDPOINT,
+          port: config.REDIS_PORT.toString(),
+          tls: true,
+        },
       };
+console.log("Connecting to redis with the following config...");
+console.log(redisConfig);
 const redisClient = createClient(redisConfig);
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
 redisClient
   .connect()
-  .then(() => console.log("Connected to redis"))
+  .then(() =>
+    console.log(
+      `Connected to redis server at ${
+        process.env.REDIS_ENDPOINT
+      }:${config.REDIS_PORT.toString()}`
+    )
+  )
   .catch((err) => console.log("Redis Client Error", err));
 
 // Setup sequelize
 async function initializeSequelize() {
+  console.log(`Connecting to MySQL at ${process.env.MYSQL_HOST}.`);
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
     process.env.MYSQL_USERNAME,
@@ -36,7 +47,7 @@ async function initializeSequelize() {
   );
   try {
     await sequelize.authenticate();
-    console.log(`Connected to SQL database at ${process.env.MYSQL_HOST}.`);
+    console.log(`Connected to MySQL database at ${process.env.MYSQL_HOST}.`);
   } catch (err) {
     console.error("Unable to connect to SQL database:", err);
   }
