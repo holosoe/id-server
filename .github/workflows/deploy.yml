@@ -19,6 +19,7 @@ env:
 jobs:
   # Build Docker image and push to Docker Hub
   docker-build-push:
+    name: Build and push
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
@@ -37,7 +38,7 @@ jobs:
           tags: holonym/id-server:latest
   # Deploy to Amazon ECS
   aws-deploy:
-    name: Deploy
+    name: Deploy to AWS
     needs: docker-build-push
     runs-on: ubuntu-latest
 
