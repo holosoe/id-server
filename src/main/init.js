@@ -18,7 +18,7 @@ const redisConfig =
           tls: true,
         },
       };
-console.log("Connecting to redis with the following config...");
+console.log("Connecting to redis server using the following redis client config...");
 console.log(redisConfig);
 const redisClient = createClient(redisConfig);
 redisClient.on("error", (err) => console.log("Redis Client Error", err));
@@ -35,7 +35,7 @@ redisClient
 
 // Setup sequelize
 async function initializeSequelize() {
-  console.log(`Connecting to MySQL at ${process.env.MYSQL_HOST}.`);
+  console.log(`Connecting to MySQL server at ${process.env.MYSQL_HOST}`);
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
     process.env.MYSQL_USERNAME,
@@ -47,9 +47,9 @@ async function initializeSequelize() {
   );
   try {
     await sequelize.authenticate();
-    console.log(`Connected to MySQL database at ${process.env.MYSQL_HOST}.`);
+    console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
   } catch (err) {
-    console.error("Unable to connect to SQL database:", err);
+    console.error("Unable to connect to MySQL server:", err);
   }
   // Model name == "User". Table name == "Users"
   const User = sequelize.define(
