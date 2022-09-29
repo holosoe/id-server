@@ -364,5 +364,3 @@ async function acceptFrontendRedirect(req, res) {
 }
 
 export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };
-
-// TODO: Always return fake credentials
