@@ -8,9 +8,7 @@ dotenv.config();
 // Setup redis
 const redisConfig =
   process.env.ENVIRONMENT == "dev"
-    ? {
-        url: "http://localhost:6379",
-      }
+    ? {}
     : {
         socket: {
           host: process.env.REDIS_ENDPOINT,
