@@ -16,7 +16,6 @@ import { assertSignerIsAddress, sign, getDaysSinceNewYear } from "../utils/utils
 import {
   stdTTL,
   dummyUserCreds,
-  emptyCreds,
   stateAbbreviations,
   countryCodeToPrime,
 } from "../utils/constants.js";
@@ -330,13 +329,9 @@ async function acceptFrontendRedirect(req, res) {
     birthdate: verAttrs.birthdate || "",
   };
 
-  // Use empty creds for alpha so that we don't accidentally sign off on fake
-  // credentials while anons are testing
   const creds =
-    process.env.ENVIRONMENT == "dev"
+    process.env.ENVIRONMENT == "dev" || process.env.ENVIRONMENT == "alpha"
       ? dummyUserCreds
-      : process.env.ENVIRONMENT == "alpha"
-      ? emptyCreds
       : realCreds;
 
   const secret = generateSecret();
@@ -369,3 +364,5 @@ async function acceptFrontendRedirect(req, res) {
 }
 
 export { startPersonaInquiry, acceptPersonaRedirect, acceptFrontendRedirect };
+
+// TODO: Always return fake credentials

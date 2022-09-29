@@ -5,13 +5,6 @@ export const dummyUserCreds = {
   birthdate: "1950-01-01",
 };
 
-export const emptyCreds = {
-  countryCode: 0,
-  subdivision: "",
-  completedAt: "",
-  birthdate: "",
-};
-
 export const stdTTL = 900; // in seconds
 
 export const stateAbbreviations = {
