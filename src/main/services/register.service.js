@@ -59,14 +59,14 @@ function getDateAsBytes(date) {
 }
 
 /**
- * Convert state (e.g., "California") to a 2-byte representation of its abbreviation.
+ * Convert state (e.g., "California") to a hex string representation of its abbreviation.
  */
 function getStateAsBytes(state) {
   if (!state) {
-    return Buffer.concat([Buffer.from("")], 2);
+    return "0x" + new TextEncoder("utf-8").encode("").toString().replaceAll(",", "");
   }
   state = stateAbbreviations[state.toUpperCase()];
-  return Buffer.concat([Buffer.from(state || "")], 2);
+  return "0x" + new TextEncoder("utf-8").encode(state).toString().replaceAll(",", "");
 }
 
 function handleVerificationCount() {
@@ -95,7 +95,7 @@ function generateSecret(numBytes = 16) {
 async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(countryCodeToPrime[creds.countryCode] || 0);
+  countryBuffer.writeUInt16BE(creds.countryCode || 0);
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secret.replace("0x", ""), "hex"),
