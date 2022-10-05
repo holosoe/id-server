@@ -33,7 +33,6 @@ redisClient
 
 // Setup sequelize
 async function initializeSequelize() {
-  console.log(`Connecting to MySQL server at ${process.env.MYSQL_HOST}`);
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
     process.env.MYSQL_USERNAME,
@@ -62,7 +61,12 @@ async function initializeSequelize() {
         type: DataTypes.BLOB,
         allowNull: false,
       },
+      // For Persona
       inquiryId: {
+        type: DataTypes.STRING,
+      },
+      // For Vouched
+      jobID: {
         type: DataTypes.STRING,
       },
       tempSecret: {
@@ -74,7 +78,7 @@ async function initializeSequelize() {
       updatedAt: false,
     }
   );
-  sequelize.sync();
+  sequelize.sync({force : true});
   return sequelize;
 }
 let sequelize;
