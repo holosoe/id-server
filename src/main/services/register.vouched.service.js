@@ -106,6 +106,7 @@ async function generateSignature(creds, secret) {
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes
   );
   const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
+  console.log("signing leaf")
   return await sign(leaf);
 }
 
@@ -338,6 +339,13 @@ async function acceptFrontendRedirect(req, res) {
     return res.status(400).json({ error: "job status is not completed" });
   }
 
+  // Assert verifcation passed
+  if (!job.result.success) {
+    console.log(
+      `${new Date().toISOString()} acceptVouchedResult: success is ${job.result?.success}`
+    );
+    return res.status(400).json({ error: "verification failed" });
+  }
   // Get UUID
   const uuidConstituents =
   (job.result.firstName || "") +
@@ -346,10 +354,12 @@ async function acceptFrontendRedirect(req, res) {
   (job.result.idAddress.postalCode || "") +
   (job.result.dob || ""); // Date of birth
 
+  console.log("finding uuid")
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Assert user hasn't registered yet
   if (process.env.ENVIRONMENT != "dev" && process.env.ENVIRONMENT != "alpha") {
+    console.log("finding one in databse")
     const user = await sequelize.models.User.findOne({
       where: {
         uuid: uuid,
@@ -364,6 +374,7 @@ async function acceptFrontendRedirect(req, res) {
   
 }
 
+console.log("creating one in database")
 // Create new user
 await sequelize.models.User.create({
   uuid: uuid,
@@ -386,6 +397,7 @@ await sequelize.models.User.create({
       : realCreds;
 
   const secret = generateSecret();
+  console.log("generating signature")
   const signature = await generateSignature(creds, secret);
 
   const completeUser = {
