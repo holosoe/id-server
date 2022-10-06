@@ -3,6 +3,7 @@ import cors from "cors";
 // import init from "./init.js";
 import initialize from "./routes/initialize.js";
 import register from "./routes/register.js";
+import registerVouched from "./routes/registerVouched.js";
 
 const app = express();
 
@@ -17,5 +18,6 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/initialize", initialize);
 app.use("/register", register);
+app.use("/registerVouched", registerVouched)
 
 export { app };
