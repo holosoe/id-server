@@ -104,17 +104,17 @@ async function getVouchedJob(jobID) {
 }
 
 async function redactVouchedJob(jobID) {
-  console.error("redactVouchedJob: not implemented yet");
-  return;
-  // try {
-  //   const inqResp = await axios.delete(
-  //     `https://withpersona.com/api/v1/inquiries/${inqId}`,
-  //     personaHeaders
-  //   );
-  //   return inqResp.data;
-  // } catch (err) {
-  //   return {};
-  // }
+  try {
+    const resp = await axios.delete(`https://verify.vouched.id/api/jobs/${jobID}`, {
+      headers: {
+        "X-API-Key": process.env.VOUCHED_PRIVATE_KEY,
+        Accept: "application/json",
+      },
+    });
+    return resp.data;
+  } catch (err) {
+    return {};
+  }
 }
 
 /**
