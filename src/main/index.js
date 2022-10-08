@@ -18,6 +18,18 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/initialize", initialize);
 app.use("/register", register);
-app.use("/registerVouched", registerVouched)
+app.use("/registerVouched", registerVouched);
+
+app.get("/", (req, res) => {
+  console.log(`${new Date().toISOString()} GET /`);
+  const routes = [
+    "GET /initialize",
+    "GET /register",
+    "GET /register/redirect",
+    "GET /register/credentials",
+    "GET /registerVouched/vouchedCredentials",
+  ];
+  res.status(200).json({ routes: routes });
+});
 
 export { app };
