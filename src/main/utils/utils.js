@@ -69,3 +69,7 @@ export function getDaysSinceNewYear(month, day) {
 function isLeapYear(year) {
   return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
 }
+
+export function logWithTimestamp(message) {
+  console.log(`${new Date().toISOString()} ${message}`);
+}

@@ -1,3 +1,8 @@
+/**
+ * NOTE: NOT USED. This file includes the deprecated Persona verification endpoints.
+ * We are now using Vouched.
+ */
+
 import axios from "axios";
 import { createHash, randomBytes } from "crypto";
 import express from "express";

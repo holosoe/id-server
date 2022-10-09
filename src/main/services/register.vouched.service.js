@@ -6,7 +6,7 @@ const { ethers } = ethersPkg;
 import config from "../../../config.js";
 import { sequelize } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
-import { sign, getDaysSinceNewYear } from "../utils/utils.js";
+import { sign, getDaysSinceNewYear, logWithTimestamp } from "../utils/utils.js";
 import {
   dummyUserCreds,
   stateAbbreviations,
@@ -131,43 +131,31 @@ async function redactVouchedJob(jobID) {
 /**
  * Allows user to retrieve their Vouched verification info
  */
-async function acceptFrontendRedirect(req, res) {
-  console.log(`${new Date().toISOString()} acceptFrontendRedirect: Entered`);
+async function getCredentials(req, res) {
+  logWithTimestamp("getCredentials: Entered");
 
   if (!req?.query?.jobID) {
-    console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: No job specified. Exiting.`
-    );
+    logWithTimestamp("getCredentials: No job specified. Exiting.");
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
 
   if (!job) {
-    console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: failed to retrieve Vouched job ${
-        req.query.jobID
-      }. Exiting.`
+    logWithTimestamp(
+      `getCredentials: failed to retrieve Vouched job ${req.query.jobID}. Exiting.`
     );
     return res.status(400).json({ error: "Failed to retrieve Vouched job" });
   }
 
   // Assert job complete
   if (job.status !== "completed") {
-    console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: job status is ${
-        job.status
-      }. Exiting.`
-    );
+    logWithTimestamp(`getCredentials: job status is ${job.status}. Exiting.`);
     return res.status(400).json({ error: "Job status is not completed." });
   }
 
   // Assert verifcation passed
   if (!job.result.success) {
-    console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: success is ${
-        job.result?.success
-      }. Exiting.`
-    );
+    logWithTimestamp(`getCredentials: success is ${job.result?.success}. Exiting.`);
     return res.status(400).json({ error: "Verification failed" });
   }
 
@@ -182,24 +170,20 @@ async function acceptFrontendRedirect(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Assert user hasn't registered yet
-  if (process.env.ENVIRONMENT != "dev" && process.env.ENVIRONMENT != "alpha") {
+  if (process.env.ENVIRONMENT != "dev") {
     const user = await sequelize.models.User.findOne({
       where: {
         uuid: uuid,
       },
     });
     if (user) {
-      console.log(
-        `${new Date().toISOString()} acceptFrontendRedirect: User has already registered. Exiting.`
-      );
+      logWithTimestamp(`getCredentials: User has already registered. Exiting.`);
       return res.status(400).json({ error: "User has already registered" });
     }
   }
 
-  console.log(
-    `${new Date().toISOString()} acceptFrontendRedirect: creating one in database`
-  );
   // Create new user
+  logWithTimestamp(`getCredentials: Inserting user into database`);
   await sequelize.models.User.create({
     uuid: uuid,
     jobID: req.query.jobID,
@@ -213,8 +197,8 @@ async function acceptFrontendRedirect(req, res) {
     assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters");
     birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
   } else {
-    console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: birthdate == ${birthdate}. Setting birthdate to ""`
+    logWithTimestamp(
+      `getCredentials: birthdate == ${birthdate}. Setting birthdate to ""`
     );
     birthdate = "";
   }
@@ -225,15 +209,10 @@ async function acceptFrontendRedirect(req, res) {
     birthdate: birthdate,
   };
 
-  const creds =
-    process.env.ENVIRONMENT == "dev" || process.env.ENVIRONMENT == "alpha"
-      ? dummyUserCreds
-      : realCreds;
+  const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
 
   const secret = generateSecret();
-  console.log(
-    `${new Date().toISOString()} acceptFrontendRedirect: Generating signature`
-  );
+  logWithTimestamp("getCredentials: Generating signature");
   const signature = await generateSignature(creds, secret);
 
   const completeUser = {
@@ -250,7 +229,6 @@ async function acceptFrontendRedirect(req, res) {
   return res.status(200).json({ user: completeUser });
 }
 
-export { acceptFrontendRedirect };
+export { getCredentials };
 
-// TODO: Add something in frontend that, upon error on verified/, says, "Please contact Holonym support <insert email address>"
 // TODO: Standardize error handling in this file
