@@ -163,7 +163,7 @@ async function getCredentials(req, res) {
   assert.ok(countryCode, "Unsupported country");
   let birthdate = job.result?.dob?.split("/");
   if (birthdate?.length == 3) {
-    assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters");
+    assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
     birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
   } else {
     logWithTimestamp(
@@ -200,4 +200,5 @@ async function getCredentials(req, res) {
 
 export { getCredentials };
 
-// TODO: Standardize error handling in this file
+// TODO: Standardize error handling in this file. When should we return error message to user?
+// And when should we simply log the error and return vague message to user?
