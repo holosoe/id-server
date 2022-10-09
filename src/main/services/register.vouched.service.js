@@ -49,7 +49,7 @@ function getStateAsBytes(state) {
   if (!state) {
     return "0x" + new TextEncoder("utf-8").encode("").toString().replaceAll(",", "");
   }
-  state = stateAbbreviations[state.toUpperCase()];
+  state = state.length == 2 ? state : stateAbbreviations[state.toUpperCase()];
   return "0x" + new TextEncoder("utf-8").encode(state).toString().replaceAll(",", "");
 }
 
