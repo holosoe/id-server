@@ -80,4 +80,4 @@ The following is the serialization scheme that our proofs will expect. User cred
 
 ## UUID
 
-UUID is hash(firstName + middleInitial + lastName + addressStreet1 + addressStreet2 + addressCity + addressSubdivision + addressPostalCode + birthdate)
+UUID is hash(firstName + lastName + addressPostalCode + birthdate)
