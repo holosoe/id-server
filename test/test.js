@@ -151,9 +151,15 @@ describe("getDateAsBytes", async () => {
     expect(dateAsBytes).to.deep.equal(Buffer.from([0x64, 0x00, 0x3b]));
   });
 
-  it("Should convert 2000-10-01 to 0x640112", async () => {
+  it("Should convert 2000-02-29 to 0x64003c", async () => {
+    const date = "2000-02-29";
+    const dateAsBytes = getDateAsBytes(date);
+    expect(dateAsBytes).to.deep.equal(Buffer.from([0x64, 0x00, 0x3c]));
+  });
+
+  it("Should convert 2000-10-01 to 0x640113", async () => {
     const date = "2000-10-01";
     const dateAsBytes = getDateAsBytes(date);
-    expect(dateAsBytes).to.deep.equal(Buffer.from([0x64, 0x01, 0x12]));
+    expect(dateAsBytes).to.deep.equal(Buffer.from([0x64, 0x01, 0x13]));
   });
 });

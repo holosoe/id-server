@@ -25,19 +25,23 @@ export async function sign(data) {
 /**
  * Convert date string to 3 bytes with the following structure:
  * byte 1: number of years since 1900
- * bytes 2-3: number of days since beginning of the year
+ * bytes 2-3: number of days after beginning of the given year
  * @param {string} date Must be of form yyyy-mm-dd
  */
 export function getDateAsBytes(date) {
   // Format input
   const [year, month, day] = date.split("-");
-  const yearsSince1900 = parseInt(year) - 1900;
-  const daysSinceNewYear = getDaysSinceNewYear(parseInt(month), parseInt(day));
+  const yearAsInt = parseInt(year);
+  const monthAsInt = parseInt(month);
+  const dayAsInt = parseInt(day);
+
+  const yearsSince1900 = yearAsInt - 1900;
+  const daysSinceNewYear = getDaysAfterNewYear(yearAsInt, monthAsInt, dayAsInt);
 
   // Validate input
   assert.ok(yearsSince1900 >= 0, "Invalid year");
-  assert.ok(parseInt(month) >= 0 && parseInt(month) <= 12, `Invalid month ${month}`);
-  assert.ok(parseInt(day) >= 0 && parseInt(day) <= 31, `Invalid day ${day}`);
+  assert.ok(monthAsInt >= 0 && monthAsInt <= 12, `Invalid month ${month}`);
+  assert.ok(dayAsInt >= 0 && dayAsInt <= 31, `Invalid day ${day}`);
 
   // Convert yearsSince1900 and daysSinceNewYear to bytes
   const yearsBuffer = Buffer.alloc(1, yearsSince1900);
@@ -57,7 +61,7 @@ export function getDateAsBytes(date) {
   return Buffer.concat([yearsBuffer, daysBuffer], 3);
 }
 
-export function getDaysSinceNewYear(month, day) {
+export function getDaysAfterNewYear(year, month, day) {
   let daysSinceNewYear = day;
   if (month == 1) {
     return daysSinceNewYear;
@@ -66,7 +70,7 @@ export function getDaysSinceNewYear(month, day) {
     daysSinceNewYear += 31;
   }
   if (month > 2) {
-    if (isLeapYear(new Date().getYear())) {
+    if (isLeapYear(year)) {
       daysSinceNewYear += 29;
     } else {
       daysSinceNewYear += 28;
