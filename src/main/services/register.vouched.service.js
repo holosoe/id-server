@@ -12,11 +12,12 @@ import {
   stateAbbreviations,
   countryCodeToPrime,
 } from "../utils/constants.js";
-import { assert } from "console";
+import { strict as assert } from "node:assert";
 
 const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 
 /**
+ * TODO: Test this.
  * Convert date string to 3 bytes with the following structure:
  * byte 1: number of years since 1900
  * bytes 2-3: number of days since beginning of the year
@@ -36,6 +37,10 @@ function getDateAsBytes(date) {
       Buffer.alloc(1, daysSinceNewYear - 256),
     ]);
   } else {
+    daysBuffer = Buffer.concat([
+      Buffer.from([0x00]),
+      Buffer.alloc(1, daysSinceNewYear),
+    ]);
     daysBuffer = Buffer.alloc(1, daysSinceNewYear);
   }
 
@@ -43,12 +48,11 @@ function getDateAsBytes(date) {
 }
 
 /**
- * Convert state (e.g., "California") to a hex string representation of its abbreviation.
+ * NOTE: Only handles case where countryCode == 2.
+ * Convert state (e.g., "California" or "CA") to a hex string representation of its abbreviation.
  */
-function getStateAsBytes(state) {
-  if (!state) {
-    return "0x" + new TextEncoder("utf-8").encode("").toString().replaceAll(",", "");
-  }
+function getStateAsBytes(state, countryCode) {
+  if (!state || countryCode != 2) return "0x";
   state = state.length == 2 ? state : stateAbbreviations[state.toUpperCase()];
   return "0x" + new TextEncoder("utf-8").encode(state).toString().replaceAll(",", "");
 }
@@ -72,12 +76,12 @@ function generateSecret(numBytes = 16) {
 async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.countryCode || 0);
+  countryBuffer.writeUInt16BE(creds.countryCode);
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
-    getStateAsBytes(creds.subdivision), // 2 bytes
+    getStateAsBytes(creds.subdivision, creds.countryCode), // 2 bytes
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes
   );
@@ -92,9 +96,10 @@ async function getVouchedJob(jobID) {
       headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
     });
 
-    assert(
-      resp.data.items.length == 1,
-      `There should only be one job with ID ${jobID}`
+    assert.equal(
+      resp.data.items.length,
+      1,
+      `There should be exactly one job with ID ${jobID}`
     );
     return resp.data.items[0];
   } catch (err) {
@@ -131,29 +136,41 @@ async function acceptFrontendRedirect(req, res) {
 
   if (!req?.query?.jobID) {
     console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: No job specified.`
+      `${new Date().toISOString()} acceptFrontendRedirect: No job specified. Exiting.`
     );
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
 
+  if (!job) {
+    console.log(
+      `${new Date().toISOString()} acceptFrontendRedirect: failed to retrieve Vouched job ${
+        req.query.jobID
+      }. Exiting.`
+    );
+    return res.status(400).json({ error: "Failed to retrieve Vouched job" });
+  }
+
   // Assert job complete
   if (job.status !== "completed") {
     console.log(
-      `${new Date().toISOString()} acceptFrontendRedirect: job status is ${job.status}`
+      `${new Date().toISOString()} acceptFrontendRedirect: job status is ${
+        job.status
+      }. Exiting.`
     );
-    return res.status(400).json({ error: "job status is not completed" });
+    return res.status(400).json({ error: "Job status is not completed." });
   }
 
   // Assert verifcation passed
   if (!job.result.success) {
     console.log(
-      `${new Date().toISOString()} acceptVouchedResult: success is ${
+      `${new Date().toISOString()} acceptFrontendRedirect: success is ${
         job.result?.success
-      }`
+      }. Exiting.`
     );
-    return res.status(400).json({ error: "verification failed" });
+    return res.status(400).json({ error: "Verification failed" });
   }
+
   // Get UUID
   const uuidConstituents =
     (job.result.firstName || "") +
@@ -162,12 +179,10 @@ async function acceptFrontendRedirect(req, res) {
     (job.result.idAddress.postalCode || "") +
     (job.result.dob || ""); // Date of birth
 
-  console.log("finding uuid");
   const uuid = hash(Buffer.from(uuidConstituents));
 
   // Assert user hasn't registered yet
   if (process.env.ENVIRONMENT != "dev" && process.env.ENVIRONMENT != "alpha") {
-    console.log("finding one in databse");
     const user = await sequelize.models.User.findOne({
       where: {
         uuid: uuid,
@@ -175,13 +190,15 @@ async function acceptFrontendRedirect(req, res) {
     });
     if (user) {
       console.log(
-        `${new Date().toISOString()} acceptVouchedResult: User has already registered. Exiting.`
+        `${new Date().toISOString()} acceptFrontendRedirect: User has already registered. Exiting.`
       );
       return res.status(400).json({ error: "User has already registered" });
     }
   }
 
-  console.log("creating one in database");
+  console.log(
+    `${new Date().toISOString()} acceptFrontendRedirect: creating one in database`
+  );
   // Create new user
   await sequelize.models.User.create({
     uuid: uuid,
@@ -189,12 +206,23 @@ async function acceptFrontendRedirect(req, res) {
   });
 
   // Get each credential
-  let birthdate_ = job.result?.dob.split("/");
+  const countryCode = countryCodeToPrime[job.result.country];
+  assert.ok(countryCode, "Unsupported country");
+  let birthdate = job.result?.dob?.split("/");
+  if (birthdate?.length == 3) {
+    assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters");
+    birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
+  } else {
+    console.log(
+      `${new Date().toISOString()} acceptFrontendRedirect: birthdate == ${birthdate}. Setting birthdate to ""`
+    );
+    birthdate = "";
+  }
   const realCreds = {
-    countryCode: countryCodeToPrime[job.result.country] || 0,
+    countryCode: countryCode,
     subdivision: job.result?.state || "",
     completedAt: job.updatedAt?.split("T")[0] || "",
-    birthdate: [birthdate_[2], birthdate_[0], birthdate_[1]].join("-") || "",
+    birthdate: birthdate,
   };
 
   const creds =
@@ -203,13 +231,15 @@ async function acceptFrontendRedirect(req, res) {
       : realCreds;
 
   const secret = generateSecret();
-  console.log("generating signature");
+  console.log(
+    `${new Date().toISOString()} acceptFrontendRedirect: Generating signature`
+  );
   const signature = await generateSignature(creds, secret);
 
   const completeUser = {
     // credentials from Vouched
     ...creds,
-    // server-generated secrets
+    // server-generated secret
     secret: secret,
     // server-generated signature
     signature: signature,
@@ -221,3 +251,6 @@ async function acceptFrontendRedirect(req, res) {
 }
 
 export { acceptFrontendRedirect };
+
+// TODO: Add something in frontend that, upon error on verified/, says, "Please contact Holonym support <insert email address>"
+// TODO: Standardize error handling in this file

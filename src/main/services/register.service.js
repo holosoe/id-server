@@ -52,6 +52,10 @@ function getDateAsBytes(date) {
       Buffer.alloc(1, daysSinceNewYear - 256),
     ]);
   } else {
+    daysBuffer = Buffer.concat([
+      Buffer.from([0x00]),
+      Buffer.alloc(1, daysSinceNewYear),
+    ]);
     daysBuffer = Buffer.alloc(1, daysSinceNewYear);
   }
 
