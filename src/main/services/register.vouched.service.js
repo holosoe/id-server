@@ -1,4 +1,5 @@
 import axios from "axios";
+import { strict as assert } from "node:assert";
 import { createHash, randomBytes } from "crypto";
 import express, { response } from "express";
 import ethersPkg from "ethers";
@@ -12,7 +13,6 @@ import {
   stateAbbreviations,
   countryCodeToPrime,
 } from "../utils/constants.js";
-import { strict as assert } from "node:assert";
 
 const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 

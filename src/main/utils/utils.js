@@ -1,3 +1,4 @@
+import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 
@@ -28,9 +29,15 @@ export async function sign(data) {
  * @param {string} date Must be of form yyyy-mm-dd
  */
 export function getDateAsBytes(date) {
+  // Format input
   const [year, month, day] = date.split("-");
   const yearsSince1900 = parseInt(year) - 1900;
   const daysSinceNewYear = getDaysSinceNewYear(parseInt(month), parseInt(day));
+
+  // Validate input
+  assert.ok(yearsSince1900 >= 0, "Invalid year");
+  assert.ok(parseInt(month) >= 0 && parseInt(month) <= 12, `Invalid month ${month}`);
+  assert.ok(parseInt(day) >= 0 && parseInt(day) <= 31, `Invalid day ${day}`);
 
   // Convert yearsSince1900 and daysSinceNewYear to bytes
   const yearsBuffer = Buffer.alloc(1, yearsSince1900);

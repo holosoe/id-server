@@ -5,7 +5,8 @@
     "start:alpha": "bash scripts/run.sh alpha",
     "start:prod": "bash scripts/run.sh prod",
     "build:alpha": "bash scripts/build.sh alpha",
-    "build:prod": "bash scripts/build.sh prod"
+    "build:prod": "bash scripts/build.sh prod",
+    "test": "npx mocha"
   },
   "type": "module",
   "dependencies": {
@@ -21,8 +22,10 @@
     "zokrates-js": "^1.1.2"
   },
   "devDependencies": {
+    "chai": "^4.3.6",
     "eslint": "^8.20.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-import": "^2.26.0"
+    "eslint-plugin-import": "^2.26.0",
+    "mocha": "^10.0.0"
   }
 }
