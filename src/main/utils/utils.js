@@ -21,6 +21,35 @@ export async function sign(data) {
   return signature;
 }
 
+/**
+ * Convert date string to 3 bytes with the following structure:
+ * byte 1: number of years since 1900
+ * bytes 2-3: number of days since beginning of the year
+ * @param {string} date Must be of form yyyy-mm-dd
+ */
+export function getDateAsBytes(date) {
+  const [year, month, day] = date.split("-");
+  const yearsSince1900 = parseInt(year) - 1900;
+  const daysSinceNewYear = getDaysSinceNewYear(parseInt(month), parseInt(day));
+
+  // Convert yearsSince1900 and daysSinceNewYear to bytes
+  const yearsBuffer = Buffer.alloc(1, yearsSince1900);
+  let daysBuffer;
+  if (daysSinceNewYear > 255) {
+    daysBuffer = Buffer.concat([
+      Buffer.from([0x01]),
+      Buffer.alloc(1, daysSinceNewYear - 256),
+    ]);
+  } else {
+    daysBuffer = Buffer.concat([
+      Buffer.from([0x00]),
+      Buffer.alloc(1, daysSinceNewYear),
+    ]);
+  }
+
+  return Buffer.concat([yearsBuffer, daysBuffer], 3);
+}
+
 export function getDaysSinceNewYear(month, day) {
   let daysSinceNewYear = day;
   if (month == 1) {

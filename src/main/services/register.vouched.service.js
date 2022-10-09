@@ -6,7 +6,7 @@ const { ethers } = ethersPkg;
 import config from "../../../config.js";
 import { sequelize } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
-import { sign, getDaysSinceNewYear, logWithTimestamp } from "../utils/utils.js";
+import { sign, getDateAsBytes, logWithTimestamp } from "../utils/utils.js";
 import {
   dummyUserCreds,
   stateAbbreviations,
@@ -15,37 +15,6 @@ import {
 import { strict as assert } from "node:assert";
 
 const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
-
-/**
- * TODO: Test this.
- * Convert date string to 3 bytes with the following structure:
- * byte 1: number of years since 1900
- * bytes 2-3: number of days since beginning of the year
- * @param {string} date Must be of form yyyy-mm-dd
- */
-function getDateAsBytes(date) {
-  const [year, month, day] = date.split("-");
-  const yearsSince1900 = parseInt(year) - 1900;
-  const daysSinceNewYear = getDaysSinceNewYear(parseInt(month), parseInt(day));
-
-  // Convert yearsSince1900 and daysSinceNewYear to bytes
-  const yearsBuffer = Buffer.alloc(1, yearsSince1900);
-  let daysBuffer;
-  if (daysSinceNewYear > 255) {
-    daysBuffer = Buffer.concat([
-      Buffer.from([0x01]),
-      Buffer.alloc(1, daysSinceNewYear - 256),
-    ]);
-  } else {
-    daysBuffer = Buffer.concat([
-      Buffer.from([0x00]),
-      Buffer.alloc(1, daysSinceNewYear),
-    ]);
-    daysBuffer = Buffer.alloc(1, daysSinceNewYear);
-  }
-
-  return Buffer.concat([yearsBuffer, daysBuffer], 3);
-}
 
 /**
  * NOTE: Only handles case where countryCode == 2.
