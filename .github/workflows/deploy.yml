@@ -10,7 +10,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECS_SERVICE: id-server-ecs-service-v3
+  ECS_SERVICE: id-server-ecs-service-v4
   ECS_CLUSTER: id-server-ecs-cluster
   CONTAINER_NAME: id-server
   IMAGE_NAME: holonym/id-server:latest
