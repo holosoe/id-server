@@ -40,7 +40,7 @@ const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 /**
  * Convert state (e.g., "California") to a hex string representation of its abbreviation.
  */
-function getStateAsBytes(state) {
+function getStateAsHexString(state) {
   if (!state) {
     return "0x" + new TextEncoder("utf-8").encode("").toString().replaceAll(",", "");
   }
@@ -79,7 +79,7 @@ async function generateSignature(creds, secret) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
-    getStateAsBytes(creds.subdivision), // 2 bytes
+    getStateAsHexString(creds.subdivision), // 2 bytes
     creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
     creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes
   );
