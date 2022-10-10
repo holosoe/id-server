@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import verify from "./routes/verify-vouched.js";
+import verify from "./routes/register-vouched.js";
 
 const app = express();
 

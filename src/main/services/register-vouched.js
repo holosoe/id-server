@@ -114,7 +114,7 @@ async function getCredentials(req, res) {
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
-  // TODO: Check for errors, warnings, expireDate, and success in the returned job object
+  // TODO: Check for errors, warnings, expireDate in the returned job object
 
   if (!job) {
     logWithTimestamp(
