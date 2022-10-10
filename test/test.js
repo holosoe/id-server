@@ -1,5 +1,8 @@
+import axios from "axios";
 import { expect } from "chai";
 import { getDateAsBytes } from "../src/main/utils/utils.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 describe("getDateAsBytes", async () => {
   it("Should throw error if date is in format yyyy-mm", async () => {
@@ -161,5 +164,20 @@ describe("getDateAsBytes", async () => {
     const date = "2000-10-01";
     const dateAsBytes = getDateAsBytes(date);
     expect(dateAsBytes).to.deep.equal(Buffer.from([0x64, 0x01, 0x13]));
+  });
+});
+
+describe("/registerVouched/vouchedCredentials", async () => {
+  it("Should work", async () => {
+    const resp = await axios.get(
+      "http://localhost:3000/registerVouched/vouchedCredentials?jobID=123"
+    );
+    expect(resp.data.user).to.be.an("object");
+    expect(resp.data.user.countryCode).to.be.a("number");
+    expect(resp.data.user.subdivision).to.be.a("string");
+    expect(resp.data.user.completedAt).to.be.a("string");
+    expect(resp.data.user.birthdate).to.be.a("string");
+    expect(resp.data.user.secret).to.be.a("string");
+    expect(resp.data.user.signature).to.be.a("string");
   });
 });

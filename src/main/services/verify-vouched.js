@@ -61,7 +61,10 @@ async function generateSignature(creds, secret) {
 
 async function getVouchedJob(jobID) {
   try {
-    const resp = await axios.get(`https://verify.vouched.id/api/jobs?id=${jobID}`, {
+    const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
+    const liveUrl = `https://verify.vouched.id/api/jobs?id=${jobID}`;
+    const url = process.env.TESTING == "true" ? testUrl : liveUrl;
+    const resp = await axios.get(url, {
       headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
     });
 
@@ -79,7 +82,10 @@ async function getVouchedJob(jobID) {
 
 async function redactVouchedJob(jobID) {
   try {
-    const resp = await axios.delete(`https://verify.vouched.id/api/jobs/${jobID}`, {
+    const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
+    const liveUrl = `https://verify.vouched.id/api/jobs/${jobID}`;
+    const url = process.env.TESTING == "true" ? testUrl : liveUrl;
+    const resp = await axios.delete(url, {
       headers: {
         "X-API-Key": process.env.VOUCHED_PRIVATE_KEY,
         Accept: "application/json",
@@ -108,6 +114,7 @@ async function getCredentials(req, res) {
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
+  // TODO: Check for errors, warnings, expireDate, and success in the returned job object
 
   if (!job) {
     logWithTimestamp(
