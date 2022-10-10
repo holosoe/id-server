@@ -11,9 +11,7 @@ const config = {
   THIS_URL: environment == "dev" ? "http://localhost:3000" : "https://zk.sciverse.id",
   FRONT_END_ORIGIN:
     environment == "dev" ? "http://localhost:3002" : "https://holonym.io",
-  REDIS_PORT: 6379,
   MYSQL_DB_NAME: "db",
-  PATH_TO_JSON_DB: `${__dirname}/database/db.json`,
   ZOK_DIR: `${__dirname}/src/zok`,
   ZOK_PATH_TO_CREATE_LEAF: `${__dirname}/src/zok/createLeaf.zok`,
 };

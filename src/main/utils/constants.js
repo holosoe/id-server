@@ -5,8 +5,6 @@ export const dummyUserCreds = {
   birthdate: "1950-01-01",
 };
 
-export const stdTTL = 900; // in seconds
-
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",

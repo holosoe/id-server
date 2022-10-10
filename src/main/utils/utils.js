@@ -2,17 +2,6 @@ import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 
-export function assertSignerIsAddress(message, signature, address) {
-  let signer;
-  try {
-    signer = ethers.utils.verifyMessage(message, signature);
-  } catch (err) {
-    console.log(err);
-    console.log("Malformed signature");
-  }
-  return signer.toLowerCase() == address.toLowerCase();
-}
-
 /**
  * Sign data with the server's private key
  */

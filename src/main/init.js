@@ -1,35 +1,7 @@
-import { LowSync, JSONFileSync } from "lowdb";
-import { createClient } from "redis";
 import { Sequelize, DataTypes } from "sequelize";
 import config from "../../config.js";
 import dotenv from "dotenv";
 dotenv.config();
-
-// Setup redis
-const redisConfig =
-  process.env.ENVIRONMENT == "dev"
-    ? {}
-    : {
-        socket: {
-          host: process.env.REDIS_ENDPOINT,
-          port: config.REDIS_PORT.toString(),
-          tls: true,
-        },
-      };
-console.log("Connecting to redis server using the following redis client config...");
-console.log(redisConfig);
-const redisClient = createClient(redisConfig);
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
-redisClient
-  .connect()
-  .then(() =>
-    console.log(
-      `Connected to redis server at ${
-        process.env.REDIS_ENDPOINT
-      }:${config.REDIS_PORT.toString()}`
-    )
-  )
-  .catch((err) => console.log("Redis Client Error", err));
 
 // Setup sequelize
 async function initializeSequelize() {
@@ -61,15 +33,8 @@ async function initializeSequelize() {
         type: DataTypes.BLOB,
         allowNull: false,
       },
-      // For Persona
-      inquiryId: {
-        type: DataTypes.STRING,
-      },
       // For Vouched
       jobID: {
-        type: DataTypes.STRING,
-      },
-      tempSecret: {
         type: DataTypes.STRING,
       },
     },
@@ -78,7 +43,7 @@ async function initializeSequelize() {
       updatedAt: false,
     }
   );
-  sequelize.sync({force : true});
+  sequelize.sync({ force: true });
   return sequelize;
 }
 let sequelize;
@@ -86,22 +51,4 @@ initializeSequelize().then((result) => {
   sequelize = result;
 });
 
-// Setup jsonDb
-const lowdbAdapter = new JSONFileSync(config.PATH_TO_JSON_DB);
-const jsonDb = new LowSync(lowdbAdapter);
-jsonDb.read();
-if (!jsonDb.data) {
-  jsonDb.data = {};
-  jsonDb.write();
-}
-if (!jsonDb.data.verificationCount) {
-  jsonDb.data.verificationCount = 0;
-  jsonDb.write();
-}
-if (!jsonDb.data?.lastZeroed) {
-  // The month in which verificationCount was last set to 0
-  jsonDb.data.lastZeroed = new Date().getMonth();
-  jsonDb.write();
-}
-
-export { sequelize, jsonDb, redisClient };
+export { sequelize };

@@ -1,5 +1,5 @@
 import { app } from "./index.js";
-import { sequelize, redisClient } from "./init.js";
+import { sequelize } from "./init.js";
 
 const PORT = 3000;
 const server = app.listen(PORT, (err) => {
@@ -10,8 +10,6 @@ const server = app.listen(PORT, (err) => {
 process.on("SIGTERM", async () => {
   await sequelize.close();
   console.log(`\nClosed SQL database`);
-  await redisClient.quit();
-  console.log(`Disconnected from redis database`);
   console.log(`Closing server`);
   server.close(() => {
     console.log(`Closed server`);
@@ -21,8 +19,6 @@ process.on("SIGTERM", async () => {
 process.on("SIGINT", async () => {
   await sequelize.close();
   console.log(`\nClosed SQL database`);
-  await redisClient.quit();
-  console.log(`Disconnected from redis database`);
   console.log(`Closing server`);
   server.close(() => {
     console.log(`Closed server`);
