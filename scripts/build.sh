@@ -10,7 +10,6 @@ Usage: $(basename "$0") [ENVIRONMENT]
 
 Environments:
     dev (default)
-    alpha
     prod
 "
 
@@ -21,7 +20,7 @@ if [[ -z $TARGET_ENV ]]; then
     TARGET_ENV="dev"
 fi
 
-if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "alpha" && "$TARGET_ENV" != "prod" ]]; then
+if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
     echo "$USAGE";
     exit 1;
 fi

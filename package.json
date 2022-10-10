@@ -2,9 +2,7 @@
   "scripts": {
     "start": "node src/main/server",
     "start:dev": "bash scripts/run.sh dev",
-    "start:alpha": "bash scripts/run.sh alpha",
     "start:prod": "bash scripts/run.sh prod",
-    "build:alpha": "bash scripts/build.sh alpha",
     "build:prod": "bash scripts/build.sh prod",
     "test": "npx mocha"
   },
