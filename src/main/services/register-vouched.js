@@ -64,6 +64,8 @@ async function getVouchedJob(jobID) {
     const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
     const liveUrl = `https://verify.vouched.id/api/jobs?id=${jobID}`;
     const url = process.env.TESTING == "true" ? testUrl : liveUrl;
+    console.log("url...");
+    console.log(url);
     const resp = await axios.get(url, {
       headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
     });
