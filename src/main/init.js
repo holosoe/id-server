@@ -1,19 +1,14 @@
 import { Sequelize, DataTypes } from "sequelize";
 import config from "../../config.js";
+import { mockSequelize } from "./utils/utils";
 import dotenv from "dotenv";
 dotenv.config();
 
-// TODO: Remove these logs
-console.log("config.MYSQL_DB_NAME...");
-console.log(config.MYSQL_DB_NAME);
-console.log("process.env.MYSQL_USERNAME...");
-console.log(process.env.MYSQL_USERNAME);
-console.log("process.env.MYSQL_PASSWORD...");
-console.log(process.env.MYSQL_PASSWORD);
-console.log("process.env.MYSQL_HOST...");
-console.log(process.env.MYSQL_HOST);
 // Setup sequelize
 async function initializeSequelize() {
+  // TODO: Connect to an actual MySQL server within testing environment (e.g., GitHub Actions)
+  if (process.env.TESTING == "true") return mockSequelize;
+
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
     process.env.MYSQL_USERNAME,

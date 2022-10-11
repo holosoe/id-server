@@ -102,3 +102,13 @@ function isLeapYear(year) {
 export function logWithTimestamp(message) {
   console.log(`${new Date().toISOString()} ${message}`);
 }
+
+export const mockSequelize = {
+  close: async () => await new Promise((resolve) => resolve({})),
+  models: {
+    User: {
+      findOne: async (query) => await new Promise((resolve) => resolve({})),
+      create: async (query) => await new Promise((resolve) => resolve({})),
+    },
+  },
+};

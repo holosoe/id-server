@@ -23,8 +23,5 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
-      - run: |
-          sudo /etc/init.d/mysql start
-          mysql -u ${{ env.MYSQL_USERNAME }} -p'${{ env.MYSQL_PASSWORD }}' -h ${{ env.MYSQL_HOST }} -P 3306 -e "CREATE DATABASE db"
       - run: npm ci
       - run: npm test
