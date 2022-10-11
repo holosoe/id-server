@@ -1,8 +1,12 @@
 import axios from "axios";
-import { expect } from "chai";
+import chai from "chai";
+import chaiAsPromised from "chai-as-promised";
 import { getDateAsBytes } from "../src/main/utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
+
+chai.use(chaiAsPromised);
+const expect = chai.expect;
 
 describe("getDateAsBytes", async () => {
   it("Should throw error if date is in format yyyy-mm", async () => {
@@ -168,7 +172,7 @@ describe("getDateAsBytes", async () => {
 });
 
 describe("/registerVouched/vouchedCredentials", async () => {
-  it("Should work", async () => {
+  it("Should return status 200 and an object with the correct attributes", async () => {
     const resp = await axios.get(
       "http://localhost:3000/registerVouched/vouchedCredentials?jobID=123"
     );
@@ -180,4 +184,17 @@ describe("/registerVouched/vouchedCredentials", async () => {
     expect(resp.data.user.secret).to.be.a("string");
     expect(resp.data.user.signature).to.be.a("string");
   });
+
+  it("Should return status 400 if no jobID is provided", async () => {
+    try {
+      const resp = await axios.get(
+        "http://localhost:3000/registerVouched/vouchedCredentials"
+      );
+      expect(false).to.equal(true);
+    } catch (err) {
+      expect(err?.response?.status).to.equal(400);
+    }
+  });
+
+  // TODO: Update mock Vouched server to return different the responses that affect the code's branching
 });

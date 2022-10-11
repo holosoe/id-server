@@ -14,6 +14,7 @@ import {
   countryCodeToPrime,
 } from "../utils/constants.js";
 
+const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
 const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 
 /**
@@ -65,7 +66,7 @@ async function getVouchedJob(jobID) {
     const liveUrl = `https://verify.vouched.id/api/jobs?id=${jobID}`;
     const url = process.env.TESTING == "true" ? testUrl : liveUrl;
     const resp = await axios.get(url, {
-      headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY || "test" },
+      headers: { "X-API-Key": vouchedPrivateKey },
     });
 
     assert.equal(
@@ -87,7 +88,7 @@ async function redactVouchedJob(jobID) {
     const url = process.env.TESTING == "true" ? testUrl : liveUrl;
     const resp = await axios.delete(url, {
       headers: {
-        "X-API-Key": process.env.VOUCHED_PRIVATE_KEY || "test",
+        "X-API-Key": vouchedPrivateKey,
         Accept: "application/json",
       },
     });
