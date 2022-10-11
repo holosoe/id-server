@@ -24,12 +24,12 @@ async function initializeSequelize() {
     }
   );
   try {
-    await sequelize.authenticate({
-      retry: {
-        match: "9",
-        max: 10,
-      },
-    });
+    for (let i = 0; i < 10; i++) {
+      console.log("sequelize...");
+      console.log(sequelize);
+      await sequelize.authenticate();
+      break;
+    }
     console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
   } catch (err) {
     console.error("Unable to connect to MySQL server:", err);
