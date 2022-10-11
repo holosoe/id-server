@@ -3,7 +3,7 @@ import config from "../../config.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Setup sequelize
+// TODO: Remove these logs
 console.log("config.MYSQL_DB_NAME...");
 console.log(config.MYSQL_DB_NAME);
 console.log("process.env.MYSQL_USERNAME...");
@@ -12,6 +12,7 @@ console.log("process.env.MYSQL_PASSWORD...");
 console.log(process.env.MYSQL_PASSWORD);
 console.log("process.env.MYSQL_HOST...");
 console.log(process.env.MYSQL_HOST);
+// Setup sequelize
 async function initializeSequelize() {
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
