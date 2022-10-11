@@ -23,17 +23,13 @@ async function initializeSequelize() {
       dialect: "mysql",
     }
   );
-  for (let i = 0; i < 10; i++) {
-    console.log("sequelize...");
-    console.log(sequelize);
-    try {
-      await sequelize.authenticate();
-      console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
-      break;
-    } catch (err) {
-      console.error("Unable to connect to MySQL server:", err);
-    }
+  try {
+    await sequelize.authenticate();
+    console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
+  } catch (err) {
+    console.error("Unable to connect to MySQL server:", err);
   }
+
   // Model name == "User". Table name == "Users"
   const User = sequelize.define(
     "User",
