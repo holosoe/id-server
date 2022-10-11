@@ -26,6 +26,5 @@ jobs:
       - run: |
           sudo /etc/init.d/mysql start
           mysql -u ${{ env.MYSQL_USERNAME }} -p'${{ env.MYSQL_PASSWORD }}' -h ${{ env.MYSQL_HOST }} -P 3306 -e "CREATE DATABASE db"
-          mysql -e 'SHOW DATABASES;' -uroot -proot
       - run: npm ci
       - run: PRIVATE_KEY=${{ env.PRIVATE_KEY }} ADDRESS=${{ env.ADDRESS }} ENVIRONMENT=${{ env.ENVIRONMENT }} MYSQL_USERNAME=${{ env.MYSQL_USERNAME }} MYSQL_PASSWORD=${{ env.MYSQL_PASSWORD }} MYSQL_HOST=${{ env.MYSQL_HOST }} npm test

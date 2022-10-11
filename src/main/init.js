@@ -4,6 +4,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // Setup sequelize
+console.log("config.MYSQL_DB_NAME...");
+console.log(config.MYSQL_DB_NAME);
+console.log("process.env.MYSQL_USERNAME...");
+console.log(process.env.MYSQL_USERNAME);
+console.log("process.env.MYSQL_PASSWORD...");
+console.log(process.env.MYSQL_PASSWORD);
+console.log("process.env.MYSQL_HOST...");
+console.log(process.env.MYSQL_HOST);
 async function initializeSequelize() {
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
