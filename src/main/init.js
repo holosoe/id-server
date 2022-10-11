@@ -24,7 +24,11 @@ async function initializeSequelize() {
     }
   );
   try {
-    await sequelize.authenticate();
+    await sequelize.authenticate({
+      retry: {
+        max: 10,
+      },
+    });
     console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
   } catch (err) {
     console.error("Unable to connect to MySQL server:", err);
