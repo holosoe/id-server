@@ -11,8 +11,8 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
-      PRIVATE_KEY: 0x0fd6767c661a6a144a78cce98bf64aab13c48bd7fc595f80ca7148cf58688cca # random private key
-      ADDRESS: 0xbAd15e99f9A94DbF931Ae788e10eA8350025b18a # random address
+      PRIVATE_KEY: "0x0fd6767c661a6a144a78cce98bf64aab13c48bd7fc595f80ca7148cf58688cca" # random private key
+      ADDRESS: "0xbAd15e99f9A94DbF931Ae788e10eA8350025b18a" # random address
       ENVIRONMENT: dev
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: root
