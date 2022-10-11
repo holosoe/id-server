@@ -1,6 +1,6 @@
 import { Sequelize, DataTypes } from "sequelize";
 import config from "../../config.js";
-import { mockSequelize } from "./utils/utils";
+import { mockSequelize } from "./utils/utils.j";
 import dotenv from "dotenv";
 dotenv.config();
 
