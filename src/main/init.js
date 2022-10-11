@@ -26,6 +26,7 @@ async function initializeSequelize() {
   try {
     await sequelize.authenticate({
       retry: {
+        match: "9",
         max: 10,
       },
     });
