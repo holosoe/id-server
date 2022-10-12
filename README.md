@@ -2,61 +2,88 @@ Backend for Holonym's ID service.
 
 ## Requirements
 
-Option 1:
-
-- Docker ^20.10.18
-
-Option 2:
-
 - Node.js ^18.9.0
 - ZoKrates ^8.0.2
 - MySQL ^8.0.30
+- Docker ^20.10.18
 
 (Other versions might work too, but the above versions were the ones used for testing.)
 
-## Environment Setup
+## Local environment setup
 
-Copy .env.example to .env, and then set the environment variables.
+### 1. Node.js
+
+Use [nvm](https://github.com/nvm-sh/nvm#about) to use the correct Node version.
+
+1.  Follow the instructions in the [nvm repo](https://github.com/nvm-sh/nvm#about) to install nvm.
+2.  Install and use the correct version of Node.
+
+        nvm install
+
+### 2. Install Node dependencies
+
+        npm install
+
+### 3. Install ZoKrates
+
+Follow [the instructions in the ZoKrates "Getting Started" page](https://zokrates.github.io/gettingstarted.html) to install ZoKrates.
+
+### 4. Environment variables
+
+#### Create .env files
+
+Copy .env.example to .env.
 
         cp .env.example .env
 
-You will need to create a .env.docker.ENVIRONMENT file for every environment you want to run. For a local development environment, create the following file.
+You also need a .env.docker.dev file.
 
         cp .env .env.docker.dev
 
-Then set `ENVIRONMENT` to `dev`.
+(We use a separate .env.docker.\<ENVIRONMENT> file for every environment we run.)
 
-Use the correct node version. For nvm users...
+#### Set environment variables
 
-        nvm use
+All environment variables are already correctly set in the .env.example file for local development.
 
-## Database Setup
+You must change the following variables.
 
-### MySQL Server
+        VOUCHED_PUBLIC_KEY
+        VOUCHED_PRIVATE_KEY
+        VOUCHED_SANDBOX_PUBLIC_KEY
+        VOUCHED_SANDBOX_PRIVATE_KEY
 
-Start the MySQL server.
+### 5. Database setup
 
-Create a database. Set `MYSQL_DB_NAME` in config.js to the name of the database hosted on the MySQL server (default: 'db').
+Run the MySQL Docker container.
+
+        docker run --name id-server-mysql --network host -e MYSQL_ROOT_PASSWORD=root -d mysql
+
+Connect to the server, and create a database called 'db'.
+
+        $ mysql -uroot -proot -h localhost -P 3306 --protocol=tcp
+
+        mysql> CREATE DATABASE db;
 
 ## Run
 
-Ensure the database servers are running and environment variables are set.
-
-**With Docker**
+Ensure that the MySQL server is running and that environment variables are set.
 
 Open a terminal window, navigate to the directory of this repo, and run:
 
         npm run start:dev
 
-**Without docker**
+## Test
 
-        npm run start
+We use mocha for tests. Run tests with:
 
-## Serialization of Credentials
+        npm test
+
+## Serialization of credentials
 
 At the end of the verification process, the user is given their credentials to store in their browser.
 
-The following is the serialization scheme that our proofs will expect. User credentials must be converted to bytes on the frontend prior to proof generation.
+The following is the serialization scheme that our proofs will expect.
 
 | Field         | Number of bytes | Additional info                                                                                           |
 | ------------- | --------------- | --------------------------------------------------------------------------------------------------------- |
