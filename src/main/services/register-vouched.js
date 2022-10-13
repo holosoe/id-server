@@ -115,7 +115,8 @@ async function getCredentials(req, res) {
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
-  // TODO: Check for errors, warnings, expireDate in the returned job object
+
+  // TODO: Check job.result.ipFraudCheck ?
 
   if (!job) {
     logWithTimestamp(
@@ -123,17 +124,29 @@ async function getCredentials(req, res) {
     );
     return res.status(400).json({ error: "Failed to retrieve Vouched job" });
   }
-
   // Assert job complete
   if (job.status !== "completed") {
     logWithTimestamp(`getCredentials: job status is ${job.status}. Exiting.`);
     return res.status(400).json({ error: "Job status is not completed." });
   }
-
   // Assert verifcation passed
   if (!job.result.success) {
     logWithTimestamp(`getCredentials: success is ${job.result?.success}. Exiting.`);
     return res.status(400).json({ error: "Verification failed" });
+  }
+  // Assert ID not expired
+  if (new Date(job.result.expireDate) < new Date()) {
+    logWithTimestamp(
+      `getCredentials: ID expired. expireDate is ${job.result.expireDate}. Exiting.`
+    );
+    return res.status(400).json({ error: "ID expired" });
+  }
+  // Assert no errors in job
+  if (job.result.errors?.length > 0) {
+    logWithTimestamp(`getCredentials: errors in job (see next log). Exiting.`);
+    console.log(job.result.errors);
+    const errorNames = job.result.errors.map((err) => err.type);
+    return res.status(400).json({ error: `Errors in job: ${errorNames}` });
   }
 
   // Get UUID
@@ -208,5 +221,5 @@ async function getCredentials(req, res) {
 
 export { getCredentials };
 
-// TODO: Standardize error handling in this file. When should we return error message to user?
-// And when should we simply log the error and return vague message to user?
+// TODO: Perform as many checks as needed.
+// TODO: Redact job on error
