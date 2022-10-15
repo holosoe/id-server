@@ -206,12 +206,10 @@ async function getCredentials(req, res) {
   const signature = await generateSignature(creds, secret);
 
   const completeUser = {
-    // credentials from Vouched
-    ...creds,
-    // server-generated secret
-    secret: secret,
-    // server-generated signature
-    signature: signature,
+    ...creds, // credentials from Vouched
+    secret: secret, // server-generated secret
+    signature: signature, // server-generated signature
+    issuer: process.env.ADDRESS,
   };
 
   await redactVouchedJob(req.query.jobID);
