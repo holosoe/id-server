@@ -167,8 +167,12 @@ async function getCredentials(req, res) {
       },
     });
     if (user) {
-      logWithTimestamp(`getCredentials: User has already registered. Exiting.`);
-      return res.status(400).json({ error: "User has already registered" });
+      logWithTimestamp(
+        `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. UUID: ${uuid}` });
     }
   }
 
