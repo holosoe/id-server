@@ -4,6 +4,7 @@ import { createHash, randomBytes } from "crypto";
 import express, { response } from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+import { getStateAsHexString } from "@holonym-foundation/utils";
 import config from "../../../config.js";
 import { sequelize } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
@@ -16,16 +17,6 @@ import {
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
 const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
-
-/**
- * NOTE: Only handles case where countryCode == 2.
- * Convert state (e.g., "California" or "CA") to a hex string representation of its abbreviation.
- */
-function getStateAsHexString(state, countryCode) {
-  if (!state || countryCode != 2) return "0x";
-  state = state.length == 2 ? state : stateAbbreviations[state.toUpperCase()];
-  return "0x" + new TextEncoder("utf-8").encode(state).toString().replaceAll(",", "");
-}
 
 function hash(data) {
   // returns Buffer
