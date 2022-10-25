@@ -1,3 +1,4 @@
+import mysql from "mysql2/promise";
 import { Sequelize, DataTypes } from "sequelize";
 import config from "../../config.js";
 import { mockSequelize } from "./utils/utils.js";
@@ -8,6 +9,15 @@ dotenv.config();
 async function initializeSequelize() {
   // TODO: Connect to an actual MySQL server within testing environment (e.g., GitHub Actions)
   if (process.env.TESTING == "true") return mockSequelize;
+
+  // Create database if it doesn't exist
+  const connection = await mysql.createConnection({
+    user: process.env.MYSQL_USERNAME,
+    password: process.env.MYSQL_PASSWORD,
+  });
+  console.log(`Executing: CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
+  await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
+  await connection.end();
 
   const sequelize = new Sequelize(
     config.MYSQL_DB_NAME,
@@ -48,7 +58,7 @@ async function initializeSequelize() {
       updatedAt: false,
     }
   );
-  sequelize.sync({ force: true });
+  sequelize.sync();
   return sequelize;
 }
 let sequelize;

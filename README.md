@@ -59,12 +59,6 @@ Run the MySQL Docker container.
 
         docker run --name id-server-mysql --network host -e MYSQL_ROOT_PASSWORD=root -d mysql
 
-Connect to the server, and create a database called 'db'.
-
-        $ mysql -uroot -proot -h localhost -P 3306 --protocol=tcp
-
-        mysql> CREATE DATABASE db;
-
 ## Run
 
 Ensure that the MySQL server is running and that environment variables are set.
