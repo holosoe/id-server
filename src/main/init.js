@@ -14,6 +14,8 @@ async function initializeSequelize() {
   const connection = await mysql.createConnection({
     user: process.env.MYSQL_USERNAME,
     password: process.env.MYSQL_PASSWORD,
+    host: process.env.MYSQL_HOST,
+    port: 3306,
   });
   console.log(`Executing: CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
   await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
