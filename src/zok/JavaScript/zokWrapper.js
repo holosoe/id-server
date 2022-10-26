@@ -42,10 +42,10 @@ async function createLeaf(
 ) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  assertLengthIs(countryCode, 2, "countryCode");
+  // assertLengthIs(countryCode, 2, "countryCode");
   // assertLengthIs(subdivision, 2, "subdivision");
-  assertLengthIs(completedAt, 3, "completedAt");
-  assertLengthIs(birthdate, 3, "birthdate");
+  // assertLengthIs(completedAt, 3, "completedAt");
+  // assertLengthIs(birthdate, 3, "birthdate");
   try {
     const createLeafPath = config.ZOK_PATH_TO_CREATE_LEAF;
     const zokratesProvider = await initialize();

@@ -4,19 +4,16 @@ import { createHash, randomBytes } from "crypto";
 import express, { response } from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-import { getStateAsHexString } from "@holonym-foundation/utils";
 import config from "../../../config.js";
 import { sequelize } from "../init.js";
 import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
-import { sign, getDateAsBytes, logWithTimestamp } from "../utils/utils.js";
+import { sign, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import {
   dummyUserCreds,
-  stateAbbreviations,
   countryCodeToPrime,
 } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
-const threeZeroedBytes = Buffer.concat([Buffer.from("")], 3);
 
 function hash(data) {
   // returns Buffer
@@ -38,16 +35,16 @@ async function generateSignature(creds, secret) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.countryCode);
+
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
-    getStateAsHexString(creds.subdivision, creds.countryCode), // 2 bytes
-    creds.completedAt ? getDateAsBytes(creds.completedAt) : threeZeroedBytes,
-    creds.birthdate ? getDateAsBytes(creds.birthdate) : threeZeroedBytes
+    "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    getDateAsInt(creds.completedAt),
+    getDateAsInt(creds.birthdate)
   );
   const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
-  console.log("signing leaf");
   return await sign(leaf);
 }
 
@@ -73,6 +70,7 @@ async function getVouchedJob(jobID) {
 }
 
 async function redactVouchedJob(jobID) {
+  // return;
   try {
     const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
     const liveUrl = `https://verify.vouched.id/api/jobs/${jobID}`;
