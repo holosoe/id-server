@@ -1,13 +1,10 @@
 import axios from "axios";
 import { strict as assert } from "node:assert";
 import { createHash, randomBytes } from "crypto";
-import express, { response } from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-import config from "../../../config.js";
 import { sequelize } from "../init.js";
-import { createLeaf } from "../../zok/JavaScript/zokWrapper.js";
-import { sign, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
+import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import {
   dummyUserCreds,
   countryCodeToPrime,
