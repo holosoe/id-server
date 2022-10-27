@@ -21,4 +21,9 @@ app.get("/", (req, res) => {
   res.status(200).json({ routes: routes });
 });
 
+app.get("/aws-health", (req, res) => {
+  console.log(`${new Date().toISOString()} GET /aws-health`);
+  return res.status(200).json({ healthy: true });
+});
+
 export { app };
