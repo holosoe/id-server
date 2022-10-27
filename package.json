@@ -10,6 +10,7 @@
   "dependencies": {
     "@holonym-foundation/utils": "^1.0.1",
     "axios": "^0.27.2",
+    "big-integer": "^1.6.51",
     "circomlibjs-old": "npm:circomlibjs@^0.0.8",
     "cors": "^2.8.5",
     "dotenv": "^16.0.1",
