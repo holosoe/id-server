@@ -15,11 +15,12 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECS_SERVICE: id-server-ecs-service-v4
-  ECS_CLUSTER: id-server-ecs-cluster
+  ECS_SERVICE: prod-id-server-ecs-service
+  ECS_CLUSTER: prod-id-server-ecs-cluster
+  TASK_DEF_NAME: prod-id-server-task-def
   CONTAINER_NAME: id-server
   IMAGE_NAME: holonym/id-server:latest
-  IAM_ROLE: arn:aws:iam::130486779388:role/github-actions-role
+  IAM_ROLE: arn:aws:iam::187023981994:role/github-actions-role
 
 jobs:
   # Build Docker image and push to Docker Hub
@@ -60,7 +61,7 @@ jobs:
 
       - name: Download ECS task definition
         run: |
-          aws ecs describe-task-definition --task-definition id-server-task --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition $TASK_DEF_NAME --query taskDefinition > task-definition.json
 
       - name: Fill in the new image ID in the Amazon ECS task definition
         id: task-def
