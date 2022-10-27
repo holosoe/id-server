@@ -12,17 +12,14 @@ export async function sign(data) {
 }
 
 /**
- * Convert date string to 3 bytes with the following structure:
- * byte 1: number of years since 1900
- * bytes 2-3: number of days after beginning of the given year
  * @param {string} date Must be of form yyyy-mm-dd
  */
 export function getDateAsInt(date) {
   // Format input
   const [year, month, day] = date.split("-");
   assert.ok(year && month && day); // Make sure Y M D all given
-  assert.ok((year >= 1900) && (year <= 2099)); // Make sure date is in a reasonable range, otherwise it's likely the input was malformatted and it's best to be safe by stopping -- we can always allow more edge cases if needed later 
-  const time = (new Date(date)).getTime() / 1000 + 2208988800 // 2208988800000 is 70 year offset; Unix timestamps below 1970 are negative and we want to allow from approximately 1900. 
+  assert.ok(year >= 1900 && year <= 2099); // Make sure date is in a reasonable range, otherwise it's likely the input was malformatted and it's best to be safe by stopping -- we can always allow more edge cases if needed later
+  const time = new Date(date).getTime() / 1000 + 2208988800; // 2208988800000 is 70 year offset; Unix timestamps below 1970 are negative and we want to allow from approximately 1900.
   assert.ok(!isNaN(time));
   return time;
 }
@@ -40,8 +37,6 @@ export const mockSequelize = {
     },
   },
 };
-
-
 
 function assertLengthIs(item, length, itemName) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
@@ -75,9 +70,11 @@ export async function createLeaf(
   // assertLengthIs(completedAt, 3, "completedAt");
   // assertLengthIs(birthdate, 3, "birthdate");
   try {
-   return poseidon([
-      issuer, secret, countryCode, subdivision, completedAt, birthdate
-    ].map((x) => ethers.BigNumber.from(x).toString()));
+    return poseidon(
+      [issuer, secret, countryCode, subdivision, completedAt, birthdate].map((x) =>
+        ethers.BigNumber.from(x).toString()
+      )
+    );
   } catch (err) {
     console.log(err);
   }
