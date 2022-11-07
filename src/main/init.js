@@ -1,9 +1,12 @@
 import mysql from "mysql2/promise";
 import { Sequelize, DataTypes } from "sequelize";
+import mongoose from "mongoose";
 import config from "../../config.js";
 import { mockSequelize } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
+
+const { Schema } = mongoose;
 
 // Setup sequelize
 async function initializeSequelize() {
@@ -63,9 +66,26 @@ async function initializeSequelize() {
   sequelize.sync();
   return sequelize;
 }
+
+async function initializeMongoDb() {
+  await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR);
+  const userCredentialsSchema = new Schema({
+    address: String,
+    encryptedCredentials: String,
+    encryptedSymmetricKey: String,
+  });
+  const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
+  return UserCredentials;
+}
+
 let sequelize;
 initializeSequelize().then((result) => {
   sequelize = result;
 });
 
-export { sequelize };
+let UserCredentials;
+initializeMongoDb().then((result) => {
+  UserCredentials = result;
+});
+
+export { sequelize, mongoose, UserCredentials };

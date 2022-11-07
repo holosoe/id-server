@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import verify from "./routes/register-vouched.js";
+import credentials from "./routes/credentials.js";
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use("/registerVouched", verify);
+app.use("/credentials", credentials);
 
 app.get("/", (req, res) => {
   console.log(`${new Date().toISOString()} GET /`);
