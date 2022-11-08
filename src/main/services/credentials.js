@@ -11,9 +11,9 @@ import { logWithTimestamp } from "../utils/utils.js";
 async function getCredentials(req, res) {
   logWithTimestamp("GET /credentials: Entered");
 
-  const address = req?.body?.address;
-  const signature = req?.body?.signature;
-  const signedMessage = req?.body?.signedMessage;
+  const address = req?.query?.address;
+  const signature = req?.query?.signature;
+  const signedMessage = req?.query?.signedMessage;
 
   // Require that args are present
   if (!address) {
@@ -44,10 +44,15 @@ async function getCredentials(req, res) {
   }
 
   // Signature check
-  const signer = ethers.utils.verifyMessage(signedMessage, signature);
-  if (signer.toLowerCase() != address.toLowerCase()) {
-    logWithTimestamp("GET /credentials: signer != address. Exiting.");
-    return res.status(400).json({ error: "signer != address" });
+  try {
+    const signer = ethers.utils.verifyMessage(signedMessage, signature);
+    if (signer.toLowerCase() != address.toLowerCase()) {
+      logWithTimestamp("GET /credentials: signer != address. Exiting.");
+      return res.status(400).json({ error: "signer != address" });
+    }
+  } catch (err) {
+    logWithTimestamp("GET /credentials: failed to verify signature. Exiting.");
+    return res.status(400).json({ error: "failed to verify signature" });
   }
 
   try {
@@ -74,15 +79,9 @@ async function getCredentials(req, res) {
 async function postCredentials(req, res) {
   logWithTimestamp("POST /credentials: Entered");
 
-  // Required params:
-  // - address: String,
-  // - encryptedCredentials: String,
-  // - encryptedSymmetricKey: String,
-  // - signature (proving user owns address)
-  // TODO: Write GET /nonce endpoint that returns nonce that user can sign. OR use Lit's AuthSig
-
   const address = req?.body?.address;
   const signature = req?.body?.signature;
+  const signedMessage = req?.body?.signedMessage;
   const encryptedCredentials = req?.body?.encryptedCredentials;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
 
@@ -94,6 +93,10 @@ async function postCredentials(req, res) {
   if (!signature) {
     logWithTimestamp("POST /credentials: No signature specified. Exiting.");
     return res.status(400).json({ error: "No signature specified" });
+  }
+  if (!signedMessage) {
+    logWithTimestamp("POST /credentials: No signedMessage specified. Exiting.");
+    return res.status(400).json({ error: "No signedMessage specified" });
   }
   if (!encryptedCredentials) {
     logWithTimestamp("POST /credentials: No encryptedCredentials specified. Exiting.");
@@ -115,6 +118,10 @@ async function postCredentials(req, res) {
     logWithTimestamp("POST /credentials: signature isn't a string. Exiting.");
     return res.status(400).json({ error: "signature isn't a string" });
   }
+  if (typeof signedMessage != "string") {
+    logWithTimestamp("POST /credentials: signedMessage isn't a string. Exiting.");
+    return res.status(400).json({ error: "signedMessage isn't a string" });
+  }
   if (typeof encryptedCredentials != "string") {
     logWithTimestamp(
       "POST /credentials: encryptedCredentials isn't a string. Exiting."
@@ -129,18 +136,28 @@ async function postCredentials(req, res) {
   }
 
   // Signature check
-  const signer = ethers.utils.verifyMessage(signedMessage, signature);
-  if (signer.toLowerCase() != address.toLowerCase()) {
-    logWithTimestamp("GET /credentials: signer != address. Exiting.");
-    return res.status(400).json({ error: "signer != address" });
+  try {
+    const signer = ethers.utils.verifyMessage(signedMessage, signature);
+    if (signer.toLowerCase() != address.toLowerCase()) {
+      logWithTimestamp("POST /credentials: signer != address. Exiting.");
+      return res.status(400).json({ error: "signer != address" });
+    }
+  } catch (err) {
+    logWithTimestamp("POST /credentials: failed to verify signature. Exiting.");
+    return res.status(400).json({ error: "failed to verify signature" });
   }
 
-  // TODO: Test that the following lines actually save a document to the database
-  const userCredentialsDoc = new UserCredentials({
-    address,
-    encryptedCredentials,
-    encryptedSymmetricKey,
-  });
+  let userCredentialsDoc = await UserCredentials.findOne({ address: address }).exec();
+  if (userCredentialsDoc) {
+    userCredentialsDoc.encryptedCredentials = encryptedCredentials;
+    userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
+  } else {
+    userCredentialsDoc = new UserCredentials({
+      address,
+      encryptedCredentials,
+      encryptedSymmetricKey,
+    });
+  }
   try {
     await userCredentialsDoc.save();
   } catch (err) {
