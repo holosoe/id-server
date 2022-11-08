@@ -2,6 +2,7 @@ import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
+
 /**
  * Sign data with the server's private key
  */
