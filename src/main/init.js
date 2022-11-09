@@ -68,7 +68,12 @@ async function initializeSequelize() {
 }
 
 async function initializeMongoDb() {
-  await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR);
+  try {
+    await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR);
+    console.log("Connected to MongoDB database.");
+  } catch (err) {
+    console.log("Unable to connect to MongoDB database", err);
+  }
   const userCredentialsSchema = new Schema({
     address: String,
     // NOTE: encryptedCredentials is stored as base64 string. Convert back to blob with LitJsSdk.base64StringToBlob()
