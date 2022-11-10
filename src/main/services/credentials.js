@@ -11,52 +11,19 @@ import { logWithTimestamp } from "../utils/utils.js";
 async function getCredentials(req, res) {
   logWithTimestamp("GET /credentials: Entered");
 
-  const address = req?.query?.address;
-  const signature = req?.query?.signature;
-  const signedMessage = req?.query?.signedMessage;
+  const sigDigest = req?.query?.sigDigest;
 
-  // Require that args are present
-  if (!address) {
-    logWithTimestamp("GET /credentials: No address specified. Exiting.");
-    return res.status(400).json({ error: "No address specified" });
+  if (!sigDigest) {
+    logWithTimestamp("GET /credentials: No sigDigest specified. Exiting.");
+    return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (!signature) {
-    logWithTimestamp("GET /credentials: No signature specified. Exiting.");
-    return res.status(400).json({ error: "No signature specified" });
-  }
-  if (!signedMessage) {
-    logWithTimestamp("GET /credentials: No signedMessage specified. Exiting.");
-    return res.status(400).json({ error: "No signedMessage specified" });
-  }
-
-  // Require that args are correct types
-  if (typeof address != "string") {
-    logWithTimestamp("GET /credentials: address isn't a string. Exiting.");
-    return res.status(400).json({ error: "address isn't a string" });
-  }
-  if (typeof signature != "string") {
-    logWithTimestamp("GET /credentials: signature isn't a string. Exiting.");
-    return res.status(400).json({ error: "signature isn't a string" });
-  }
-  if (typeof signedMessage != "string") {
-    logWithTimestamp("GET /credentials: signedMessage isn't a string. Exiting.");
-    return res.status(400).json({ error: "signedMessage isn't a string" });
-  }
-
-  // Signature check
-  try {
-    const signer = ethers.utils.verifyMessage(signedMessage, signature);
-    if (signer.toLowerCase() != address.toLowerCase()) {
-      logWithTimestamp("GET /credentials: signer != address. Exiting.");
-      return res.status(400).json({ error: "signer != address" });
-    }
-  } catch (err) {
-    logWithTimestamp("GET /credentials: failed to verify signature. Exiting.");
-    return res.status(400).json({ error: "failed to verify signature" });
+  if (typeof sigDigest != "string") {
+    logWithTimestamp("GET /credentials: sigDigest isn't a string. Exiting.");
+    return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
   try {
-    const userCreds = await UserCredentials.findOne({ address: address }).exec();
+    const userCreds = await UserCredentials.findOne({ sigDigest: sigDigest }).exec();
     return res.status(200).json(userCreds);
   } catch (err) {
     console.log(err);
@@ -79,24 +46,20 @@ async function getCredentials(req, res) {
 async function postCredentials(req, res) {
   logWithTimestamp("POST /credentials: Entered");
 
-  const address = req?.body?.address;
-  const signature = req?.body?.signature;
-  const signedMessage = req?.body?.signedMessage;
+  const apiKey = req?.body?.apiKey;
+  const sigDigest = req?.body?.sigDigest;
   const encryptedCredentials = req?.body?.encryptedCredentials;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
 
+  if (apiKey != process.env.THIS_API_KEY) {
+    logWithTimestamp("POST /credentials: Incorrect apiKey. Exiting.");
+    return res.status(400).json({ error: "Incorrect apiKey" });
+  }
+
   // Require that args are present
-  if (!address) {
-    logWithTimestamp("POST /credentials: No address specified. Exiting.");
-    return res.status(400).json({ error: "No address specified" });
-  }
-  if (!signature) {
-    logWithTimestamp("POST /credentials: No signature specified. Exiting.");
-    return res.status(400).json({ error: "No signature specified" });
-  }
-  if (!signedMessage) {
-    logWithTimestamp("POST /credentials: No signedMessage specified. Exiting.");
-    return res.status(400).json({ error: "No signedMessage specified" });
+  if (!sigDigest) {
+    logWithTimestamp("POST /credentials: No sigDigest specified. Exiting.");
+    return res.status(400).json({ error: "No sigDigest specified" });
   }
   if (!encryptedCredentials) {
     logWithTimestamp("POST /credentials: No encryptedCredentials specified. Exiting.");
@@ -110,17 +73,9 @@ async function postCredentials(req, res) {
   }
 
   // Require that args are correct types
-  if (typeof address != "string") {
-    logWithTimestamp("POST /credentials: address isn't a string. Exiting.");
-    return res.status(400).json({ error: "address isn't a string" });
-  }
-  if (typeof signature != "string") {
-    logWithTimestamp("POST /credentials: signature isn't a string. Exiting.");
-    return res.status(400).json({ error: "signature isn't a string" });
-  }
-  if (typeof signedMessage != "string") {
-    logWithTimestamp("POST /credentials: signedMessage isn't a string. Exiting.");
-    return res.status(400).json({ error: "signedMessage isn't a string" });
+  if (typeof sigDigest != "string") {
+    logWithTimestamp("POST /credentials: sigDigest isn't a string. Exiting.");
+    return res.status(400).json({ error: "sigDigest isn't a string" });
   }
   if (typeof encryptedCredentials != "string") {
     logWithTimestamp(
@@ -135,25 +90,15 @@ async function postCredentials(req, res) {
     return res.status(400).json({ error: "encryptedSymmetricKey isn't a string" });
   }
 
-  // Signature check
-  try {
-    const signer = ethers.utils.verifyMessage(signedMessage, signature);
-    if (signer.toLowerCase() != address.toLowerCase()) {
-      logWithTimestamp("POST /credentials: signer != address. Exiting.");
-      return res.status(400).json({ error: "signer != address" });
-    }
-  } catch (err) {
-    logWithTimestamp("POST /credentials: failed to verify signature. Exiting.");
-    return res.status(400).json({ error: "failed to verify signature" });
-  }
-
-  let userCredentialsDoc = await UserCredentials.findOne({ address: address }).exec();
+  let userCredentialsDoc = await UserCredentials.findOne({
+    sigDigest: sigDigest,
+  }).exec();
   if (userCredentialsDoc) {
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
   } else {
     userCredentialsDoc = new UserCredentials({
-      address,
+      sigDigest,
       encryptedCredentials,
       encryptedSymmetricKey,
     });

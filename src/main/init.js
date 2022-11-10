@@ -75,8 +75,8 @@ async function initializeMongoDb() {
     console.log("Unable to connect to MongoDB database", err);
   }
   const userCredentialsSchema = new Schema({
-    address: String,
-    // NOTE: encryptedCredentials is stored as base64 string. Convert back to blob with LitJsSdk.base64StringToBlob()
+    sigDigest: String,
+    // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
     encryptedCredentials: String,
     encryptedSymmetricKey: String,
   });

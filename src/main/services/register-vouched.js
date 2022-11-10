@@ -5,10 +5,7 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { sequelize } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
-import {
-  dummyUserCreds,
-  countryCodeToPrime,
-} from "../utils/constants.js";
+import { dummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
 
@@ -202,7 +199,8 @@ async function getCredentials(req, res) {
     issuer: process.env.ADDRESS,
   };
 
-  await redactVouchedJob(req.query.jobID);
+  // TODO: UNCOMMENT
+  // await redactVouchedJob(req.query.jobID);
 
   return res.status(200).json({ user: completeUser });
 }
