@@ -90,9 +90,20 @@ async function postCredentials(req, res) {
     return res.status(400).json({ error: "encryptedSymmetricKey isn't a string" });
   }
 
-  let userCredentialsDoc = await UserCredentials.findOne({
-    sigDigest: sigDigest,
-  }).exec();
+  let userCredentialsDoc;
+  try {
+    userCredentialsDoc = await UserCredentials.findOne({
+      sigDigest: sigDigest,
+    }).exec();
+  } catch (err) {
+    console.log(err);
+    console.log(
+      "POST /credentials: An error occurred while retrieving credenials. Exiting"
+    );
+    return res.status(400).json({
+      error: "An error occurred while retrieving credentials. Please try again.",
+    });
+  }
   if (userCredentialsDoc) {
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;

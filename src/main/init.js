@@ -73,6 +73,7 @@ async function initializeMongoDb() {
     console.log("Connected to MongoDB database.");
   } catch (err) {
     console.log("Unable to connect to MongoDB database", err);
+    return;
   }
   const userCredentialsSchema = new Schema({
     sigDigest: String,
