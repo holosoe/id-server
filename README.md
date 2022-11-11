@@ -59,6 +59,10 @@ Run the MySQL Docker container.
 
         docker run --name id-server-mysql --network host -e MYSQL_ROOT_PASSWORD=root -d mysql
 
+Run the MongoDB Docker container.
+
+        docker run -d --network host --name id-server-mongo -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password mongo
+
 ## Run
 
 Ensure that the MySQL server is running and that environment variables are set.
