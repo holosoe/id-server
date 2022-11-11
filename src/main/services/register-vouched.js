@@ -199,8 +199,7 @@ async function getCredentials(req, res) {
     issuer: process.env.ADDRESS,
   };
 
-  // TODO: UNCOMMENT
-  // await redactVouchedJob(req.query.jobID);
+  await redactVouchedJob(req.query.jobID);
 
   return res.status(200).json({ user: completeUser });
 }
