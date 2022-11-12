@@ -102,8 +102,10 @@ async function initializeMongoDb() {
             `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
             data.Body,
             (writeFileErr) => {
-              if (writeFileErr) reject(writeFileErr);
-              resolve();
+              if (writeFileErr) {
+                console.log("encountered error writing cert to disk,", writeFileErr);
+                reject(writeFileErr);
+              }
               console.log(
                 `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
               );
@@ -113,6 +115,7 @@ async function initializeMongoDb() {
               );
               console.log(data.Body);
               // END DEBUGGING BLOCK
+              resolve();
             }
           );
         });
@@ -136,7 +139,10 @@ async function initializeMongoDb() {
   }
 
   try {
-    await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR);
+    const mongoConfig = {
+      ssl: process.env.ENVIRONMENT != "dev",
+    };
+    await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR, mongoConfig);
     console.log("Connected to MongoDB database.");
   } catch (err) {
     console.log("Unable to connect to MongoDB database", err);
