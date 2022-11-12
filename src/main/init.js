@@ -78,6 +78,11 @@ async function initializeMongoDb() {
     // Download certificate used for TLS connection
     try {
       const s3 = new AWS.S3({ region: "us-east-1" });
+      console.log("process.env.BUCKET_NAME:", process.env.BUCKET_NAME);
+      console.log(
+        "process.env.MONGO_CERT_FILE_NAME:",
+        process.env.MONGO_CERT_FILE_NAME
+      );
       const params = {
         Bucket: process.env.BUCKET_NAME,
         Key: process.env.MONGO_CERT_FILE_NAME,
