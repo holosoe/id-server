@@ -98,10 +98,16 @@ async function initializeMongoDb() {
         s3.getObject(params, (getObjectErr, data) => {
           if (getObjectErr) reject(getObjectErr);
           console.log("writing cert to disk...");
+          console.log("data.Body...");
+          console.log(data.Body);
+          console.log();
+          console.log("`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`...");
+          console.log(`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`);
           fs.writeFile(
             `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
             data.Body,
             (writeFileErr) => {
+              console.log("entered writeFile callback");
               if (writeFileErr) {
                 console.log("encountered error writing cert to disk,", writeFileErr);
                 reject(writeFileErr);
