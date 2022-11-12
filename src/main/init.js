@@ -95,36 +95,46 @@ async function initializeMongoDb() {
       };
       await new Promise((resolve, reject) => {
         console.log("downloading cert...");
-        s3.getObject(params, (getObjectErr, data) => {
-          if (getObjectErr) reject(getObjectErr);
-          console.log("writing cert to disk...");
-          console.log("data.Body...");
-          console.log(data.Body);
-          console.log();
-          console.log("`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`...");
-          console.log(`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`);
-          fs.writeFile(
-            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
-            data.Body,
-            (writeFileErr) => {
-              console.log("entered writeFile callback");
-              if (writeFileErr) {
-                console.log("encountered error writing cert to disk,", writeFileErr);
-                reject(writeFileErr);
-              }
-              console.log(
-                `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
-              );
-              // DEBUGGING BLOCK
-              console.log(
-                `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
-              );
-              console.log(data.Body);
-              // END DEBUGGING BLOCK
-              resolve();
-            }
-          );
-        });
+        // s3.getObject(params, (getObjectErr, data) => {
+        //   if (getObjectErr) reject(getObjectErr);
+        //   console.log("writing cert to disk...");
+        //   console.log("data.Body...");
+        //   console.log(data.Body);
+        //   console.log();
+        //   console.log("`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`...");
+        //   console.log(`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`);
+        //   fs.writeFile(
+        //     `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
+        //     data.Body,
+        //     (writeFileErr) => {
+        //       console.log("entered writeFile callback");
+        //       if (writeFileErr) {
+        //         console.log("encountered error writing cert to disk,", writeFileErr);
+        //         reject(writeFileErr);
+        //       }
+        //       console.log(
+        //         `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
+        //       );
+        //       // DEBUGGING BLOCK
+        //       console.log(
+        //         `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
+        //       );
+        //       console.log(data.Body);
+        //       // END DEBUGGING BLOCK
+        //       resolve();
+        //     }
+        //   );
+        // });
+        console.log("loading cert from s3...");
+        const readStream = s3.getObject(params).createReadStream();
+        console.log("creating write stream...");
+        const writeStream = fs.createWriteStream(
+          `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`
+        );
+        console.log("writing to disk...");
+        readStream.pipe(writeStream);
+        console.log("file written");
+        resolve();
       });
 
       // DEBUGGING BLOCK
