@@ -1,10 +1,16 @@
+import fs from "fs";
+import { dirname } from "path";
+import { fileURLToPath } from "url";
 import mysql from "mysql2/promise";
 import { Sequelize, DataTypes } from "sequelize";
 import mongoose from "mongoose";
+import * as AWS from "@aws-sdk/client-s3";
 import config from "../../config.js";
 import { mockSequelize } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
 
@@ -68,6 +74,53 @@ async function initializeSequelize() {
 }
 
 async function initializeMongoDb() {
+  if (process.env.ENVIRONMENT != "dev") {
+    // Download certificate used for TLS connection
+    try {
+      const s3 = new AWS.S3({ region: "us-east-1" });
+      const params = {
+        Bucket: process.env.BUCKET_NAME,
+        Key: process.env.MONGO_CERT_FILE_NAME,
+      };
+      await new Promise((resolve, reject) => {
+        s3.getObject(params, (err, data) => {
+          if (err) reject(err);
+          fs.writeFile(
+            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
+            data.Body,
+            (err) => {
+              if (err) reject(err);
+              resolve();
+            }
+          );
+          console.log(
+            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
+          );
+          // DEBUGGING BLOCK
+          console.log(
+            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
+          );
+          console.log(data.Body);
+          // END DEBUGGING BLOCK
+        });
+      });
+
+      // DEBUGGING BLOCK
+      const filesInDir = await new Promise((resolve, reject) => {
+        fs.readdir(__dirname, (err, files) => {
+          if (err) reject();
+          resolve(files);
+        });
+      });
+      console.log(`files in ${__dirname}...`);
+      console.log(filesInDir);
+      // END DEBUGGING BOCK
+    } catch (err) {
+      console.log("Unable to download certificate for MongoDB connection.", err);
+      return;
+    }
+  }
+
   try {
     await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR);
     console.log("Connected to MongoDB database.");

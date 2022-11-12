@@ -10,3 +10,5 @@ src/zok/abi.json
 out.wtns
 
 lobby3-id-server.json
+
+rds-combined-ca-bundle.pem
