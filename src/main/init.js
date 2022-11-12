@@ -94,29 +94,32 @@ async function initializeMongoDb() {
         Key: process.env.MONGO_CERT_FILE_NAME,
       };
       await new Promise((resolve, reject) => {
-        s3.getObject(params, (err, data) => {
-          if (err) reject(err);
+        console.log("downloading cert...");
+        s3.getObject(params, (getObjectErr, data) => {
+          if (getObjectErr) reject(getObjectErr);
+          console.log("writing cert to disk...");
           fs.writeFile(
             `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
             data.Body,
-            (err) => {
-              if (err) reject(err);
+            (writeFileErr) => {
+              if (writeFileErr) reject(writeFileErr);
               resolve();
+              console.log(
+                `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
+              );
+              // DEBUGGING BLOCK
+              console.log(
+                `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
+              );
+              console.log(data.Body);
+              // END DEBUGGING BLOCK
             }
           );
-          console.log(
-            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
-          );
-          // DEBUGGING BLOCK
-          console.log(
-            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
-          );
-          console.log(data.Body);
-          // END DEBUGGING BLOCK
         });
       });
 
       // DEBUGGING BLOCK
+      console.log(`reading files in ${__dirname}`);
       const filesInDir = await new Promise((resolve, reject) => {
         fs.readdir(__dirname, (err, files) => {
           if (err) reject();
