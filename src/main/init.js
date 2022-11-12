@@ -85,11 +85,6 @@ async function initializeMongoDb() {
         },
         region: "us-east-1",
       });
-      console.log("process.env.BUCKET_NAME:", process.env.BUCKET_NAME);
-      console.log(
-        "process.env.MONGO_CERT_FILE_NAME:",
-        process.env.MONGO_CERT_FILE_NAME
-      );
       const params = {
         Bucket: process.env.BUCKET_NAME,
         Key: process.env.MONGO_CERT_FILE_NAME,
@@ -108,8 +103,10 @@ async function initializeMongoDb() {
               console.log("entered writeFile cb");
               if (writeFileErr) {
                 console.log("writeFileErr...", writeFileErr);
+                resolve();
               }
               console.log("successfully wrote file to disk");
+              resolve();
             }
           );
           console.log("`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`...");
@@ -139,15 +136,15 @@ async function initializeMongoDb() {
       });
 
       // DEBUGGING BLOCK
-      console.log(`reading files in ${__dirname}`);
-      const filesInDir = await new Promise((resolve, reject) => {
-        fs.readdir(__dirname, (err, files) => {
-          if (err) reject();
-          resolve(files);
-        });
-      });
-      console.log(`files in ${__dirname}...`);
-      console.log(filesInDir);
+      // console.log(`reading files in ${__dirname}`);
+      // const filesInDir = await new Promise((resolve, reject) => {
+      //   fs.readdir(__dirname, (err, files) => {
+      //     if (err) reject();
+      //     resolve(files);
+      //   });
+      // });
+      // console.log(`files in ${__dirname}...`);
+      // console.log(filesInDir);
       // END DEBUGGING BOCK
     } catch (err) {
       console.log("Unable to download certificate for MongoDB connection.", err);
