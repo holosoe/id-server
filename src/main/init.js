@@ -154,9 +154,12 @@ async function initializeMongoDb() {
 
   try {
     const client = new MongoClient(process.env.MONGO_DB_CONNECTION_STR);
-    await client.connect();
+    await client.connect({
+      tlsCAFile: `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
+    });
     console.log("connected to MongoDB using mongodb npm package");
   } catch (err) {
+    console.log("failed to connected to MongoDB using mongodb npm package");
     console.log(err);
   }
 
