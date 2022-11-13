@@ -1,7 +1,6 @@
 import fs from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import { MongoClient } from "mongodb";
 import mysql from "mysql2/promise";
 import { Sequelize, DataTypes } from "sequelize";
 import mongoose from "mongoose";
@@ -150,17 +149,6 @@ async function initializeMongoDb() {
       console.log("Unable to download certificate for MongoDB connection.", err);
       return;
     }
-  }
-
-  try {
-    const client = new MongoClient(process.env.MONGO_DB_CONNECTION_STR);
-    await client.connect({
-      tlsCAFile: `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
-    });
-    console.log("connected to MongoDB using mongodb npm package");
-  } catch (err) {
-    console.log("failed to connected to MongoDB using mongodb npm package");
-    console.log(err);
   }
 
   try {
