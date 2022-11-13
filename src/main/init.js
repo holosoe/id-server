@@ -6,7 +6,7 @@ import { Sequelize, DataTypes } from "sequelize";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import config from "../../config.js";
-import { mockSequelize } from "./utils/utils.js";
+import { mockSequelize, logWithTimestamp } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -89,10 +89,9 @@ async function initializeMongoDb() {
         Key: process.env.MONGO_CERT_FILE_NAME,
       };
       await new Promise((resolve, reject) => {
-        console.log("downloading cert...");
+        logWithTimestamp("Downloading certificate for MongoDB connection...");
         s3.getObject(params, async (getObjectErr, data) => {
           if (getObjectErr) reject(getObjectErr);
-          console.log("writing cert to disk...");
           const bodyStream = data.Body;
           const bodyAsString = await bodyStream.transformToString();
           fs.writeFile(
@@ -104,47 +103,14 @@ async function initializeMongoDb() {
                 console.log("writeFileErr...", writeFileErr);
                 resolve();
               }
-              console.log("successfully wrote file to disk");
+              logWithTimestamp(
+                "Successfully downloaded certificate for MongoDB connection"
+              );
               resolve();
             }
           );
-          console.log("`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`...");
-          console.log(`${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`);
-          // fs.writeFile(
-          //   `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
-          //   data.Body,
-          //   (writeFileErr) => {
-          //     console.log("entered writeFile callback");
-          //     if (writeFileErr) {
-          //       console.log("encountered error writing cert to disk,", writeFileErr);
-          //       reject(writeFileErr);
-          //     }
-          //     console.log(
-          //       `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} has been created`
-          //     );
-          //     // DEBUGGING BLOCK
-          //     console.log(
-          //       `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME} contents...`
-          //     );
-          //     console.log(data.Body);
-          //     // END DEBUGGING BLOCK
-          //     resolve();
-          //   }
-          // );
         });
       });
-
-      // DEBUGGING BLOCK
-      // console.log(`reading files in ${__dirname}`);
-      // const filesInDir = await new Promise((resolve, reject) => {
-      //   fs.readdir(__dirname, (err, files) => {
-      //     if (err) reject();
-      //     resolve(files);
-      //   });
-      // });
-      // console.log(`files in ${__dirname}...`);
-      // console.log(filesInDir);
-      // END DEBUGGING BOCK
     } catch (err) {
       console.log("Unable to download certificate for MongoDB connection.", err);
       return;
