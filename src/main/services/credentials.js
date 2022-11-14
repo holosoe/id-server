@@ -24,6 +24,9 @@ async function getCredentials(req, res) {
 
   try {
     const userCreds = await UserCredentials.findOne({ sigDigest: sigDigest }).exec();
+    logWithTimestamp(
+      `GET /credentials: Found user in database with sigDigest ${sigDigest}.`
+    );
     return res.status(200).json(userCreds);
   } catch (err) {
     console.log(err);
@@ -115,6 +118,9 @@ async function postCredentials(req, res) {
     });
   }
   try {
+    logWithTimestamp(
+      `POST /credentials: Saving user to database with sigDigest ${sigDigest}.`
+    );
     await userCredentialsDoc.save();
   } catch (err) {
     console.log(err);

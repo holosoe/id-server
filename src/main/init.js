@@ -119,14 +119,14 @@ async function initializeMongoDb() {
 
   try {
     const mongoConfig = {
-      ssl: process.env.ENVIRONMENT != "dev",
-      sslValidate: process.env.ENVIRONMENT != "dev",
-      sslCA:
-        process.env.ENVIRONMENT != "dev"
-          ? `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`
-          : "",
+      ssl: true,
+      sslValidate: true,
+      sslCA: `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
     };
-    await mongoose.connect(process.env.MONGO_DB_CONNECTION_STR, mongoConfig);
+    await mongoose.connect(
+      process.env.MONGO_DB_CONNECTION_STR,
+      process.env.ENVIRONMENT == "dev" ? {} : mongoConfig
+    );
     console.log("Connected to MongoDB database.");
   } catch (err) {
     console.log("Unable to connect to MongoDB database.", err);
