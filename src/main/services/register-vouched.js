@@ -201,6 +201,8 @@ async function getCredentials(req, res) {
 
   await redactVouchedJob(req.query.jobID);
 
+  logWithTimestamp(`getCredentials: Returning user whose UUID is ${uuid}`);
+
   return res.status(200).json({ user: completeUser });
 }
 
