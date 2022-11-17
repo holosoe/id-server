@@ -4,7 +4,6 @@ Backend for Holonym's ID service.
 
 - Node.js ^18.9.0
 - ZoKrates ^8.0.2
-- MySQL ^8.0.30
 - Docker ^20.10.18
 
 (Other versions might work too, but the above versions were the ones used for testing.)
@@ -55,17 +54,13 @@ You must change the following variables.
 
 ### 5. Database setup
 
-Run the MySQL Docker container.
-
-        docker run --name id-server-mysql --network host -e MYSQL_ROOT_PASSWORD=root -d mysql
-
 Run the MongoDB Docker container.
 
         docker run -d --network host --name id-server-mongo -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password mongo
 
 ## Run
 
-Ensure that the MySQL server is running and that environment variables are set.
+Ensure that the MongoDB database is running and that environment variables are set.
 
 Open a terminal window, navigate to the directory of this repo, and run:
 

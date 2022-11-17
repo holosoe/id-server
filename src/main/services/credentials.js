@@ -135,3 +135,52 @@ async function postCredentials(req, res) {
 }
 
 export { getCredentials, postCredentials };
+
+// let userVerifications = {
+//   vouched: {
+//     uuid,
+//     jobID,
+//   },
+//   phoneNumber: {
+//     uuid,
+//     jobID,
+//   },
+// };
+
+// let userCredentials = {
+//   encryptedCredentials,
+//   encryptedSymmetricKey,
+// };
+
+// // schemas for unencrypted user data. All data that leaves the client should first be encrypted with Lit
+// // let userLeaves = [
+// //   {
+// //     actualLeafHash,
+// //     txHash,
+// //     blockNumber,
+// //     chainId,
+// //   },
+// // ];
+// let userLeaves = {
+//   encryptedLeaves,
+//   encryptedSymmetricKey,
+// };
+
+// // let userProofs = [
+// //   {
+// //     address: "0x123...", // address that submitted the proof tx. We need to record this because the tx could be from an address other than the address the user uses to encrypt their credentials, and we should show the user which addresses are associated with which proofs. Otherwise, managing information leakage would be more difficult
+// //     usResident: true,
+// //   },
+// //   {
+// //     address: "0x456...",
+// //     uniqueForActionId: 123456789,
+// //   },
+// //   {
+// //     address: "0x123...",
+// //     birthdateIsBefore: ["01-01-2000", "01-01-1990"],
+// //   },
+// // ];
+// let userProofs = {
+//   encryptedProofs,
+//   encryptedSymmetricKey,
+// };

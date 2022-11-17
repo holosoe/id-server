@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+import { mongoose } from "./init.js";
 import { app } from "./index.js";
-import { sequelize } from "./init.js";
 
 const PORT = 3000;
 const server = app.listen(PORT, (err) => {
@@ -9,13 +8,6 @@ const server = app.listen(PORT, (err) => {
 });
 
 async function terminate() {
-  try {
-    await sequelize.close();
-    console.log(`\nClosed SQL database connection`);
-  } catch (err) {
-    console.log(err);
-    console.log("An error occurred while attempting to close the SQL connection");
-  }
   try {
     await mongoose.connection.close();
     console.log(`Closed MongoDB database connection`);

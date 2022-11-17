@@ -1,7 +1,7 @@
 import axios from "axios";
 import express from "express";
 import { app } from "../src/main/index.js";
-import { sequelize } from "../src/main/init.js";
+import { UserVerifications } from "../src/main/init.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -115,8 +115,6 @@ export async function mochaGlobalTeardown() {
     process.exit(0);
   });
 
-  await sequelize.close();
-  console.log(`Closed SQL database connection`);
   console.log(`Closing ID server`);
   this.idServer.close(() => {
     console.log(`Closed ID server`);
