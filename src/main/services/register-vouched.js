@@ -3,6 +3,7 @@ import { strict as assert } from "node:assert";
 import { createHash, randomBytes } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+import { poseidon } from "circomlibjs-old";
 import { sequelize } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import { dummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
@@ -34,7 +35,8 @@ async function generateSignature(creds, secret) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
-    "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    // "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    creds.nameSubdivisionZip,
     getDateAsInt(creds.completedAt),
     getDateAsInt(creds.birthdate)
   );
@@ -179,9 +181,33 @@ async function getCredentials(req, res) {
     );
     birthdate = "";
   }
+  const firstNameStr = job.result?.firstName ? job.result.firstName : "";
+  const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
+  const middleNameStr = job.result?.middleName ? job.result.middleName : "";
+  const middleNameBuffer = middleNameStr
+    ? Buffer.from(middleNameStr)
+    : Buffer.alloc(1);
+  const lastNameStr = job.result?.lastName ? job.result.lastName : "";
+  const lastName = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
+  const subdivisionStr = job.result?.state ? job.result.state : "";
+  const subdivisionBuffer = subdivisionStr
+    ? Buffer.from(subdivisionStr)
+    : Buffer.alloc(1);
+  const zipCode = Number(
+    job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
+  );
+  const nameSubZip = ethers.BigNumber.from(
+    poseidon(
+      [firstNameBuffer, middleNameBuffer, lastName, subdivisionBuffer, zipCode].map(
+        (x) => ethers.BigNumber.from(x).toString()
+      )
+    )
+  ).toString();
+
   const realCreds = {
     countryCode: countryCode,
-    subdivision: job.result?.state || "",
+    // subdivision: job.result?.state || "",
+    nameSubdivisionZip: nameSubZip,
     completedAt: job.updatedAt?.split("T")[0] || "",
     birthdate: birthdate,
   };

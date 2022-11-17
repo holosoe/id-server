@@ -21,9 +21,9 @@ const u32 ARITY=5; // Quinary tree
 // }
 
 
-def main(field address, field countryCode, private field subdivision, private field completedAt, private field birthdate, private field nullifier, field root, private field leaf, private field[DEPTH][ARITY] path, private u32[DEPTH] indices) {
+def main(field address, field countryCode, private field nameSubdivisionZip, private field completedAt, private field birthdate, private field nullifier, field root, private field leaf, private field[DEPTH][ARITY] path, private u32[DEPTH] indices) {
     // assert valid preimage
-    field[6] preimage = [address, nullifier, countryCode, subdivision, completedAt, birthdate];
+    field[6] preimage = [address, nullifier, countryCode, nameSubdivisionZip, completedAt, birthdate];
     assert(poseidon(preimage) == leaf);
     
     // Merkle proof

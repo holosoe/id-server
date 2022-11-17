@@ -50,7 +50,7 @@ function assertLengthIs(item, length, itemName) {
  * @param {Buffer} issuer Blockchain address of account that issued the credentials
  * @param {Buffer} secret 16 bytes
  * @param {Buffer} countryCode
- * @param {string} subdivision hex string representation
+ * @param {BigInt} nameSubdivisionZip
  * @param {Buffer} completedAt
  * @param {Buffer} birthdate
  * @returns {Promise<string>} Poseidon hash (of input data) right-shifted 3 bits. Represented as
@@ -60,20 +60,16 @@ export async function createLeaf(
   issuer,
   secret,
   countryCode,
-  subdivision,
+  nameSubdivisionZip,
   completedAt,
   birthdate
 ) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
-  // assertLengthIs(countryCode, 2, "countryCode");
-  // assertLengthIs(subdivision, 2, "subdivision");
-  // assertLengthIs(completedAt, 3, "completedAt");
-  // assertLengthIs(birthdate, 3, "birthdate");
   try {
     return poseidon(
-      [issuer, secret, countryCode, subdivision, completedAt, birthdate].map((x) =>
-        ethers.BigNumber.from(x).toString()
+      [issuer, secret, countryCode, nameSubdivisionZip, completedAt, birthdate].map(
+        (x) => ethers.BigNumber.from(x).toString()
       )
     );
   } catch (err) {

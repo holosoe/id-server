@@ -76,9 +76,8 @@ describe("getDateAsInt", async () => {
   it("Should convert 1970-01-02 to 2208988800+86400", async () => {
     const date = "1970-01-02";
     const dateAsInt = getDateAsInt(date);
-    expect(dateAsInt).to.equal(2208988800+86400);
+    expect(dateAsInt).to.equal(2208988800 + 86400);
   });
-
 
   it("Should convert 2099-12-31 to 6311347200", async () => {
     const date = "2099-12-31";
@@ -92,9 +91,10 @@ describe("/registerVouched/vouchedCredentials", async () => {
     const resp = await axios.get(
       "http://localhost:3000/registerVouched/vouchedCredentials?jobID=123"
     );
+    console.log("received resp");
     expect(resp.data.user).to.be.an("object");
     expect(resp.data.user.countryCode).to.be.a("number");
-    expect(resp.data.user.subdivision).to.be.a("string");
+    expect(resp.data.user.nameSubdivisionZip).to.be.a("string");
     expect(resp.data.user.completedAt).to.be.a("string");
     expect(resp.data.user.birthdate).to.be.a("string");
     expect(resp.data.user.secret).to.be.a("string");
