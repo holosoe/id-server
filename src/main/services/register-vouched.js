@@ -53,6 +53,79 @@ function validateJob(job, jobID) {
   return { success: true };
 }
 
+function extractCreds(job) {
+  const countryCode = countryCodeToPrime[job.result.country];
+  assert.ok(countryCode, "Unsupported country");
+  let birthdate = job.result?.dob?.split("/");
+  if (birthdate?.length == 3) {
+    assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
+    birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
+  } else {
+    logWithTimestamp(
+      `getCredentials: birthdate == ${birthdate}. Setting birthdate to ""`
+    );
+    birthdate = "";
+  }
+  const firstNameStr = job.result?.firstName ? job.result.firstName : "";
+  const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
+  const middleNameStr = job.result?.middleName ? job.result.middleName : "";
+  const middleNameBuffer = middleNameStr
+    ? Buffer.from(middleNameStr)
+    : Buffer.alloc(1);
+  const lastNameStr = job.result?.lastName ? job.result.lastName : "";
+  const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
+  const subdivisionStr = job.result?.state ? job.result.state : "";
+  const subdivisionBuffer = subdivisionStr
+    ? Buffer.from(subdivisionStr)
+    : Buffer.alloc(1);
+  const streetNumber = Number(
+    job.result?.idAddress?.streetNumber ? job.result?.idAddress?.streetNumber : 0
+  );
+  const streetNameStr = job.result?.idAddress?.street
+    ? job.result?.idAddress?.street
+    : "";
+  const streetNameBuffer = streetNameStr
+    ? Buffer.from(streetNameStr)
+    : Buffer.alloc(1);
+  const streetUnit = Number(
+    job.result?.idAddress?.unit ? job.result?.idAddress?.unit : 0
+  );
+  const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
+    ethers.BigNumber.from(x).toString()
+  );
+  const streetHash = ethers.BigNumber.from(poseidon(addrArgs));
+  const zipCode = Number(
+    job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
+  );
+  const nameSubAddrZipStreetArgs = [
+    firstNameBuffer,
+    middleNameBuffer,
+    lastNameBuffer,
+    subdivisionBuffer,
+    zipCode,
+    streetHash,
+  ].map((x) => ethers.BigNumber.from(x).toString());
+  const nameSubAddrZipStreet = ethers.BigNumber.from(
+    poseidon(nameSubAddrZipStreetArgs)
+  ).toString();
+  return {
+    countryCode: countryCode,
+    // Server signs nameSubdivisionZipStreetHash, not the inputs to that hash
+    nameSubdivisionZipStreetHash: nameSubAddrZipStreet,
+    firstName: firstNameStr,
+    middleName: middleNameStr,
+    lastName: lastNameStr,
+    subdivision: subdivisionStr,
+    zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
+    streetHash: streetHash,
+    streetNumber: streetNumber,
+    streetName: streetNameStr,
+    streetUnit: streetUnit,
+    completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
+    birthdate: birthdate,
+  };
+}
+
 /**
  * With the server's blockchain account, sign the given credentials.
  * @param creds Object containing a full string representation of every credential.
@@ -185,86 +258,11 @@ async function getCredentials(req, res) {
   const dbResponse = await saveUserToDb(uuid, req.query.jobID);
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
-  // Get each credential
-  // TODO: Once merged with dev or main, put the block into a function, extractCreds(job)
-  const countryCode = countryCodeToPrime[job.result.country];
-  assert.ok(countryCode, "Unsupported country");
-  let birthdate = job.result?.dob?.split("/");
-  if (birthdate?.length == 3) {
-    assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
-    birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
-  } else {
-    logWithTimestamp(
-      `getCredentials: birthdate == ${birthdate}. Setting birthdate to ""`
-    );
-    birthdate = "";
-  }
-  const firstNameStr = job.result?.firstName ? job.result.firstName : "";
-  const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
-  const middleNameStr = job.result?.middleName ? job.result.middleName : "";
-  const middleNameBuffer = middleNameStr
-    ? Buffer.from(middleNameStr)
-    : Buffer.alloc(1);
-  const lastNameStr = job.result?.lastName ? job.result.lastName : "";
-  const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
-  const subdivisionStr = job.result?.state ? job.result.state : "";
-  const subdivisionBuffer = subdivisionStr
-    ? Buffer.from(subdivisionStr)
-    : Buffer.alloc(1);
-  const streetNumber = Number(
-    job.result?.idAddress?.streetNumber ? job.result?.idAddress?.streetNumber : 0
-  );
-  const streetNameStr = job.result?.idAddress?.street
-    ? job.result?.idAddress?.street
-    : "";
-  const streetNameBuffer = streetNameStr
-    ? Buffer.from(streetNameStr)
-    : Buffer.alloc(1);
-  const streetUnit = Number(
-    job.result?.idAddress?.unit ? job.result?.idAddress?.unit : 0
-  );
-  const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
-    ethers.BigNumber.from(x).toString()
-  );
-  const streetHash = ethers.BigNumber.from(poseidon(addrArgs));
-  const zipCode = Number(
-    job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
-  );
-  const nameSubAddrZipStreetArgs = [
-    firstNameBuffer,
-    middleNameBuffer,
-    lastNameBuffer,
-    subdivisionBuffer,
-    zipCode,
-    streetHash,
-  ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameSubAddrZipStreet = ethers.BigNumber.from(
-    poseidon(nameSubAddrZipStreetArgs)
-  ).toString();
-
-  const realCreds = {
-    countryCode: countryCode,
-    // Server signs nameSubdivisionZipStreetHash, not the inputs to that hash
-    nameSubdivisionZipStreetHash: nameSubAddrZipStreet,
-    firstName: firstNameStr,
-    middleName: middleNameStr,
-    lastName: lastNameStr,
-    subdivision: subdivisionStr,
-    zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
-    streetHash: streetHash,
-    streetNumber: streetNumber,
-    streetName: streetNameStr,
-    streetUnit: streetUnit,
-    completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
-    birthdate: birthdate,
-  };
-
+  const realCreds = extractCreds(job);
   const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
-
   const secret = generateSecret();
   logWithTimestamp("getCredentials: Generating signature");
   const signature = await generateSignature(creds, secret);
-
   const completeUser = {
     ...creds, // credentials from Vouched
     secret: secret, // server-generated secret
