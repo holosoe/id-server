@@ -1,5 +1,5 @@
 import "hashes/poseidon/poseidon" as poseidon;
 
-def main(field address, private field secret, private field countryCode, private field nameSubdivisionZipHash, private field completedAt, private field birthdate) -> field {
-    return poseidon([address, secret, countryCode, nameSubdivisionZipHash, completedAt, birthdate]);
+def main(field address, private field secret, private field countryCode, private field nameSubdivisionZipStreetHash, private field completedAt, private field birthdate) -> field {
+    return poseidon([address, secret, countryCode, nameSubdivisionZipStreetHash, completedAt, birthdate]);
 }

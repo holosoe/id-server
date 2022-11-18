@@ -36,7 +36,7 @@ async function generateSignature(creds, secret) {
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
     // "0x" + Buffer.from(creds.subdivision).toString("hex"),
-    creds.nameSubdivisionZipHash,
+    creds.nameSubdivisionZipStreetHash,
     getDateAsInt(creds.completedAt),
     getDateAsInt(creds.birthdate)
   );
@@ -169,6 +169,7 @@ async function getCredentials(req, res) {
   });
 
   // Get each credential
+  // TODO: Once merged with dev or main, put the block into a function, extractCreds(job)
   const countryCode = countryCodeToPrime[job.result.country];
   assert.ok(countryCode, "Unsupported country");
   let birthdate = job.result?.dob?.split("/");
@@ -193,27 +194,50 @@ async function getCredentials(req, res) {
   const subdivisionBuffer = subdivisionStr
     ? Buffer.from(subdivisionStr)
     : Buffer.alloc(1);
+  const streetNumber = Number(
+    job.result?.idAddress?.streetNumber ? job.result?.idAddress?.streetNumber : 0
+  );
+  const streetNameStr = job.result?.idAddress?.street
+    ? job.result?.idAddress?.street
+    : "";
+  const streetNameBuffer = streetNameStr
+    ? Buffer.from(streetNameStr)
+    : Buffer.alloc(1);
+  const streetUnit = Number(
+    job.result?.idAddress?.unit ? job.result?.idAddress?.unit : 0
+  );
+  const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
+    ethers.BigNumber.from(x).toString()
+  );
+  const streetHash = ethers.BigNumber.from(poseidon(addrArgs));
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
-  const poseidonArgs = [
+  const nameSubAddrZipStreetArgs = [
     firstNameBuffer,
     middleNameBuffer,
     lastNameBuffer,
     subdivisionBuffer,
     zipCode,
+    streetHash,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameSubZip = ethers.BigNumber.from(poseidon(poseidonArgs)).toString();
+  const nameSubAddrZipStreet = ethers.BigNumber.from(
+    poseidon(nameSubAddrZipStreetArgs)
+  ).toString();
 
   const realCreds = {
     countryCode: countryCode,
-    // Server signs nameSubdivisionZipHash, not the actual name, subdivision, or zip
-    nameSubdivisionZipHash: nameSubZip,
+    // Server signs nameSubdivisionZipStreetHash, not the inputs to that hash
+    nameSubdivisionZipStreetHash: nameSubAddrZipStreet,
     firstName: firstNameStr,
     middleName: middleNameStr,
     lastName: lastNameStr,
     subdivision: subdivisionStr,
     zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
+    streetHash: streetHash,
+    streetNumber: streetNumber,
+    streetName: streetNameStr,
+    streetUnit: streetUnit,
     completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
     birthdate: birthdate,
   };
