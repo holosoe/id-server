@@ -29,16 +29,6 @@ export function logWithTimestamp(message) {
   console.log(`${new Date().toISOString()} ${message}`);
 }
 
-export const mockSequelize = {
-  close: async () => await new Promise((resolve) => resolve({})),
-  models: {
-    User: {
-      findOne: async (query) => await new Promise((resolve) => resolve({})),
-      create: async (query) => await new Promise((resolve) => resolve({})),
-    },
-  },
-};
-
 function assertLengthIs(item, length, itemName) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
   assert.equal(item.length, length, errMsg);

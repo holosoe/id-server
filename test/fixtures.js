@@ -1,7 +1,7 @@
 import axios from "axios";
 import express from "express";
 import { app } from "../src/main/index.js";
-import { sequelize } from "../src/main/init.js";
+import { UserVerifications } from "../src/main/init.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -101,25 +101,23 @@ function runMockVouchedServer() {
   return server;
 }
 
-export async function mochaGlobalSetup() {
-  this.vouchedServer = runMockVouchedServer();
-  this.idServer = runIdServer();
-  console.log();
-  await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for database to connection
-}
+// export async function mochaGlobalSetup() {
+//   this.vouchedServer = runMockVouchedServer();
+//   this.idServer = runIdServer();
+//   console.log();
+//   await new Promise((resolve) => setTimeout(resolve, 1000)); // wait for database to connection
+// }
 
-export async function mochaGlobalTeardown() {
-  console.log(`Closing Vouched server`);
-  this.vouchedServer.close(() => {
-    console.log(`Closed Vouched server`);
-    process.exit(0);
-  });
+// export async function mochaGlobalTeardown() {
+//   console.log(`Closing Vouched server`);
+//   this.vouchedServer.close(() => {
+//     console.log(`Closed Vouched server`);
+//     process.exit(0);
+//   });
 
-  await sequelize.close();
-  console.log(`Closed SQL database connection`);
-  console.log(`Closing ID server`);
-  this.idServer.close(() => {
-    console.log(`Closed ID server`);
-    process.exit(0);
-  });
-}
+//   console.log(`Closing ID server`);
+//   this.idServer.close(() => {
+//     console.log(`Closed ID server`);
+//     process.exit(0);
+//   });
+// }

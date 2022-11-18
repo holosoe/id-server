@@ -1,77 +1,16 @@
 import fs from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
-import mysql from "mysql2/promise";
-import { Sequelize, DataTypes } from "sequelize";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import config from "../../config.js";
-import { mockSequelize, logWithTimestamp } from "./utils/utils.js";
+import { logWithTimestamp } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
-
-// Setup sequelize
-async function initializeSequelize() {
-  // TODO: Connect to an actual MySQL server within testing environment (e.g., GitHub Actions)
-  if (process.env.TESTING == "true") return mockSequelize;
-
-  // Create database if it doesn't exist
-  const connection = await mysql.createConnection({
-    user: process.env.MYSQL_USERNAME,
-    password: process.env.MYSQL_PASSWORD,
-    host: process.env.MYSQL_HOST,
-    port: 3306,
-  });
-  console.log(`Executing: CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
-  await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.MYSQL_DB_NAME};`);
-  await connection.end();
-
-  const sequelize = new Sequelize(
-    config.MYSQL_DB_NAME,
-    process.env.MYSQL_USERNAME,
-    process.env.MYSQL_PASSWORD,
-    {
-      host: process.env.MYSQL_HOST,
-      dialect: "mysql",
-    }
-  );
-  try {
-    await sequelize.authenticate();
-    console.log(`Connected to MySQL server at ${process.env.MYSQL_HOST}.`);
-  } catch (err) {
-    console.error("Unable to connect to MySQL server:", err);
-  }
-
-  // Model name == "User". Table name == "Users"
-  const User = sequelize.define(
-    "User",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-      },
-      uuid: {
-        type: DataTypes.BLOB,
-        allowNull: false,
-      },
-      // For Vouched
-      jobID: {
-        type: DataTypes.STRING,
-      },
-    },
-    {
-      createdAt: false,
-      updatedAt: false,
-    }
-  );
-  sequelize.sync();
-  return sequelize;
-}
 
 async function initializeMongoDb() {
   if (process.env.ENVIRONMENT != "dev") {
@@ -132,6 +71,16 @@ async function initializeMongoDb() {
     console.log("Unable to connect to MongoDB database.", err);
     return;
   }
+  const userVerificationsSchema = new Schema({
+    vouched: {
+      uuid: String,
+      jobID: String,
+    },
+  });
+  const UserVerifications = mongoose.model(
+    "UserVerifications",
+    userVerificationsSchema
+  );
   const userCredentialsSchema = new Schema({
     sigDigest: String,
     // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
@@ -139,17 +88,17 @@ async function initializeMongoDb() {
     encryptedSymmetricKey: String,
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
-  return UserCredentials;
+  return { UserVerifications, UserCredentials };
 }
 
-let sequelize;
-initializeSequelize().then((result) => {
-  sequelize = result;
-});
-
-let UserCredentials;
+let UserVerifications, UserCredentials;
 initializeMongoDb().then((result) => {
-  UserCredentials = result;
+  if (result) {
+    UserVerifications = result.UserVerifications;
+    UserCredentials = result.UserCredentials;
+  } else {
+    console.log("MongoDB initialization failed");
+  }
 });
 
-export { sequelize, mongoose, UserCredentials };
+export { mongoose, UserVerifications, UserCredentials };
