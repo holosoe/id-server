@@ -5,9 +5,9 @@ import "hashes/poseidon/poseidon" as poseidon;
  * With this function, the user can take that old leaf and generate a new leaf and prove everything is the same except the secret
  * This function is called whenever adding a leaf to the merkle tree
  */
-def main(field signedLeaf, field newLeaf, field address, private field countryCode, private field nameSubdivisionZip, private field completedAt, private field birthdate, private field oldSecret, private field newSecret) {
-    field[6] oldPreimage = [address, oldSecret, countryCode, nameSubdivisionZip, completedAt, birthdate];
-    field[6] newPreimage = [address, newSecret, countryCode, nameSubdivisionZip, completedAt, birthdate];
+def main(field signedLeaf, field newLeaf, field address, private field countryCode, private field nameSubdivisionZipHash, private field completedAt, private field birthdate, private field oldSecret, private field newSecret) {
+    field[6] oldPreimage = [address, oldSecret, countryCode, nameSubdivisionZipHash, completedAt, birthdate];
+    field[6] newPreimage = [address, newSecret, countryCode, nameSubdivisionZipHash, completedAt, birthdate];
     assert(poseidon(oldPreimage) == signedLeaf);
     assert(poseidon(newPreimage) == newLeaf);
     return;

@@ -36,7 +36,7 @@ async function generateSignature(creds, secret) {
     Buffer.from(secret.replace("0x", ""), "hex"),
     countryBuffer,
     // "0x" + Buffer.from(creds.subdivision).toString("hex"),
-    creds.nameSubdivisionZip,
+    creds.nameSubdivisionZipHash,
     getDateAsInt(creds.completedAt),
     getDateAsInt(creds.birthdate)
   );
@@ -188,7 +188,7 @@ async function getCredentials(req, res) {
     ? Buffer.from(middleNameStr)
     : Buffer.alloc(1);
   const lastNameStr = job.result?.lastName ? job.result.lastName : "";
-  const lastName = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
+  const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
   const subdivisionStr = job.result?.state ? job.result.state : "";
   const subdivisionBuffer = subdivisionStr
     ? Buffer.from(subdivisionStr)
@@ -196,19 +196,25 @@ async function getCredentials(req, res) {
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
-  const nameSubZip = ethers.BigNumber.from(
-    poseidon(
-      [firstNameBuffer, middleNameBuffer, lastName, subdivisionBuffer, zipCode].map(
-        (x) => ethers.BigNumber.from(x).toString()
-      )
-    )
-  ).toString();
+  const poseidonArgs = [
+    firstNameBuffer,
+    middleNameBuffer,
+    lastNameBuffer,
+    subdivisionBuffer,
+    zipCode,
+  ].map((x) => ethers.BigNumber.from(x).toString());
+  const nameSubZip = ethers.BigNumber.from(poseidon(poseidonArgs)).toString();
 
   const realCreds = {
     countryCode: countryCode,
-    // subdivision: job.result?.state || "",
-    nameSubdivisionZip: nameSubZip,
-    completedAt: job.updatedAt?.split("T")[0] || "",
+    // Server signs nameSubdivisionZipHash, not the actual name, subdivision, or zip
+    nameSubdivisionZipHash: nameSubZip,
+    firstName: firstNameStr,
+    middleName: middleNameStr,
+    lastName: lastNameStr,
+    subdivision: subdivisionStr,
+    zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
+    completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
     birthdate: birthdate,
   };
 

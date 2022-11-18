@@ -94,7 +94,7 @@ describe("/registerVouched/vouchedCredentials", async () => {
     console.log("received resp");
     expect(resp.data.user).to.be.an("object");
     expect(resp.data.user.countryCode).to.be.a("number");
-    expect(resp.data.user.nameSubdivisionZip).to.be.a("string");
+    expect(resp.data.user.nameSubdivisionZipHash).to.be.a("string");
     expect(resp.data.user.completedAt).to.be.a("string");
     expect(resp.data.user.birthdate).to.be.a("string");
     expect(resp.data.user.secret).to.be.a("string");
