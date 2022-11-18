@@ -1,6 +1,15 @@
 export const dummyUserCreds = {
   countryCode: 2,
-  // subdivision: "NY",
+  firstName: "Satoshi",
+  middleName: "",
+  lastName: "Nakamoto",
+  subdivision: "NY",
+  zipCode: 12345,
+  streetHash:
+    10771486706529852150200226111599067623527314510572034955353660669031775117955n,
+  streetNumber: 123,
+  streetName: "main",
+  streetUnit: "",
   nameSubdivisionZipStreetHash:
     10661486706529852150200226111599067623527314510572034955353660669031775117944n,
   completedAt: "2022-09-16", // "2022-09-16T02:21:59.510Z",
