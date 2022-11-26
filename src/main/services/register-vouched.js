@@ -18,6 +18,25 @@ function generateSecret(numBytes = 16) {
   return "0x" + randomBytes(numBytes).toString("hex");
 }
 
+/**
+ * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
+ * @param {Object} creds Object containing a full string representation of every credential.
+ * @returns 6 string representations of the preimage's 6 field elements, in order
+ */
+function serializeCreds(creds) {
+  let countryBuffer = Buffer.alloc(2);
+  countryBuffer.writeUInt16BE(creds.countryCode);
+
+  return [
+    creds.issuer,
+    creds.secret,
+    "0x" + countryBuffer.toString("hex"),
+    "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    getDateAsInt(creds.completedAt).toString(),
+    getDateAsInt(creds.birthdate).toString(),
+  ];
+}
+
 function validateJob(job, jobID) {
   if (!job) {
     logWithTimestamp(
@@ -204,16 +223,18 @@ async function getCredentials(req, res) {
   };
 
   const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
+  creds.issuer = process.env.ADDRESS;
+  creds.secret = generateSecret();
 
-  const secret = generateSecret();
   logWithTimestamp("getCredentials: Generating signature");
   const signature = await generateSignature(creds, secret);
 
+  const serializedCreds = serializeCreds(creds);
+
   const completeUser = {
-    ...creds, // credentials from Vouched
-    secret: secret, // server-generated secret
+    ...creds, // credentials from Vouched (plus secret and issuer)
     signature: signature, // server-generated signature
-    issuer: process.env.ADDRESS,
+    serializedCreds: serializedCreds,
   };
 
   await redactVouchedJob(req.query.jobID); // TODO: Does this pose an injection risk??
