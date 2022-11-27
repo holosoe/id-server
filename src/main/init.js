@@ -88,17 +88,27 @@ async function initializeMongoDb() {
     encryptedSymmetricKey: String,
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
-  return { UserVerifications, UserCredentials };
+  const userProofMetadataSchema = new Schema({
+    sigDigest: String,
+    encryptedProofMetadata: String,
+    encryptedSymmetricKey: String,
+  });
+  const UserProofMetadata = mongoose.model(
+    "UserProofMetadata",
+    userProofMetadataSchema
+  );
+  return { UserVerifications, UserCredentials, UserProofMetadata };
 }
 
-let UserVerifications, UserCredentials;
+let UserVerifications, UserCredentials, UserProofMetadata;
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
     UserCredentials = result.UserCredentials;
+    UserProofMetadata = result.UserProofMetadata;
   } else {
     console.log("MongoDB initialization failed");
   }
 });
 
-export { mongoose, UserVerifications, UserCredentials };
+export { mongoose, UserVerifications, UserCredentials, UserProofMetadata };

@@ -19,6 +19,25 @@ function generateSecret(numBytes = 16) {
   return "0x" + randomBytes(numBytes).toString("hex");
 }
 
+/**
+ * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
+ * @param {Object} creds Object containing a full string representation of every credential.
+ * @returns 6 string representations of the preimage's 6 field elements, in order
+ */
+function serializeCreds(creds) {
+  let countryBuffer = Buffer.alloc(2);
+  countryBuffer.writeUInt16BE(creds.countryCode);
+
+  return [
+    creds.issuer,
+    creds.secret,
+    "0x" + countryBuffer.toString("hex"),
+    "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    getDateAsInt(creds.completedAt).toString(),
+    getDateAsInt(creds.birthdate).toString(),
+  ];
+}
+
 function validateJob(job, jobID) {
   if (!job) {
     logWithTimestamp(
@@ -129,18 +148,17 @@ function extractCreds(job) {
 /**
  * With the server's blockchain account, sign the given credentials.
  * @param creds Object containing a full string representation of every credential.
- * @param {string} secret 16-byte secret represented as a hex string
  * @returns Object containing one smallCreds signature for every
  *          credential and one bigCreds signature.
  */
-async function generateSignature(creds, secret) {
+async function generateSignature(creds) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.countryCode);
 
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.from(secret.replace("0x", ""), "hex"),
+    Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
     // "0x" + Buffer.from(creds.subdivision).toString("hex"),
     creds.nameSubdivisionZipStreetHash,
@@ -220,6 +238,24 @@ async function redactVouchedJob(jobID) {
 async function getCredentials(req, res) {
   logWithTimestamp("getCredentials: Entered");
 
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = dummyUserCreds;
+    creds.issuer = process.env.ADDRESS;
+    creds.secret = generateSecret();
+
+    logWithTimestamp("getCredentials: Generating signature");
+    const signature = await generateSignature(creds);
+
+    const serializedCreds = serializeCreds(creds);
+
+    const completeUser = {
+      ...creds, // credentials from Vouched (plus secret and issuer)
+      signature: signature, // server-generated signature
+      serializedCreds: serializedCreds,
+    };
+    return res.status(200).json({ user: completeUser });
+  }
+
   if (!req?.query?.jobID) {
     logWithTimestamp("getCredentials: No job specified. Exiting.");
     return res.status(400).json({ error: "No job specified" });
@@ -241,16 +277,14 @@ async function getCredentials(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
-  if (process.env.ENVIRONMENT != "dev") {
-    const user = await UserVerifications.findOne({ uuid: uuid }).exec();
-    if (user) {
-      logWithTimestamp(
-        `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
-      );
-      return res
-        .status(400)
-        .json({ error: `User has already registered. UUID: ${uuid}` });
-    }
+  const user = await UserVerifications.findOne({ uuid: uuid }).exec();
+  if (user) {
+    logWithTimestamp(
+      `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
+    );
+    return res
+      .status(400)
+      .json({ error: `User has already registered. UUID: ${uuid}` });
   }
 
   // Store UUID for Sybil resistance
@@ -258,16 +292,19 @@ async function getCredentials(req, res) {
   const dbResponse = await saveUserToDb(uuid, req.query.jobID);
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
-  const realCreds = extractCreds(job);
-  const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
-  const secret = generateSecret();
+  const creds = extractCreds(job);
+  creds.issuer = process.env.ADDRESS;
+  creds.secret = generateSecret();
+
   logWithTimestamp("getCredentials: Generating signature");
-  const signature = await generateSignature(creds, secret);
+  const signature = await generateSignature(creds);
+
+  const serializedCreds = serializeCreds(creds);
+
   const completeUser = {
-    ...creds, // credentials from Vouched
-    secret: secret, // server-generated secret
+    ...creds, // credentials from Vouched (plus secret and issuer)
     signature: signature, // server-generated signature
-    issuer: process.env.ADDRESS,
+    serializedCreds: serializedCreds,
   };
 
   await redactVouchedJob(req.query.jobID); // TODO: Does this pose an injection risk??

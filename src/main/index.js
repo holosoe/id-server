@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import verify from "./routes/register-vouched.js";
 import credentials from "./routes/credentials.js";
+import proofMetadata from "./routes/proof-metadata.js";
 
 const app = express();
 
@@ -16,10 +17,17 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/registerVouched", verify);
 app.use("/credentials", credentials);
+app.use("/proof-metadata", proofMetadata);
 
 app.get("/", (req, res) => {
   console.log(`${new Date().toISOString()} GET /`);
-  const routes = ["GET /registerVouched/vouchedCredentials"];
+  const routes = [
+    "GET /registerVouched/vouchedCredentials",
+    "GET /credentials",
+    "POST /credentials",
+    "GET /proof-metadata",
+    "POST /proof-metadata",
+  ];
   res.status(200).json({ routes: routes });
 });
 

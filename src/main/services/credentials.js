@@ -32,8 +32,7 @@ async function getCredentials(req, res) {
     console.log(err);
     console.log("GET /credentials: Could not find user credentials. Exiting");
     return res.status(400).json({
-      error:
-        "An error occurred while trying to get credentials object from database. Please try again.",
+      error: "An error occurred while trying to get credentials object from database.",
     });
   }
 }
@@ -104,7 +103,7 @@ async function postCredentials(req, res) {
       "POST /credentials: An error occurred while retrieving credenials. Exiting"
     );
     return res.status(400).json({
-      error: "An error occurred while retrieving credentials. Please try again.",
+      error: "An error occurred while retrieving credentials.",
     });
   }
   if (userCredentialsDoc) {
@@ -126,8 +125,7 @@ async function postCredentials(req, res) {
     console.log(err);
     console.log("POST /credentials: Could not save userCredentialsDoc. Exiting");
     return res.status(400).json({
-      error:
-        "An error occurred while trying to save object to database. Please try again.",
+      error: "An error occurred while trying to save object to database.",
     });
   }
 
