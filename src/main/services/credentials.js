@@ -59,15 +59,23 @@ async function postCredentials(req, res) {
   }
 
   // Require that args are present
-  if (!sigDigest) {
+  if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
     logWithTimestamp("POST /credentials: No sigDigest specified. Exiting.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (!encryptedCredentials) {
+  if (
+    !encryptedCredentials ||
+    encryptedCredentials == "null" ||
+    encryptedCredentials == "undefined"
+  ) {
     logWithTimestamp("POST /credentials: No encryptedCredentials specified. Exiting.");
     return res.status(400).json({ error: "No encryptedCredentials specified" });
   }
-  if (!encryptedSymmetricKey) {
+  if (
+    !encryptedSymmetricKey ||
+    encryptedSymmetricKey == "null" ||
+    encryptedSymmetricKey == "undefined"
+  ) {
     logWithTimestamp(
       "POST /credentials: No encryptedSymmetricKey specified. Exiting."
     );
