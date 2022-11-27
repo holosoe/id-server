@@ -32,7 +32,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    "0x" + Buffer.from(creds.subdivision).toString("hex"),
+    creds.nameSubdivisionZipStreetHash,
     getDateAsInt(creds.completedAt).toString(),
     getDateAsInt(creds.birthdate).toString(),
   ];
@@ -112,7 +112,7 @@ function extractCreds(job) {
   const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
     ethers.BigNumber.from(x).toString()
   );
-  const streetHash = ethers.BigNumber.from(poseidon(addrArgs));
+  const streetHash = ethers.BigNumber.from(poseidon(addrArgs)).toString();
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
