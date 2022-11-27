@@ -8,7 +8,7 @@ export const dummyUserCreds = {
   streetHash:
     "10771486706529852150200226111599067623527314510572034955353660669031775117955",
   streetNumber: 123,
-  streetName: "main",
+  streetName: "Main St",
   streetUnit: "",
   nameSubdivisionZipStreetHash:
     "10661486706529852150200226111599067623527314510572034955353660669031775117944",
