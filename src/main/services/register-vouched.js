@@ -74,18 +74,17 @@ function validateJob(job, jobID) {
 /**
  * With the server's blockchain account, sign the given credentials.
  * @param creds Object containing a full string representation of every credential.
- * @param {string} secret 16-byte secret represented as a hex string
  * @returns Object containing one smallCreds signature for every
  *          credential and one bigCreds signature.
  */
-async function generateSignature(creds, secret) {
+async function generateSignature(creds) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.countryCode);
 
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.from(secret.replace("0x", ""), "hex"),
+    Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
     "0x" + Buffer.from(creds.subdivision).toString("hex"),
     getDateAsInt(creds.completedAt),
@@ -227,7 +226,7 @@ async function getCredentials(req, res) {
   creds.secret = generateSecret();
 
   logWithTimestamp("getCredentials: Generating signature");
-  const signature = await generateSignature(creds, secret);
+  const signature = await generateSignature(creds);
 
   const serializedCreds = serializeCreds(creds);
 
