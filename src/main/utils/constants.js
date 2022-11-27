@@ -3,6 +3,7 @@ export const dummyUserCreds = {
   firstName: "Satoshi",
   middleName: "",
   lastName: "Nakamoto",
+  city: "New York",
   subdivision: "NY",
   zipCode: 12345,
   streetHash:
@@ -10,7 +11,7 @@ export const dummyUserCreds = {
   streetNumber: 123,
   streetName: "Main St",
   streetUnit: "",
-  nameSubdivisionZipStreetHash:
+  nameCitySubdivisionZipStreetHash:
     "10661486706529852150200226111599067623527314510572034955353660669031775117944",
   completedAt: "2022-09-16", // "2022-09-16T02:21:59.510Z",
   birthdate: "1950-01-01",

@@ -32,7 +32,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.nameSubdivisionZipStreetHash,
+    creds.nameCitySubdivisionZipStreetHash,
     getDateAsInt(creds.completedAt).toString(),
     getDateAsInt(creds.birthdate).toString(),
   ];
@@ -93,6 +93,12 @@ function extractCreds(job) {
     : Buffer.alloc(1);
   const lastNameStr = job.result?.lastName ? job.result.lastName : "";
   const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
+  const nameArgs = [firstNameBuffer, middleNameBuffer, lastNameBuffer].map((x) =>
+    ethers.BigNumber.from(x).toString()
+  );
+  const nameHash = ethers.BigNumber.from(poseidon(nameArgs)).toString();
+  const cityStr = job.result?.idAddress?.city ? job.result.idAddress.city : "";
+  const cityBuffer = cityStr ? Buffer.from(cityStr) : Buffer.alloc(1);
   const subdivisionStr = job.result?.state ? job.result.state : "";
   const subdivisionBuffer = subdivisionStr
     ? Buffer.from(subdivisionStr)
@@ -116,24 +122,24 @@ function extractCreds(job) {
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
-  const nameSubAddrZipStreetArgs = [
-    firstNameBuffer,
-    middleNameBuffer,
-    lastNameBuffer,
+  const nameCitySubStreetZipArgs = [
+    nameHash,
+    cityBuffer,
     subdivisionBuffer,
     zipCode,
     streetHash,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameSubAddrZipStreet = ethers.BigNumber.from(
-    poseidon(nameSubAddrZipStreetArgs)
+  const nameCitySubZipStreet = ethers.BigNumber.from(
+    poseidon(nameCitySubStreetZipArgs)
   ).toString();
   return {
     countryCode: countryCode,
-    // Server signs nameSubdivisionZipStreetHash, not the inputs to that hash
-    nameSubdivisionZipStreetHash: nameSubAddrZipStreet,
+    // Server signs nameCitySubdivisionZipStreetHash, not the inputs to that hash
+    nameCitySubdivisionZipStreetHash: nameCitySubZipStreet,
     firstName: firstNameStr,
     middleName: middleNameStr,
     lastName: lastNameStr,
+    city: cityStr,
     subdivision: subdivisionStr,
     zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
     streetHash: streetHash,
@@ -161,7 +167,7 @@ async function generateSignature(creds) {
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
     // "0x" + Buffer.from(creds.subdivision).toString("hex"),
-    creds.nameSubdivisionZipStreetHash,
+    creds.nameCitySubdivisionZipStreetHash,
     getDateAsInt(creds.completedAt),
     getDateAsInt(creds.birthdate)
   );
