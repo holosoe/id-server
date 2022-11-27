@@ -163,6 +163,24 @@ async function redactVouchedJob(jobID) {
 async function getCredentials(req, res) {
   logWithTimestamp("getCredentials: Entered");
 
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = dummyUserCreds;
+    creds.issuer = process.env.ADDRESS;
+    creds.secret = generateSecret();
+
+    logWithTimestamp("getCredentials: Generating signature");
+    const signature = await generateSignature(creds);
+
+    const serializedCreds = serializeCreds(creds);
+
+    const completeUser = {
+      ...creds, // credentials from Vouched (plus secret and issuer)
+      signature: signature, // server-generated signature
+      serializedCreds: serializedCreds,
+    };
+    return res.status(200).json({ user: completeUser });
+  }
+
   if (!req?.query?.jobID) {
     logWithTimestamp("getCredentials: No job specified. Exiting.");
     return res.status(400).json({ error: "No job specified" });
@@ -184,16 +202,14 @@ async function getCredentials(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
-  if (process.env.ENVIRONMENT != "dev") {
-    const user = await UserVerifications.findOne({ uuid: uuid }).exec();
-    if (user) {
-      logWithTimestamp(
-        `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
-      );
-      return res
-        .status(400)
-        .json({ error: `User has already registered. UUID: ${uuid}` });
-    }
+  const user = await UserVerifications.findOne({ uuid: uuid }).exec();
+  if (user) {
+    logWithTimestamp(
+      `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
+    );
+    return res
+      .status(400)
+      .json({ error: `User has already registered. UUID: ${uuid}` });
   }
 
   // Store UUID for Sybil resistance
@@ -214,14 +230,12 @@ async function getCredentials(req, res) {
     );
     birthdate = "";
   }
-  const realCreds = {
+  const creds = {
     countryCode: countryCode,
     subdivision: job.result?.state || "",
     completedAt: job.updatedAt?.split("T")[0] || "",
     birthdate: birthdate,
   };
-
-  const creds = process.env.ENVIRONMENT == "dev" ? dummyUserCreds : realCreds;
   creds.issuer = process.env.ADDRESS;
   creds.secret = generateSecret();
 
