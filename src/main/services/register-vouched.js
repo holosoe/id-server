@@ -41,30 +41,36 @@ function serializeCreds(creds) {
 function validateJob(job, jobID) {
   if (!job) {
     logWithTimestamp(
-      `getCredentials: failed to retrieve Vouched job ${jobID}. Exiting.`
+      `registerVouched/vouchedCredentials: failed to retrieve Vouched job ${jobID}. Exiting.`
     );
     return { error: "Failed to retrieve Vouched job" };
   }
   // Assert job complete
   if (job.status !== "completed") {
-    logWithTimestamp(`getCredentials: job status is ${job.status}. Exiting.`);
+    logWithTimestamp(
+      `registerVouched/vouchedCredentials: job status is ${job.status}. Exiting.`
+    );
     return { error: "Job status is not completed." };
   }
   // Assert verifcation passed
   if (!job.result.success) {
-    logWithTimestamp(`getCredentials: success is ${job.result?.success}. Exiting.`);
+    logWithTimestamp(
+      `registerVouched/vouchedCredentials: success is ${job.result?.success}. Exiting.`
+    );
     return { error: "Verification failed" };
   }
   // Assert ID not expired
   if (new Date(job.result.expireDate) < new Date()) {
     logWithTimestamp(
-      `getCredentials: ID expired. expireDate is ${job.result.expireDate}. Exiting.`
+      `registerVouched/vouchedCredentials: ID expired. expireDate is ${job.result.expireDate}. Exiting.`
     );
     return { error: "ID expired" };
   }
   // Assert no errors in job
   if (job.result.errors?.length > 0) {
-    logWithTimestamp(`getCredentials: errors in job (see next log). Exiting.`);
+    logWithTimestamp(
+      `registerVouched/vouchedCredentials: errors in job (see next log). Exiting.`
+    );
     console.log(job.result.errors);
     const errorNames = job.result.errors.map((err) => err.type);
     return { error: `Errors in job: ${errorNames}` };
@@ -81,7 +87,7 @@ function extractCreds(job) {
     birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
   } else {
     logWithTimestamp(
-      `getCredentials: birthdate == ${birthdate}. Setting birthdate to ""`
+      `registerVouched/vouchedCredentials: birthdate == ${birthdate}. Setting birthdate to ""`
     );
     birthdate = "";
   }
@@ -184,7 +190,9 @@ async function saveUserToDb(uuid, jobID) {
     await userVerificationsDoc.save();
   } catch (err) {
     console.log(err);
-    console.log("getCredentials: Could not save userVerificationsDoc. Exiting");
+    console.log(
+      "registerVouched/vouchedCredentials: Could not save userVerificationsDoc. Exiting"
+    );
     return {
       error:
         "An error occurred while trying to save object to database. Please try again.",
@@ -242,14 +250,14 @@ async function redactVouchedJob(jobID) {
  * Allows user to retrieve their Vouched verification info
  */
 async function getCredentials(req, res) {
-  logWithTimestamp("getCredentials: Entered");
+  logWithTimestamp("registerVouched/vouchedCredentials: Entered");
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = dummyUserCreds;
     creds.issuer = process.env.ADDRESS;
     creds.secret = generateSecret();
 
-    logWithTimestamp("getCredentials: Generating signature");
+    logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
     const signature = await generateSignature(creds);
 
     const serializedCreds = serializeCreds(creds);
@@ -263,7 +271,7 @@ async function getCredentials(req, res) {
   }
 
   if (!req?.query?.jobID) {
-    logWithTimestamp("getCredentials: No job specified. Exiting.");
+    logWithTimestamp("registerVouched/vouchedCredentials: No job specified. Exiting.");
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
@@ -286,7 +294,7 @@ async function getCredentials(req, res) {
   const user = await UserVerifications.findOne({ uuid: uuid }).exec();
   if (user) {
     logWithTimestamp(
-      `getCredentials: User has already registered. Exiting. UUID == ${uuid}`
+      `registerVouched/vouchedCredentials: User has already registered. Exiting. UUID == ${uuid}`
     );
     return res
       .status(400)
@@ -294,7 +302,7 @@ async function getCredentials(req, res) {
   }
 
   // Store UUID for Sybil resistance
-  logWithTimestamp(`getCredentials: Inserting user into database`);
+  logWithTimestamp(`registerVouched/vouchedCredentials: Inserting user into database`);
   const dbResponse = await saveUserToDb(uuid, req.query.jobID);
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
@@ -302,7 +310,7 @@ async function getCredentials(req, res) {
   creds.issuer = process.env.ADDRESS;
   creds.secret = generateSecret();
 
-  logWithTimestamp("getCredentials: Generating signature");
+  logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
   const signature = await generateSignature(creds);
 
   const serializedCreds = serializeCreds(creds);
@@ -315,7 +323,9 @@ async function getCredentials(req, res) {
 
   await redactVouchedJob(req.query.jobID); // TODO: Does this pose an injection risk??
 
-  logWithTimestamp(`getCredentials: Returning user whose UUID is ${uuid}`);
+  logWithTimestamp(
+    `registerVouched/vouchedCredentials: Returning user whose UUID is ${uuid}`
+  );
 
   return res.status(200).json({ user: completeUser });
 }
