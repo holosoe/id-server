@@ -1,7 +1,7 @@
 export const dummyUserCreds = {
   countryCode: 2,
   firstName: "Satoshi",
-  middleName: "",
+  middleName: "Bitcoin",
   lastName: "Nakamoto",
   city: "New York",
   subdivision: "NY",
