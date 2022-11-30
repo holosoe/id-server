@@ -3,7 +3,6 @@ Backend for Holonym's ID service.
 ## Requirements
 
 - Node.js ^18.9.0
-- ZoKrates ^8.0.2
 - Docker ^20.10.18
 
 (Other versions might work too, but the above versions were the ones used for testing.)
@@ -23,11 +22,7 @@ Use [nvm](https://github.com/nvm-sh/nvm#about) to use the correct Node version.
 
         npm install
 
-### 3. Install ZoKrates
-
-Follow [the instructions in the ZoKrates "Getting Started" page](https://zokrates.github.io/gettingstarted.html) to install ZoKrates.
-
-### 4. Environment variables
+### 3. Environment variables
 
 #### Create .env files
 
@@ -52,7 +47,7 @@ You must change the following variables.
         VOUCHED_SANDBOX_PUBLIC_KEY
         VOUCHED_SANDBOX_PRIVATE_KEY
 
-### 5. Database setup
+### 4. Database setup
 
 Run the MongoDB Docker container.
 
