@@ -25,4 +25,4 @@ fi
 
 docker build -f Dockerfile -t id-server $REPO_DIR
 printf "\n"
-docker run --env-file $REPO_DIR/.env.docker.$TARGET_ENV --network host id-server
+docker run --env-file $REPO_DIR/.env.docker.$TARGET_ENV -p 127.0.0.1:3000:3000 id-server
