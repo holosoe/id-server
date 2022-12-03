@@ -53,6 +53,8 @@ Run the MongoDB Docker container.
 
         docker run -d --network host --name id-server-mongo -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password mongo
 
+Alternatively, you can setup a MongoDB cluster using MongoDB Atlas. To connect to the cluster in the app, simply ensure that the `MONGO_DB_CONNECTION_STR` variable is set to the connection string provided by Atlas.
+
 ## Run
 
 Ensure that the MongoDB database is running and that environment variables are set.
