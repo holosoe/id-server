@@ -145,6 +145,7 @@ function extractCreds(job) {
     firstName: firstNameStr,
     middleName: middleNameStr,
     lastName: lastNameStr,
+    nameHash: nameHash,
     city: cityStr,
     subdivision: subdivisionStr,
     zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
