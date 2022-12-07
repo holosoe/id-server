@@ -85,13 +85,14 @@ async function initializeMongoDb() {
   );
   const userCredentialsSchema = new Schema({
     proofDigest: String,
+    sigDigest: String,
     // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
     encryptedCredentials: String,
     encryptedSymmetricKey: String,
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
   const userProofMetadataSchema = new Schema({
-    proofDigest: String,
+    sigDigest: String,
     encryptedProofMetadata: String,
     encryptedSymmetricKey: String,
   });

@@ -11,23 +11,23 @@ import { logWithTimestamp } from "../utils/utils.js";
 async function getProofMetadata(req, res) {
   logWithTimestamp("GET /proof-metadata: Entered");
 
-  const proofDigest = req?.query?.proofDigest;
+  const sigDigest = req?.query?.sigDigest;
 
-  if (!proofDigest) {
-    logWithTimestamp("GET /proof-metadata: No proofDigest specified. Exiting.");
-    return res.status(400).json({ error: "No proofDigest specified" });
+  if (!sigDigest) {
+    logWithTimestamp("GET /proof-metadata: No sigDigest specified. Exiting.");
+    return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (typeof proofDigest != "string") {
-    logWithTimestamp("GET /proof-metadata: proofDigest isn't a string. Exiting.");
-    return res.status(400).json({ error: "proofDigest isn't a string" });
+  if (typeof sigDigest != "string") {
+    logWithTimestamp("GET /proof-metadata: sigDigest isn't a string. Exiting.");
+    return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
   try {
     const userProofMetadata = await UserProofMetadata.findOne({
-      proofDigest: proofDigest,
+      sigDigest: sigDigest,
     }).exec();
     logWithTimestamp(
-      `GET /proof-metadata: Found user in database with proofDigest ${proofDigest}.`
+      `GET /proof-metadata: Found user in database with sigDigest ${sigDigest}.`
     );
     return res.status(200).json(userProofMetadata);
   } catch (err) {
@@ -46,14 +46,14 @@ async function getProofMetadata(req, res) {
 async function postProofMetadata(req, res) {
   logWithTimestamp("POST /proof-metadata: Entered");
 
-  const proofDigest = req?.body?.proofDigest;
+  const sigDigest = req?.body?.sigDigest;
   const encryptedProofMetadata = req?.body?.encryptedProofMetadata;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
 
   // Require that args are present
-  if (!proofDigest) {
-    logWithTimestamp("POST /proof-metadata: No proofDigest specified. Exiting.");
-    return res.status(400).json({ error: "No proofDigest specified" });
+  if (!sigDigest) {
+    logWithTimestamp("POST /proof-metadata: No sigDigest specified. Exiting.");
+    return res.status(400).json({ error: "No sigDigest specified" });
   }
   if (!encryptedProofMetadata) {
     logWithTimestamp(
@@ -69,9 +69,9 @@ async function postProofMetadata(req, res) {
   }
 
   // Require that args are correct types
-  if (typeof proofDigest != "string") {
-    logWithTimestamp("POST /proof-metadata: proofDigest isn't a string. Exiting.");
-    return res.status(400).json({ error: "proofDigest isn't a string" });
+  if (typeof sigDigest != "string") {
+    logWithTimestamp("POST /proof-metadata: sigDigest isn't a string. Exiting.");
+    return res.status(400).json({ error: "sigDigest isn't a string" });
   }
   if (typeof encryptedProofMetadata != "string") {
     logWithTimestamp(
@@ -90,7 +90,7 @@ async function postProofMetadata(req, res) {
   let userCredentialsDoc;
   try {
     userCredentialsDoc = await UserCredentials.findOne({
-      proofDigest: proofDigest,
+      sigDigest: sigDigest,
     }).exec();
   } catch (err) {
     console.log(err);
@@ -103,7 +103,7 @@ async function postProofMetadata(req, res) {
   }
   if (!userCredentialsDoc) {
     return res.status(404).json({
-      error: `User with proofDigest ${proofDigest} does not exist.`,
+      error: `User with sigDigest ${sigDigest} does not exist.`,
     });
   }
 
@@ -111,7 +111,7 @@ async function postProofMetadata(req, res) {
   let userProofMetadataDoc;
   try {
     userProofMetadataDoc = await UserProofMetadata.findOne({
-      proofDigest: proofDigest,
+      sigDigest: sigDigest,
     }).exec();
     userProofMetadataDoc;
   } catch (err) {
@@ -128,14 +128,14 @@ async function postProofMetadata(req, res) {
     userProofMetadataDoc.encryptedSymmetricKey = encryptedSymmetricKey;
   } else {
     userProofMetadataDoc = new UserProofMetadata({
-      proofDigest,
+      sigDigest,
       encryptedProofMetadata,
       encryptedSymmetricKey,
     });
   }
   try {
     logWithTimestamp(
-      `POST /proof-metadata: Saving user proof metadata to database with proofDigest ${proofDigest}.`
+      `POST /proof-metadata: Saving user proof metadata to database with sigDigest ${sigDigest}.`
     );
     await userProofMetadataDoc.save();
   } catch (err) {

@@ -9,6 +9,7 @@ import hubABI from "../constants/abi/Hub.js";
 import { holonymIssuers } from "../constants/misc.js";
 
 async function validatePostCredentialsArgs(
+  sigDigest,
   proof,
   encryptedCredentials,
   encryptedSymmetricKey
@@ -45,6 +46,9 @@ async function validatePostCredentialsArgs(
   }
 
   // Require that args are present
+  if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
+    return { error: "No sigDigest specified" };
+  }
   if (
     !encryptedCredentials ||
     encryptedCredentials == "null" ||
@@ -61,6 +65,9 @@ async function validatePostCredentialsArgs(
   }
 
   // Require that args are correct types
+  if (typeof sigDigest != "string") {
+    return { error: "sigDigest isn't a string" };
+  }
   if (typeof encryptedCredentials != "string") {
     return { error: "encryptedCredentials isn't a string" };
   }
@@ -69,6 +76,9 @@ async function validatePostCredentialsArgs(
   }
 
   // Ensure that args are not too large
+  if (sigDigest.length == 64) {
+    return { error: "sigDigest is not 64 characters long" };
+  }
   if (encryptedCredentials.length < 10000) {
     return { error: "encryptedCredentials is too large" };
   }
@@ -78,6 +88,7 @@ async function validatePostCredentialsArgs(
 }
 
 async function storeOrUpdateUserCredentials(
+  sigDigest,
   proofDigest,
   encryptedCredentials,
   encryptedSymmetricKey
@@ -95,11 +106,13 @@ async function storeOrUpdateUserCredentials(
     return { error: "An error occurred while retrieving credentials." };
   }
   if (userCredentialsDoc) {
+    userCredentialsDoc.sigDigest = sigDigest;
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
   } else {
     userCredentialsDoc = new UserCredentials({
       proofDigest,
+      sigDigest,
       encryptedCredentials,
       encryptedSymmetricKey,
     });
@@ -121,23 +134,23 @@ async function storeOrUpdateUserCredentials(
 async function getCredentials(req, res) {
   logWithTimestamp("GET /credentials: Entered");
 
-  const proofDigest = req?.query?.proofDigest;
+  const sigDigest = req?.query?.sigDigest;
 
-  if (!proofDigest) {
-    logWithTimestamp("GET /credentials: No proofDigest specified. Exiting.");
-    return res.status(400).json({ error: "No proofDigest specified" });
+  if (!sigDigest) {
+    logWithTimestamp("GET /credentials: No sigDigest specified. Exiting.");
+    return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (typeof proofDigest != "string") {
-    logWithTimestamp("GET /credentials: proofDigest isn't a string. Exiting.");
-    return res.status(400).json({ error: "proofDigest isn't a string" });
+  if (typeof sigDigest != "string") {
+    logWithTimestamp("GET /credentials: sigDigest isn't a string. Exiting.");
+    return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
   try {
     const userCreds = await UserCredentials.findOne({
-      proofDigest: proofDigest,
+      sigDigest: sigDigest,
     }).exec();
     logWithTimestamp(
-      `GET /credentials: Found user in database with proofDigest ${proofDigest}.`
+      `GET /credentials: Found user in database with sigDigest ${sigDigest}.`
     );
     return res.status(200).json(userCreds);
   } catch (err) {
@@ -161,11 +174,13 @@ async function getCredentials(req, res) {
 async function postCredentials(req, res) {
   logWithTimestamp("POST /credentials: Entered");
 
+  const sigDigest = req?.body?.sigDigest;
   const proof = req?.body?.proof;
   const encryptedCredentials = req?.body?.encryptedCredentials;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
 
   const validationResult = await validatePostCredentialsArgs(
+    sigDigest,
     proof,
     encryptedCredentials,
     encryptedSymmetricKey
@@ -183,6 +198,7 @@ async function postCredentials(req, res) {
   const proofDigest = poseidon([serializedProof]).toString();
 
   const storeOrUpdateResult = await storeOrUpdateUserCredentials(
+    sigDigest,
     proofDigest,
     encryptedCredentials,
     encryptedSymmetricKey
