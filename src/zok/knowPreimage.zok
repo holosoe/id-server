@@ -1,0 +1,7 @@
+import "hashes/poseidon/poseidon" as poseidon;
+
+def main(field leaf, field address, private field countryCode, private field nameCitySubdivisionZipStreetHash, private field completedAt, private field birthdate, private field secret) {
+    field[6] preimage = [address, secret, countryCode, nameCitySubdivisionZipStreetHash, completedAt, birthdate];
+    assert(poseidon(preimage) == leaf);
+    return;
+}

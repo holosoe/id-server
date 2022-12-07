@@ -3,7 +3,9 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
-import config from "../../config.js";
+import { ethers } from "ethers";
+import { initialize } from "zokrates-js";
+import config from "../config.js";
 import { logWithTimestamp } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -82,14 +84,14 @@ async function initializeMongoDb() {
     userVerificationsSchema
   );
   const userCredentialsSchema = new Schema({
-    sigDigest: String,
+    proofDigest: String,
     // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
     encryptedCredentials: String,
     encryptedSymmetricKey: String,
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
   const userProofMetadataSchema = new Schema({
-    sigDigest: String,
+    proofDigest: String,
     encryptedProofMetadata: String,
     encryptedSymmetricKey: String,
   });
@@ -111,4 +113,22 @@ initializeMongoDb().then((result) => {
   }
 });
 
-export { mongoose, UserVerifications, UserCredentials, UserProofMetadata };
+const alchemyProvider = new ethers.providers.AlchemyProvider(
+  // TODO: Support multiple chains when we deploy to multiple chains
+  "optimism-goerli",
+  process.env.ALCHEMY_APIKEY
+);
+
+let zokProvider;
+initialize().then((provider) => {
+  zokProvider = provider;
+});
+
+export {
+  mongoose,
+  UserVerifications,
+  UserCredentials,
+  UserProofMetadata,
+  alchemyProvider,
+  zokProvider,
+};
