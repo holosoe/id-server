@@ -14,18 +14,17 @@ async function validatePostCredentialsArgs(
   encryptedCredentials,
   encryptedSymmetricKey
 ) {
-  const leaf = proof?.inputs?.[0];
-  const issuer = proof?.inputs?.[1];
+  const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
+  const issuer = ethers.BigNumber.from(proof?.inputs?.[1]).toHexString();
 
   if (!holonymIssuers.includes(issuer)) {
-    return { error: "Issuer in proof is not whitelisted" };
+    return { error: `Issuer ${issuer} is not whitelisted` };
   }
 
   // Check that leaf is in the Merkle tree
   // TODO: Use cross-chain contract library once it is implemented
-  const hubAddress = contractAddresses["optimism-goerli"].Hub;
-  const contract = new ethers.Contract(hubAddress, hubABI, alchemyProvider);
-  const leaves = await contract.getLeaves();
+  const leavesResp = await axios.get("https://relayer.holonym.id/getLeaves");
+  const leaves = leavesResp.data;
   if (!leaves.includes(leaf)) {
     return { error: "Merkle tree does not include leaf" };
   }
@@ -36,8 +35,10 @@ async function validatePostCredentialsArgs(
       "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowPreimage.verification.key"
     );
     const verificationKey = verifKeyResp.data;
+    // console.log(proof);
     const isVerified = zokProvider.verify(verificationKey, proof);
     if (!isVerified) {
+      console.log("isVerified", isVerified);
       return { error: "Proof is invalid" };
     }
   } catch (err) {
@@ -76,15 +77,16 @@ async function validatePostCredentialsArgs(
   }
 
   // Ensure that args are not too large
-  if (sigDigest.length == 64) {
+  if (sigDigest.length != 64) {
     return { error: "sigDigest is not 64 characters long" };
   }
-  if (encryptedCredentials.length < 10000) {
+  if (encryptedCredentials.length > 10000) {
     return { error: "encryptedCredentials is too large" };
   }
-  if (encryptedSymmetricKey.length < 10000) {
+  if (encryptedSymmetricKey.length > 10000) {
     return { error: "encryptedSymmetricKey is too large" };
   }
+  return { success: true };
 }
 
 async function storeOrUpdateUserCredentials(
@@ -126,6 +128,7 @@ async function storeOrUpdateUserCredentials(
     console.log(err);
     return { error: "An error occurred while trying to save object to database." };
   }
+  return { success: true };
 }
 
 /**

@@ -1,4 +1,4 @@
 export const holonymIssuers = [
-  "0x8281316aC1D51c94f2DE77575301cEF615aDea84", // gov-id
-  "0xB625e69aB86db23C23682875Ba10FbC8f8756d16", // phone
+  "0x8281316ac1d51c94f2de77575301cef615adea84", // gov-id
+  "0xb625e69ab86db23c23682875ba10fbc8f8756d16", // phone
 ];
