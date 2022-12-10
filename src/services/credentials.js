@@ -6,7 +6,7 @@ import { mongoose, UserCredentials, alchemyProvider, zokProvider } from "../init
 import { logWithTimestamp } from "../utils/utils.js";
 import contractAddresses from "../constants/contractAddresses.js";
 import hubABI from "../constants/abi/Hub.js";
-import { holonymIssuers } from "../constants/misc.js";
+import { holonymIssuers, relayerURL } from "../constants/misc.js";
 
 async function validatePostCredentialsArgs(
   sigDigest,
@@ -22,8 +22,8 @@ async function validatePostCredentialsArgs(
   }
 
   // Check that leaf is in the Merkle tree
-  // TODO: Use cross-chain contract library once it is implemented
-  const leavesResp = await axios.get("https://relayer.holonym.id/getLeaves");
+  // TODO: Replace optimism-goerli with dynamic variable
+  const leavesResp = await axios.get(`${relayerURL}/getLeaves/${"optimism-goerli"}`); 
   const leaves = leavesResp.data;
   if (!leaves.includes(leaf)) {
     return { error: "Merkle tree does not include leaf" };
