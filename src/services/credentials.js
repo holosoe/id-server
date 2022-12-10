@@ -6,7 +6,7 @@ import { mongoose, UserCredentials, alchemyProvider, zokProvider } from "../init
 import { logWithTimestamp } from "../utils/utils.js";
 import contractAddresses from "../constants/contractAddresses.js";
 import hubABI from "../constants/abi/Hub.js";
-import { holonymIssuers } from "../constants/misc.js";
+import { holonymIssuers, relayerURL } from "../constants/misc.js";
 
 async function validatePostCredentialsArgs(
   sigDigest,
@@ -22,11 +22,25 @@ async function validatePostCredentialsArgs(
   }
 
   // Check that leaf is in the Merkle tree
-  // TODO: Use cross-chain contract library once it is implemented
-  const leavesResp = await axios.get("https://relayer.holonym.id/getLeaves");
-  const leaves = leavesResp.data;
-  if (!leaves.includes(leaf)) {
-    return { error: "Merkle tree does not include leaf" };
+  let leafIsInTree = false;
+  const networks = [
+    ...Object.keys(contractAddresses.Hub.mainnet),
+    ...Object.keys(contractAddresses.Hub.testnet),
+  ];
+  for (const network of networks) {
+    try {
+      const leavesResp = await axios.get(`${relayerURL}/getLeaves/${network}`);
+      const leaves = leavesResp.data;
+      if (leaves.includes(leaf)) {
+        leafIsInTree = true;
+        break;
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  }
+  if (!leafIsInTree) {
+    return { error: "No Merkle tree includes the specified leaf" };
   }
 
   // Verify proof of knowledge of leaf preimage
