@@ -1,6 +1,6 @@
 import axios from "axios";
 import { strict as assert } from "node:assert";
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
@@ -33,7 +33,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash,
+    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     getDateAsInt(creds.rawCreds.birthdate).toString(),
   ];
@@ -46,21 +46,27 @@ function validateSession(session, sessionId) {
       log: `veriff/credentials: Failed to retrieve Verrif session ${sessionId}. Exiting.`,
     };
   }
-  if (session.verification.code !== 9001) {
+  if (session.status !== "success") {
     return {
       error: "Verification failed.",
-      log: `veriff/credentials: Verification failed. Verification code: ${session.verification.code}. Exiting.`,
+      log: `veriff/credentials: Verification failed. Status: ${session.status}. Exiting.`,
+    };
+  }
+  if (session.verification?.code !== 9001) {
+    return {
+      error: "Verification failed.",
+      log: `veriff/credentials: Verification failed. Verification code: ${session.verification?.code}. Exiting.`,
     };
   }
   if (session.verification.status !== "approved") {
     return {
       error: "Verification failed.",
-      log: `veriff/credentials: Status is ${session.verification.status}. Exiting.`,
+      log: `veriff/credentials: Verification status is ${session.verification.status}. Exiting.`,
     };
   }
   const necessaryPersonFields = ["firstName", "lastName", "dateOfBirth"];
   const person = session.verification.person;
-  for (const field in necessaryPersonFields) {
+  for (const field of necessaryPersonFields) {
     if (!(field in person)) {
       return {
         error: `Verification missing necessary field: ${field}.`,
@@ -68,10 +74,31 @@ function validateSession(session, sessionId) {
       };
     }
   }
-  if (!("postcode" in person?.addresses?.[0]?.parsedAddress)) {
+  // NOTE: Veriff does not include addresses in test sessions
+  const address = person.addresses?.[0]?.parsedAddress;
+  if (!address) {
+    return {
+      error: "Verification missing necessary field: address.",
+      log: `veriff/credentials: Verification missing necessary field: address. Exiting.`,
+    };
+  }
+  if (!("postcode" in address)) {
     return {
       error: "Verification missing necessary field: postcode.",
       log: `veriff/credentials: Verification missing necessary field: postcode. Exiting.`,
+    };
+  }
+  const doc = session.verification.document;
+  if (!doc) {
+    return {
+      error: "Verification missing necessary field: document.",
+      log: `veriff/credentials: Verification missing necessary field: document. Exiting.`,
+    };
+  }
+  if (!("country" in doc)) {
+    return {
+      error: "Verification missing necessary field: country.",
+      log: `veriff/credentials: Verification missing necessary field: country. Exiting.`,
     };
   }
   return { success: true };
@@ -80,8 +107,7 @@ function validateSession(session, sessionId) {
 function extractCreds(session) {
   const person = session.verification.person;
   const address = person.addresses?.[0]?.parsedAddress;
-  // TODO: Check that the possible values of "nationality" map exactly to countries in the dictionary
-  const countryCode = countryCodeToPrime[person.nationality];
+  const countryCode = countryCodeToPrime[session.verification.document.country];
   assert.ok(countryCode, "Unsupported country");
   const birthdate = person.dateOfBirth;
   const firstNameStr = person.firstName ? person.firstName : "";
@@ -127,24 +153,62 @@ function extractCreds(session) {
     poseidon(nameCitySubStreetZipArgs)
   ).toString();
   return {
-    countryCode: countryCode,
-    // Server signs nameCitySubdivisionZipStreetHash, not the inputs to that hash
-    nameCitySubdivisionZipStreetHash: nameCitySubZipStreet,
-    firstName: firstNameStr,
-    middleName: middleNameStr,
-    lastName: lastNameStr,
-    nameHash: nameHash,
-    city: cityStr,
-    subdivision: subdivisionStr,
-    zipCode: address?.postcode ? address.postcode : 0,
-    streetHash: streetHash,
-    streetNumber: streetNumber,
-    streetName: streetNameStr,
-    streetUnit: streetUnit,
-    completedAt: session.verification.decisionTime
-      ? session.verification.decisionTime.split("T")[0]
-      : "",
-    birthdate: birthdate,
+    rawCreds: {
+      countryCode: countryCode,
+      firstName: firstNameStr,
+      middleName: middleNameStr,
+      lastName: lastNameStr,
+      nameHash: nameHash,
+      city: cityStr,
+      subdivision: subdivisionStr,
+      zipCode: address?.postcode ? address.postcode : 0,
+      streetNumber: streetNumber,
+      streetName: streetNameStr,
+      streetUnit: streetUnit,
+      completedAt: session.verification.decisionTime
+        ? session.verification.decisionTime.split("T")[0]
+        : "",
+      birthdate: birthdate,
+    },
+    derivedCreds: {
+      nameCitySubdivisionZipStreetHash: {
+        value: nameCitySubZipStreet,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "derivedCreds.nameHash.value",
+          "rawCreds.city",
+          "rawCreds.subdivision",
+          "rawCreds.zipCode",
+          "derivedCreds.streetHash.value",
+        ],
+      },
+      streetHash: {
+        value: streetHash,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "rawCreds.streetNumber",
+          "rawCreds.streetName",
+          "rawCreds.streetUnit",
+        ],
+      },
+      nameHash: {
+        value: nameHash,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "rawCreds.firstName",
+          "rawCreds.middleName",
+          "rawCreds.lastName",
+        ],
+      },
+    },
+    fieldsInLeaf: [
+      "issuer",
+      "secret",
+      "rawCreds.countryCode",
+      "derivedCreds.nameCitySubdivisionZipStreetHash.value",
+      "rawCreds.completedAt",
+      "rawCreds.birthdate",
+    ],
   };
 }
 
@@ -163,8 +227,7 @@ async function generateSignature(creds) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
-    // "0x" + Buffer.from(creds.subdivision).toString("hex"),
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash,
+    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
@@ -196,8 +259,7 @@ async function saveUserToDb(uuid, sessionId) {
 
 async function getVeriffSessionDecision(sessionId) {
   try {
-    const hmacSignature = crypto
-      .createHmac("sha256", veriffSecretKey)
+    const hmacSignature = createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
       .digest("hex")
       .toLowerCase();
@@ -211,9 +273,10 @@ async function getVeriffSessionDecision(sessionId) {
         },
       }
     );
+    console.log(resp.data);
     return resp.data;
   } catch (err) {
-    console.error(`Error getting job with ID ${jobID}`, err);
+    console.error(`Error getting session with ID ${sessionId}`, err.message);
     return {};
   }
 }
@@ -237,6 +300,7 @@ async function redactVeriffSession(sessionId) {
     );
     return resp.data;
   } catch (err) {
+    console.log(err.message);
     return {};
   }
 }
@@ -253,23 +317,23 @@ async function redactVeriffSession(sessionId) {
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
 
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = newDummyUserCreds;
-    creds.issuer = process.env.ADDRESS;
-    creds.secret = generateSecret();
+  // if (process.env.ENVIRONMENT == "dev") {
+  //   const creds = newDummyUserCreds;
+  //   creds.issuer = process.env.ADDRESS;
+  //   creds.secret = generateSecret();
 
-    logWithTimestamp("veriff/credentials: Generating signature");
-    const signature = await generateSignature(creds);
+  //   logWithTimestamp("veriff/credentials: Generating signature");
+  //   const signature = await generateSignature(creds);
 
-    const serializedCreds = serializeCreds(creds);
+  //   const serializedCreds = serializeCreds(creds);
 
-    const response = {
-      ...creds, // credentials from Veriff (plus secret and issuer)
-      signature: signature, // server-generated signature
-      serializedCreds: serializedCreds,
-    };
-    return res.status(200).json(response);
-  }
+  //   const response = {
+  //     ...creds, // credentials from Veriff (plus secret and issuer)
+  //     signature: signature, // server-generated signature
+  //     serializedCreds: serializedCreds,
+  //   };
+  //   return res.status(200).json(response);
+  // }
 
   if (!req?.query?.sessionId) {
     logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
@@ -322,7 +386,7 @@ async function getCredentials(req, res) {
     serializedCreds: serializedCreds,
   };
 
-  await redactVeriffSession(req.query.sessionId); // TODO: Does this pose an injection risk??
+  await redactVeriffSession(req.query.sessionId);
 
   logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
 
