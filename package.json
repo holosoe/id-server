@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node src/main/server",
+    "start": "node src/server",
     "start:dev": "bash scripts/run.sh dev",
     "start:prod": "bash scripts/run.sh prod",
     "build:prod": "bash scripts/build.sh prod",

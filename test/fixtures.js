@@ -1,7 +1,7 @@
 import axios from "axios";
 import express from "express";
-import { app } from "../src/main/index.js";
-import { UserVerifications } from "../src/main/init.js";
+import { app } from "../src/index.js";
+import { UserVerifications } from "../src/init.js";
 import dotenv from "dotenv";
 dotenv.config();
 
