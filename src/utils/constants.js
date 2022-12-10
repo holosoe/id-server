@@ -17,6 +17,63 @@ export const dummyUserCreds = {
   birthdate: "1950-01-01",
 };
 
+// newDummyUserCreds does not include the following fields, though they should be
+// returned in the final response: issuer, secret, signature, or serializedCreds.
+export const newDummyUserCreds = {
+  rawCreds: {
+    birthdate: "1950-01-01",
+    city: "New York",
+    completedAt: "2022-09-16", // "2022-09-16T02:21:59.510Z",
+    countryCode: 2,
+    firstName: "Satoshi",
+    middleName: "Bitcoin",
+    lastName: "Nakamoto",
+    streetName: "Main St",
+    streetNumber: 123,
+    streetUnit: "",
+    subdivision: "NY",
+    zipCode: 12345,
+  },
+  derivedCreds: {
+    nameCitySubdivisionZipStreetHash: {
+      value:
+        "10661486706529852150200226111599067623527314510572034955353660669031775117944",
+      derivationFunction: "poseidonHash",
+      inputFields: [
+        "derivedCreds.nameHash",
+        "rawCreds.city",
+        "rawCreds.subdivision",
+        "rawCreds.zipCode",
+        "derivedCreds.streetHash",
+      ],
+    },
+    streetHash: {
+      value:
+        "10661486706529852150200226111599067623527314510572034955353660669031775117945",
+      derivationFunction: "poseidonHash",
+      inputFields: [
+        "rawCreds.streetNumber",
+        "rawCreds.streetName",
+        "rawCreds.streetUnit",
+      ],
+    },
+    nameHash: {
+      value:
+        "10661486706529852150200226111599067623527314510572034955353660669031775117943",
+      derivationFunction: "poseidonHash",
+      inputFields: ["rawCreds.firstName", "rawCreds.middleName", "rawCreds.lastName"],
+    },
+  },
+  fieldsInLeaf: [
+    "issuer",
+    "secret",
+    "rawCreds.countryCode",
+    "derivedCreds.nameCitySubdivisionZipStreetHash",
+    "rawCreds.completedAt",
+    "rawCreds.birthdate",
+  ],
+};
+
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",

@@ -184,9 +184,9 @@ async function generateSignature(creds) {
 
 async function saveUserToDb(uuid, jobID) {
   const userVerificationsDoc = new UserVerifications({
-    vouched: {
+    govId: {
       uuid: uuid,
-      jobID: jobID,
+      sessionId: jobID,
     },
   });
   try {
@@ -294,7 +294,7 @@ async function getCredentials(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
-  const user = await UserVerifications.findOne({ "vouched.uuid": uuid }).exec();
+  const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
   if (user) {
     logWithTimestamp(
       `registerVouched/vouchedCredentials: User has already registered. Exiting. UUID == ${uuid}`
