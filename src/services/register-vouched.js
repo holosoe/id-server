@@ -289,7 +289,7 @@ async function getCredentials(req, res) {
     (job.result.firstName || "") +
     (job.result.lastName || "") +
     // (job.result.country || "") +
-    (job.result.idAddress.postalCode || "") +
+    (job.result.idAddress?.postalCode || "") +
     (job.result.dob || ""); // Date of birth
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
