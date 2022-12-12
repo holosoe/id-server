@@ -6,7 +6,7 @@ const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
-import { dummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
+import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
 
@@ -26,15 +26,15 @@ function generateSecret(numBytes = 16) {
  */
 function serializeCreds(creds) {
   let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.countryCode);
+  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
   return [
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.nameCitySubdivisionZipStreetHash,
-    getDateAsInt(creds.completedAt).toString(),
-    getDateAsInt(creds.birthdate).toString(),
+    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    getDateAsInt(creds.rawCreds.completedAt).toString(),
+    getDateAsInt(creds.rawCreds.birthdate).toString(),
   ];
 }
 
@@ -139,22 +139,59 @@ function extractCreds(job) {
     poseidon(nameCitySubStreetZipArgs)
   ).toString();
   return {
-    countryCode: countryCode,
-    // Server signs nameCitySubdivisionZipStreetHash, not the inputs to that hash
-    nameCitySubdivisionZipStreetHash: nameCitySubZipStreet,
-    firstName: firstNameStr,
-    middleName: middleNameStr,
-    lastName: lastNameStr,
-    nameHash: nameHash,
-    city: cityStr,
-    subdivision: subdivisionStr,
-    zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
-    streetHash: streetHash,
-    streetNumber: streetNumber,
-    streetName: streetNameStr,
-    streetUnit: streetUnit,
-    completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
-    birthdate: birthdate,
+    rawCreds: {
+      countryCode: countryCode,
+      firstName: firstNameStr,
+      middleName: middleNameStr,
+      lastName: lastNameStr,
+      city: cityStr,
+      subdivision: subdivisionStr,
+      zipCode: job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0,
+      streetNumber: streetNumber,
+      streetName: streetNameStr,
+      streetUnit: streetUnit,
+      completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
+      birthdate: birthdate,
+    },
+    derivedCreds: {
+      nameCitySubdivisionZipStreetHash: {
+        value: nameCitySubZipStreet,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "derivedCreds.nameHash.value",
+          "rawCreds.city",
+          "rawCreds.subdivision",
+          "rawCreds.zipCode",
+          "derivedCreds.streetHash.value",
+        ],
+      },
+      streetHash: {
+        value: streetHash,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "rawCreds.streetNumber",
+          "rawCreds.streetName",
+          "rawCreds.streetUnit",
+        ],
+      },
+      nameHash: {
+        value: nameHash,
+        derivationFunction: "poseidonHash",
+        inputFields: [
+          "rawCreds.firstName",
+          "rawCreds.middleName",
+          "rawCreds.lastName",
+        ],
+      },
+    },
+    fieldsInLeaf: [
+      "issuer",
+      "secret",
+      "rawCreds.countryCode",
+      "derivedCreds.nameCitySubdivisionZipStreetHash.value",
+      "rawCreds.completedAt",
+      "rawCreds.birthdate",
+    ],
   };
 }
 
@@ -167,16 +204,15 @@ function extractCreds(job) {
 async function generateSignature(creds) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.countryCode);
+  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
   const leafAsStr = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
-    // "0x" + Buffer.from(creds.subdivision).toString("hex"),
-    creds.nameCitySubdivisionZipStreetHash,
-    getDateAsInt(creds.completedAt),
-    getDateAsInt(creds.birthdate)
+    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    getDateAsInt(creds.rawCreds.completedAt),
+    getDateAsInt(creds.rawCreds.birthdate)
   );
   const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
   return await sign(leaf);
@@ -256,7 +292,7 @@ async function getCredentials(req, res) {
   logWithTimestamp("registerVouched/vouchedCredentials: Entered");
 
   if (process.env.ENVIRONMENT == "dev") {
-    const creds = dummyUserCreds;
+    const creds = newDummyUserCreds;
     creds.issuer = process.env.ADDRESS;
     creds.secret = generateSecret();
 
@@ -265,12 +301,12 @@ async function getCredentials(req, res) {
 
     const serializedCreds = serializeCreds(creds);
 
-    const completeUser = {
+    const response = {
       ...creds, // credentials from Vouched (plus secret and issuer)
       signature: signature, // server-generated signature
       serializedCreds: serializedCreds,
     };
-    return res.status(200).json({ user: completeUser });
+    return res.status(200).json(response);
   }
 
   if (!req?.query?.jobID) {
@@ -318,19 +354,19 @@ async function getCredentials(req, res) {
 
   const serializedCreds = serializeCreds(creds);
 
-  const completeUser = {
+  const response = {
     ...creds, // credentials from Vouched (plus secret and issuer)
     signature: signature, // server-generated signature
     serializedCreds: serializedCreds,
   };
 
-  await redactVouchedJob(req.query.jobID); // TODO: Does this pose an injection risk??
+  await redactVouchedJob(req.query.jobID);
 
   logWithTimestamp(
     `registerVouched/vouchedCredentials: Returning user whose UUID is ${uuid}`
   );
 
-  return res.status(200).json({ user: completeUser });
+  return res.status(200).json(response);
 }
 
 export { getCredentials };

@@ -36,7 +36,7 @@ async function validatePostCredentialsArgs(
         break;
       }
     } catch (err) {
-      console.log(err);
+      console.log(err.message);
     }
   }
   if (!leafIsInTree) {

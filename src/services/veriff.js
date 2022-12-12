@@ -158,7 +158,6 @@ function extractCreds(session) {
       firstName: firstNameStr,
       middleName: middleNameStr,
       lastName: lastNameStr,
-      nameHash: nameHash,
       city: cityStr,
       subdivision: subdivisionStr,
       zipCode: address?.postcode ? address.postcode : 0,
@@ -317,23 +316,23 @@ async function redactVeriffSession(sessionId) {
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
 
-  // if (process.env.ENVIRONMENT == "dev") {
-  //   const creds = newDummyUserCreds;
-  //   creds.issuer = process.env.ADDRESS;
-  //   creds.secret = generateSecret();
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = newDummyUserCreds;
+    creds.issuer = process.env.ADDRESS;
+    creds.secret = generateSecret();
 
-  //   logWithTimestamp("veriff/credentials: Generating signature");
-  //   const signature = await generateSignature(creds);
+    logWithTimestamp("veriff/credentials: Generating signature");
+    const signature = await generateSignature(creds);
 
-  //   const serializedCreds = serializeCreds(creds);
+    const serializedCreds = serializeCreds(creds);
 
-  //   const response = {
-  //     ...creds, // credentials from Veriff (plus secret and issuer)
-  //     signature: signature, // server-generated signature
-  //     serializedCreds: serializedCreds,
-  //   };
-  //   return res.status(200).json(response);
-  // }
+    const response = {
+      ...creds, // credentials from Veriff (plus secret and issuer)
+      signature: signature, // server-generated signature
+      serializedCreds: serializedCreds,
+    };
+    return res.status(200).json(response);
+  }
 
   if (!req?.query?.sessionId) {
     logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
