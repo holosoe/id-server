@@ -3,7 +3,6 @@ import { dirname } from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
-import { ethers } from "ethers";
 import { initialize } from "zokrates-js";
 import config from "../config.js";
 import { logWithTimestamp } from "./utils/utils.js";
@@ -126,12 +125,6 @@ initializeMongoDb().then((result) => {
   }
 });
 
-const alchemyProvider = new ethers.providers.AlchemyProvider(
-  // TODO: Support multiple chains when we deploy to multiple chains
-  "optimism-goerli",
-  process.env.ALCHEMY_APIKEY
-);
-
 let zokProvider;
 initialize().then((provider) => {
   zokProvider = provider;
@@ -142,6 +135,5 @@ export {
   UserVerifications,
   UserCredentials,
   UserProofMetadata,
-  alchemyProvider,
   zokProvider,
 };

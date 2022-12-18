@@ -2,10 +2,9 @@ import axios from "axios";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { mongoose, UserCredentials, alchemyProvider, zokProvider } from "../init.js";
+import { mongoose, UserCredentials, zokProvider } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 import contractAddresses from "../constants/contractAddresses.js";
-import hubABI from "../constants/abi/Hub.js";
 import { holonymIssuers, relayerURL } from "../constants/misc.js";
 
 async function validatePostCredentialsArgs(
