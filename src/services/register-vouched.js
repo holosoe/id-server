@@ -206,7 +206,7 @@ async function generateSignature(creds) {
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
-  const leafAsStr = await createLeaf(
+  const leafAsBigInt = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -214,7 +214,7 @@ async function generateSignature(creds) {
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
-  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
+  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
   return await sign(leaf);
 }
 
