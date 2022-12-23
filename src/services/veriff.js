@@ -172,7 +172,7 @@ function extractCreds(session) {
     derivedCreds: {
       nameCitySubdivisionZipStreetHash: {
         value: nameCitySubZipStreet,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.city",
@@ -183,7 +183,7 @@ function extractCreds(session) {
       },
       streetHash: {
         value: streetHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.streetNumber",
           "rawCreds.streetName",
@@ -192,7 +192,7 @@ function extractCreds(session) {
       },
       nameHash: {
         value: nameHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.firstName",
           "rawCreds.middleName",
@@ -418,7 +418,7 @@ export { getCredentials };
 //     [string]: any;
 //     //  // For example...
 //     //    nameHash: {
-//     //      derivation-function: string; // e.g., 'poseidonHash'
+//     //      derivation-function: string; // e.g., 'poseidon'
 //     //      inputFields: any[]; // e.g., ['rawCreds.firstName', 'rawCreds.middleName', 'rawCreds.lastName']
 //     //      type: string; // e.g., 'string'
 //     //      value: string;

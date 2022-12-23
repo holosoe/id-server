@@ -38,7 +38,7 @@ export const newDummyUserCreds = {
     nameCitySubdivisionZipStreetHash: {
       value:
         "10661486706529852150200226111599067623527314510572034955353660669031775117944",
-      derivationFunction: "poseidonHash",
+      derivationFunction: "poseidon",
       inputFields: [
         "derivedCreds.nameHash",
         "rawCreds.city",
@@ -50,7 +50,7 @@ export const newDummyUserCreds = {
     streetHash: {
       value:
         "10661486706529852150200226111599067623527314510572034955353660669031775117945",
-      derivationFunction: "poseidonHash",
+      derivationFunction: "poseidon",
       inputFields: [
         "rawCreds.streetNumber",
         "rawCreds.streetName",
@@ -60,7 +60,7 @@ export const newDummyUserCreds = {
     nameHash: {
       value:
         "10661486706529852150200226111599067623527314510572034955353660669031775117943",
-      derivationFunction: "poseidonHash",
+      derivationFunction: "poseidon",
       inputFields: ["rawCreds.firstName", "rawCreds.middleName", "rawCreds.lastName"],
     },
   },

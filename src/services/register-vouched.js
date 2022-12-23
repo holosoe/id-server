@@ -156,7 +156,7 @@ function extractCreds(job) {
     derivedCreds: {
       nameCitySubdivisionZipStreetHash: {
         value: nameCitySubZipStreet,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.city",
@@ -167,7 +167,7 @@ function extractCreds(job) {
       },
       streetHash: {
         value: streetHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.streetNumber",
           "rawCreds.streetName",
@@ -176,7 +176,7 @@ function extractCreds(job) {
       },
       nameHash: {
         value: nameHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.firstName",
           "rawCreds.middleName",
