@@ -156,7 +156,7 @@ function extractCreds(job) {
     derivedCreds: {
       nameCitySubdivisionZipStreetHash: {
         value: nameCitySubZipStreet,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.city",
@@ -167,7 +167,7 @@ function extractCreds(job) {
       },
       streetHash: {
         value: streetHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.streetNumber",
           "rawCreds.streetName",
@@ -176,7 +176,7 @@ function extractCreds(job) {
       },
       nameHash: {
         value: nameHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.firstName",
           "rawCreds.middleName",
@@ -206,7 +206,7 @@ async function generateSignature(creds) {
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
-  const leafAsStr = await createLeaf(
+  const leafAsBigInt = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -214,7 +214,7 @@ async function generateSignature(creds) {
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
-  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
+  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
   return await sign(leaf);
 }
 

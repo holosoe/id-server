@@ -4,7 +4,6 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
-import config from "../config.js";
 import { logWithTimestamp } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();

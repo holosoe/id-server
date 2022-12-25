@@ -173,7 +173,7 @@ function extractCreds(session) {
     derivedCreds: {
       nameCitySubdivisionZipStreetHash: {
         value: nameCitySubZipStreet,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.city",
@@ -184,7 +184,7 @@ function extractCreds(session) {
       },
       streetHash: {
         value: streetHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.streetNumber",
           "rawCreds.streetName",
@@ -193,7 +193,7 @@ function extractCreds(session) {
       },
       nameHash: {
         value: nameHash,
-        derivationFunction: "poseidonHash",
+        derivationFunction: "poseidon",
         inputFields: [
           "rawCreds.firstName",
           "rawCreds.middleName",
@@ -223,7 +223,7 @@ async function generateSignature(creds) {
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
-  const leafAsStr = await createLeaf(
+  const leafAsBigInt = await createLeaf(
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -231,7 +231,7 @@ async function generateSignature(creds) {
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
-  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsStr));
+  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
   return await sign(leaf);
 }
 
@@ -419,7 +419,7 @@ export { getCredentials };
 //     [string]: any;
 //     //  // For example...
 //     //    nameHash: {
-//     //      derivation-function: string; // e.g., 'poseidonHash'
+//     //      derivation-function: string; // e.g., 'poseidon'
 //     //      inputFields: any[]; // e.g., ['rawCreds.firstName', 'rawCreds.middleName', 'rawCreds.lastName']
 //     //      type: string; // e.g., 'string'
 //     //      value: string;
