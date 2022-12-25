@@ -352,5 +352,8 @@ export const countryCodeToPrime = {
   ZW: 1163, // Zimbabwe
 };
 
+export const clientIDs = [
+  "lobby3.io",
+];
 export const TX_VALUE = (process.env.ENVIRONMENT == "dev") ? "0.01" : "10.00"; // How much user should have paid, in USD, from PayPal
  

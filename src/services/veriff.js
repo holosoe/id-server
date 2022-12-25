@@ -8,6 +8,7 @@ import { UserVerifications } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
 import { getPaymentStatus } from "../utils/paypal.js";
+import { chargeClient } from "../utils/client-balances.js";
 
 const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
 const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
@@ -316,11 +317,13 @@ async function redactVeriffSession(sessionId) {
  */
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
-  if (!req?.query?.orderId) {
-    logWithTimestamp("veriff/credentials: No paypal order ID specified. Exiting.");
-    return res.status(400).json({ error: "No paypal order ID specified" });
+  // Check that it was paid for, i.e., PayPal order or scope exists
+  if (!(req?.query?.orderId || req?.query?.scope)) {
+    logWithTimestamp("veriff/credentials: No paypal order ID or scope specified. Exiting.");
+    return res.status(400).json({ error: "No paypal order ID or scope specified" });
   }
-  if (!(await getPaymentStatus(orderId))) {
+  // Check that if PayPal was used, the transaction went through
+  if (req?.query?.orderId && !(await getPaymentStatus(req?.query?.orderId))) {
     logWithTimestamp("veriff/credentials: Payment unsuccessful or wrong amount");
     return res.status(400).json({ error: "Payment unsuccessful or wrong amount" });
   }
@@ -348,6 +351,13 @@ async function getCredentials(req, res) {
     logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
     return res.status(400).json({ error: "No sessionId specified" });
   }
+  // If scoped, charge the client:
+  try {
+    if(req?.query?.scope)chargeClient(2, req?.query?.scope);
+  } catch(e) {
+    return res.status(400).json({ error: "Unknown error when charging client" });
+  }
+  
   const session = await getVeriffSessionDecision(req.query.sessionId);
 
   const validationResult = validateSession(session, req.query.sessionId);
