@@ -3,9 +3,8 @@ WARNING: do not use paypal until you can prevent the user from using the same or
 **************`)
 import axios from "axios";
 import dotenv from "dotenv";
+import { TX_VALUE } from "./constants.js";
 dotenv.config();
-
-const TX_VALUE = "0.01"; // How much user should have paid, in USD
 
 async function getAccessToken(){
     const response = await axios.post(

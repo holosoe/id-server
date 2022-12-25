@@ -7,7 +7,7 @@ import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
-// import { getPaymentStatus } from "../utils/paypal.js";
+import { getPaymentStatus } from "../utils/paypal.js";
 
 const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
 const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
@@ -316,7 +316,16 @@ async function redactVeriffSession(sessionId) {
  */
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
-
+  if (!req?.query?.orderId) {
+    logWithTimestamp("veriff/credentials: No paypal order ID specified. Exiting.");
+    return res.status(400).json({ error: "No paypal order ID specified" });
+  }
+  if (!(await getPaymentStatus(orderId))) {
+    logWithTimestamp("veriff/credentials: Payment unsuccessful or wrong amount");
+    return res.status(400).json({ error: "Payment unsuccessful or wrong amount" });
+  }
+  // TODO: check that orderId has not already been used to pay for verification!
+  
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
     creds.issuer = process.env.ADDRESS;
