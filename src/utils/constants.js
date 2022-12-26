@@ -1,22 +1,3 @@
-export const dummyUserCreds = {
-  countryCode: 2,
-  firstName: "Satoshi",
-  middleName: "Bitcoin",
-  lastName: "Nakamoto",
-  city: "New York",
-  subdivision: "NY",
-  zipCode: 12345,
-  streetHash:
-    "10771486706529852150200226111599067623527314510572034955353660669031775117955",
-  streetNumber: 123,
-  streetName: "Main St",
-  streetUnit: "",
-  nameCitySubdivisionZipStreetHash:
-    "10661486706529852150200226111599067623527314510572034955353660669031775117944",
-  completedAt: "2022-09-16", // "2022-09-16T02:21:59.510Z",
-  birthdate: "1950-01-01",
-};
-
 // newDummyUserCreds does not include the following fields, though they should be
 // returned in the final response: issuer, secret, signature, or serializedCreds.
 export const newDummyUserCreds = {
@@ -35,12 +16,13 @@ export const newDummyUserCreds = {
     zipCode: 12345,
   },
   derivedCreds: {
-    nameCitySubdivisionZipStreetHash: {
+    nameDobCitySubdivisionZipStreetHash: {
       value:
         "10661486706529852150200226111599067623527314510572034955353660669031775117944",
       derivationFunction: "poseidon",
       inputFields: [
         "derivedCreds.nameHash",
+        "rawCreds.birthdate",
         "rawCreds.city",
         "rawCreds.subdivision",
         "rawCreds.zipCode",
@@ -68,9 +50,9 @@ export const newDummyUserCreds = {
     "issuer",
     "secret",
     "rawCreds.countryCode",
-    "derivedCreds.nameCitySubdivisionZipStreetHash",
+    "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
     "rawCreds.completedAt",
-    "rawCreds.birthdate",
+    "scope",
   ],
 };
 

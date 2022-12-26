@@ -32,7 +32,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     getDateAsInt(creds.rawCreds.birthdate).toString(),
   ];
@@ -91,6 +91,7 @@ function extractCreds(job) {
     );
     birthdate = "";
   }
+  const birthdateBuffer = birthdate ? Buffer.from(birthdate) : Buffer.alloc(1);
   const firstNameStr = job.result?.firstName ? job.result.firstName : "";
   const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
   const middleNameStr = job.result?.middleName ? job.result.middleName : "";
@@ -128,15 +129,16 @@ function extractCreds(job) {
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
-  const nameCitySubStreetZipArgs = [
+  const nameDobCitySubStreetZipArgs = [
     nameHash,
+    birthdateBuffer,
     cityBuffer,
     subdivisionBuffer,
     zipCode,
     streetHash,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameCitySubZipStreet = ethers.BigNumber.from(
-    poseidon(nameCitySubStreetZipArgs)
+  const nameDobCitySubZipStreet = ethers.BigNumber.from(
+    poseidon(nameDobCitySubStreetZipArgs)
   ).toString();
   return {
     rawCreds: {
@@ -154,11 +156,12 @@ function extractCreds(job) {
       birthdate: birthdate,
     },
     derivedCreds: {
-      nameCitySubdivisionZipStreetHash: {
-        value: nameCitySubZipStreet,
+      nameDobCitySubdivisionZipStreetHash: {
+        value: nameDobCitySubZipStreet,
         derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
+          "rawCreds.birthdate",
           "rawCreds.city",
           "rawCreds.subdivision",
           "rawCreds.zipCode",
@@ -188,9 +191,9 @@ function extractCreds(job) {
       "issuer",
       "secret",
       "rawCreds.countryCode",
-      "derivedCreds.nameCitySubdivisionZipStreetHash.value",
+      "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
       "rawCreds.completedAt",
-      "rawCreds.birthdate",
+      "scope",
     ],
   };
 }
@@ -210,7 +213,7 @@ async function generateSignature(creds) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
@@ -295,6 +298,7 @@ async function getCredentials(req, res) {
     const creds = newDummyUserCreds;
     creds.issuer = process.env.ADDRESS;
     creds.secret = generateSecret();
+    creds.scope = 0;
 
     logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
     const signature = await generateSignature(creds);
@@ -348,6 +352,7 @@ async function getCredentials(req, res) {
   const creds = extractCreds(job);
   creds.issuer = process.env.ADDRESS;
   creds.secret = generateSecret();
+  creds.scope = 0;
 
   logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
   const signature = await generateSignature(creds);

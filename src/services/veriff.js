@@ -33,7 +33,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     getDateAsInt(creds.rawCreds.birthdate).toString(),
   ];
@@ -109,7 +109,8 @@ function extractCreds(session) {
   const address = person.addresses?.[0]?.parsedAddress;
   const countryCode = countryCodeToPrime[session.verification.document.country];
   assert.ok(countryCode, "Unsupported country");
-  const birthdate = person.dateOfBirth;
+  const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
+  const birthdateBuffer = birthdate ? Buffer.from(birthdate) : Buffer.alloc(1);
   const firstNameStr = person.firstName ? person.firstName : "";
   const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
   // Veriff doesn't support middle names, but we keep it for backwards compatibility
@@ -142,15 +143,16 @@ function extractCreds(session) {
   );
   const streetHash = ethers.BigNumber.from(poseidon(addrArgs)).toString();
   const zipCode = Number(address?.postcode ? address.postcode : 0);
-  const nameCitySubStreetZipArgs = [
+  const nameDobCitySubStreetZipArgs = [
     nameHash,
+    birthdateBuffer,
     cityBuffer,
     subdivisionBuffer,
     zipCode,
     streetHash,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameCitySubZipStreet = ethers.BigNumber.from(
-    poseidon(nameCitySubStreetZipArgs)
+  const nameDobCitySubZipStreet = ethers.BigNumber.from(
+    poseidon(nameDobCitySubStreetZipArgs)
   ).toString();
   return {
     rawCreds: {
@@ -170,11 +172,12 @@ function extractCreds(session) {
       birthdate: birthdate,
     },
     derivedCreds: {
-      nameCitySubdivisionZipStreetHash: {
-        value: nameCitySubZipStreet,
+      nameDobCitySubdivisionZipStreetHash: {
+        value: nameDobCitySubZipStreet,
         derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
+          "rawCreds.birthdate",
           "rawCreds.city",
           "rawCreds.subdivision",
           "rawCreds.zipCode",
@@ -204,9 +207,9 @@ function extractCreds(session) {
       "issuer",
       "secret",
       "rawCreds.countryCode",
-      "derivedCreds.nameCitySubdivisionZipStreetHash.value",
+      "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
       "rawCreds.completedAt",
-      "rawCreds.birthdate",
+      "scope",
     ],
   };
 }
@@ -226,7 +229,7 @@ async function generateSignature(creds) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
-    creds.derivedCreds.nameCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt),
     getDateAsInt(creds.rawCreds.birthdate)
   );
@@ -320,6 +323,7 @@ async function getCredentials(req, res) {
     const creds = newDummyUserCreds;
     creds.issuer = process.env.ADDRESS;
     creds.secret = generateSecret();
+    creds.scope = 0;
 
     logWithTimestamp("veriff/credentials: Generating signature");
     const signature = await generateSignature(creds);
@@ -373,6 +377,7 @@ async function getCredentials(req, res) {
   const creds = extractCreds(session);
   creds.issuer = process.env.ADDRESS;
   creds.secret = generateSecret();
+  creds.scope = 0;
 
   logWithTimestamp("veriff/credentials: Generating signature");
   const signature = await generateSignature(creds);
@@ -426,8 +431,8 @@ export { getCredentials };
 //     //    // Or...
 //     //    nameHash: string;
 //     //    streetHash: string;
-//     //    nameCitySubdivisionZipStreetHash: string;
+//     //    nameDobCitySubdivisionZipStreetHash: string;
 //   };
 //   serializedCreds: string[]; // i.e., leaf preimage
-//   fieldsInLeaf: string[]; // for gov-id, will be: ['issuer', 'secret', 'rawCreds.countryCode', 'derivedCreds.nameCitySubdivisionZipStreetHash', 'rawCreds.completedAt', 'rawCreds.birthdate']
+//   fieldsInLeaf: string[]; // for gov-id, will be: ['issuer', 'secret', 'rawCreds.countryCode', 'derivedCreds.nameDobCitySubdivisionZipStreetHash', 'rawCreds.completedAt', 'rawCreds.birthdate']
 // }
