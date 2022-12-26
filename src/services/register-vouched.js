@@ -34,7 +34,7 @@ function serializeCreds(creds) {
     "0x" + countryBuffer.toString("hex"),
     creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
-    creds.scope,
+    creds.scope.toString(),
   ];
 }
 
