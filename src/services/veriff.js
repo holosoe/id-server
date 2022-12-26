@@ -7,6 +7,7 @@ import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../init.js";
 import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
+// import { getPaymentStatus } from "../utils/paypal.js";
 
 const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
 const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
