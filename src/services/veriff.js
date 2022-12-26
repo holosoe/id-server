@@ -36,7 +36,7 @@ function serializeCreds(creds) {
     "0x" + countryBuffer.toString("hex"),
     creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
-    getDateAsInt(creds.rawCreds.birthdate).toString(),
+    creds.scope,
   ];
 }
 
@@ -232,7 +232,7 @@ async function generateSignature(creds) {
     countryBuffer,
     creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt),
-    getDateAsInt(creds.rawCreds.birthdate)
+    creds.scope
   );
   const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
   return await sign(leaf);
