@@ -398,7 +398,13 @@ async function getCredentials(req, res) {
   return res.status(200).json(response);
 }
 
-export { getCredentials };
+async function decisionWebhook(req, res) {
+  logWithTimestamp("veriff/decisionWebhook: Entered");
+  console.log(req.body);
+  return res.status(200).json({ message: "OK" });
+}
+
+export { getCredentials, decisionWebhook };
 
 // interface GovIdResponse {
 //   signature: string; // signature of hash of serializedCreds
