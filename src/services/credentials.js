@@ -110,9 +110,19 @@ async function storeOrUpdateUserCredentials(
 ) {
   let userCredentialsDoc;
   try {
+    // Try getting user by proofDigest first. This prevents a single proof
+    // from being used multiple times for different users/sigDigests.
     userCredentialsDoc = await UserCredentials.findOne({
       proofDigest: proofDigest,
     }).exec();
+    // If this proof hasn't been used to store user credentials, search by
+    // sigDigest. The user might be appending to a credential set that they
+    // have already stored.
+    if (!userCredentialsDoc) {
+      userCredentialsDoc = await UserCredentials.findOne({
+        sigDigest: sigDigest,
+      }).exec();
+    }
   } catch (err) {
     console.log(err);
     logWithTimestamp(
@@ -121,6 +131,7 @@ async function storeOrUpdateUserCredentials(
     return { error: "An error occurred while retrieving credentials." };
   }
   if (userCredentialsDoc) {
+    userCredentialsDoc.proofDigest = proofDigest;
     userCredentialsDoc.sigDigest = sigDigest;
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
@@ -134,7 +145,7 @@ async function storeOrUpdateUserCredentials(
   }
   try {
     logWithTimestamp(
-      `POST /credentials: Saving user to database with proofDigest ${proofDigest}.`
+      `POST /credentials: Saving user to database with proofDigest ${proofDigest} and sigDigest ${sigDigest}.`
     );
     await userCredentialsDoc.save();
   } catch (err) {
