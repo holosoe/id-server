@@ -72,18 +72,6 @@ async function initializeMongoDb() {
     return;
   }
   const userVerificationsSchema = new Schema({
-    // NOTE: vouched field is DEPRECATED. Do not add documents to this collection with vouched field.
-    // TODO: Remove vouched field once vouched integration has been phased out
-    vouched: {
-      uuid: {
-        type: String,
-        required: false,
-      },
-      jobID: {
-        type: String,
-        required: false,
-      },
-    },
     govId: {
       uuid: String,
       sessionId: String,

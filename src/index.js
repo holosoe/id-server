@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
-import verify from "./routes/register-vouched.js";
+import registerVouched from "./routes/register-vouched.js";
+import vouchedMisc from "./routes/vouched.js";
 import veriff from "./routes/veriff.js";
 import credentials from "./routes/credentials.js";
 import proofMetadata from "./routes/proof-metadata.js";
@@ -16,7 +17,8 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/registerVouched", verify);
+app.use("/registerVouched", registerVouched);
+app.use("/vouched", vouchedMisc);
 app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
