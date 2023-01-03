@@ -1,3 +1,5 @@
+export const ADMIN_EMAILS = process.env.ADMIN_EMAILS.split(",");
+
 // newDummyUserCreds does not include the following fields, though they should be
 // returned in the final response: issuer, secret, signature, or serializedCreds.
 export const newDummyUserCreds = {

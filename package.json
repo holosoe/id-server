@@ -10,6 +10,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.209.0",
     "@holonym-foundation/utils": "^1.0.1",
+    "@sendgrid/mail": "^7.7.0",
     "axios": "^0.27.2",
     "big-integer": "^1.6.51",
     "circomlibjs-old": "npm:circomlibjs@^0.0.8",

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { VerificationCount } from "../init.js";
-import { logWithTimestamp } from "../utils/utils.js";
+import { logWithTimestamp, sendEmail } from "../utils/utils.js";
+import { ADMIN_EMAILS } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY;
 
@@ -30,6 +31,14 @@ async function getJobCount(req, res) {
     }
 
     const jobCountToday = jobCount - jobCountYesterday;
+    // Send 2 emails after 5k verifications
+    if (jobCountToday > 5000 && jobCountToday <= 5002) {
+      for (const email of ADMIN_EMAILS) {
+        const subject = "Vouched job count for the day exceeded 5000!!";
+        const message = `Vouched job count for the day is ${jobCount}.`;
+        await sendEmail(email, subject, message);
+      }
+    }
     return res.status(200).json({ total: jobCount, today: jobCountToday });
   } catch (err) {
     console.log(err);

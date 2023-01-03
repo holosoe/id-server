@@ -2,6 +2,7 @@ import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
+import sgMail from "@sendgrid/mail";
 
 /**
  * Sign data with the server's private key
@@ -69,5 +70,25 @@ export async function createLeaf(
     );
   } catch (err) {
     console.log(err);
+  }
+}
+
+export async function sendEmail(to, subject, text, html) {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  // TODO: Setup SendGrid account, configure email in SendGrid, and test
+  const msg = {
+    to, // "test@example.com"
+    from: "idservices@holonym.id",
+    subject,
+    text,
+    html,
+  };
+  try {
+    await sgMail.send(msg);
+  } catch (error) {
+    console.error(error);
+    if (error.response) {
+      console.error(error.response.body);
+    }
   }
 }
