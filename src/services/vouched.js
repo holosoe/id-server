@@ -1,4 +1,5 @@
 import axios from "axios";
+import { VerificationCount } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY;
@@ -17,7 +18,19 @@ async function getJobCount(req, res) {
     });
     const jobCount = resp.data?.total || 0;
     logWithTimestamp("vouched/job-count: jobCount==" + jobCount);
-    return res.status(200).json({ jobCount });
+
+    const jobCountCollection = await VerificationCount.find().exec();
+    const jobCountDoc = jobCountCollection[0];
+    const jobCountYesterday = jobCountDoc.vouched.totalVerifications;
+
+    if (jobCountYesterday?.vouched?.lastUpdated + 86400000 < Date.now()) {
+      jobCountDoc.vouched.totalVerifications = jobCount;
+      jobCountDoc.vouched.lastUpdated = Date.now();
+      await jobCountDoc.save();
+    }
+
+    const jobCountToday = jobCount - jobCountYesterday;
+    return res.status(200).json({ total: jobCount, today: jobCountToday });
   } catch (err) {
     console.log(err);
     return res

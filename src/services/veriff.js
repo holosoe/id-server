@@ -276,7 +276,7 @@ async function getVeriffSessionDecision(sessionId) {
         },
       }
     );
-    console.log(resp.data);
+    // console.log(resp.data);
     return resp.data;
   } catch (err) {
     console.error(`Error getting session with ID ${sessionId}`, err.message);

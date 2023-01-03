@@ -1,4 +1,5 @@
 import fs from "fs";
+import axios from "axios";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
@@ -11,6 +12,29 @@ dotenv.config();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
+
+async function initializeVerificationCount(VerificationCount) {
+  const verificationCountCollection = await VerificationCount.find();
+  if (verificationCountCollection.length == 0) {
+    const url = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;
+    const resp = await axios.get(url, {
+      headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
+    });
+    const vouchedJobCount = resp.data?.total || 0;
+    // TODO: Get total Veriff verifications
+    const newVerificationCount = new VerificationCount({
+      vouched: {
+        totalVerifications: vouchedJobCount,
+        lastUpdated: Date.now(),
+      },
+      veriff: {
+        totalVerifications: 0,
+        lastUpdated: Date.now(),
+      },
+    });
+    await newVerificationCount.save();
+  }
+}
 
 async function initializeMongoDb() {
   if (process.env.ENVIRONMENT != "dev") {
@@ -98,15 +122,39 @@ async function initializeMongoDb() {
     "UserProofMetadata",
     userProofMetadataSchema
   );
-  return { UserVerifications, UserCredentials, UserProofMetadata };
+  const VerificationCountSchema = new Schema({
+    vouched: {
+      type: {
+        // total verifications in Vouched == total number of Vouched jobs
+        totalVerifications: Number,
+        lastUpdated: Number, // timestamp
+      },
+      required: false,
+    },
+    veriff: {
+      type: {
+        // total verifications in Veriff == total number of Veriff session decisions
+        totalVerifications: Number,
+        lastUpdated: Number, // timestamp
+      },
+      required: false,
+    },
+  });
+  const VerificationCount = mongoose.model(
+    "VerificationCount",
+    VerificationCountSchema
+  );
+  await initializeVerificationCount(VerificationCount);
+  return { UserVerifications, UserCredentials, UserProofMetadata, VerificationCount };
 }
 
-let UserVerifications, UserCredentials, UserProofMetadata;
+let UserVerifications, UserCredentials, UserProofMetadata, VerificationCount;
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
+    VerificationCount = result.VerificationCount;
   } else {
     console.log("MongoDB initialization failed");
   }
@@ -122,5 +170,6 @@ export {
   UserVerifications,
   UserCredentials,
   UserProofMetadata,
+  VerificationCount,
   zokProvider,
 };
