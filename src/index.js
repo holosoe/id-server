@@ -37,7 +37,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/aws-health", (req, res) => {
-  console.log(`${new Date().toISOString()} GET /aws-health`);
+  // console.log(`${new Date().toISOString()} GET /aws-health`);
   return res.status(200).json({ healthy: true });
 });
 
