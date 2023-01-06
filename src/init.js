@@ -12,27 +12,27 @@ dotenv.config();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
+if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
-async function initializeVerificationCount(VerificationCount) {
-  const verificationCountCollection = await VerificationCount.find();
-  if (verificationCountCollection.length == 0) {
+async function initializeDailyVerificationCount(DailyVerificationCount) {
+  const DailyverificationCountCollection = await DailyVerificationCount.find();
+  if (DailyverificationCountCollection.length == 0) {
     const url = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;
     const resp = await axios.get(url, {
       headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
     });
     const vouchedJobCount = resp.data?.total || 0;
     // TODO: Get total Veriff verifications
-    const newVerificationCount = new VerificationCount({
+    const newDailyVerificationCount = new DailyVerificationCount({
+      date: new Date().toISOString().slice(0, 10),
       vouched: {
-        totalVerifications: vouchedJobCount,
-        lastUpdated: Date.now(),
+        jobCount: vouchedJobCount,
       },
       veriff: {
-        totalVerifications: 0,
-        lastUpdated: Date.now(),
+        sessionCount: 0,
       },
     });
-    await newVerificationCount.save();
+    await newDailyVerificationCount.save();
   }
 }
 
@@ -122,39 +122,47 @@ async function initializeMongoDb() {
     "UserProofMetadata",
     userProofMetadataSchema
   );
-  const VerificationCountSchema = new Schema({
+  const DailyVerificationCountSchema = new Schema({
+    date: {
+      type: String, // use: new Date().toISOString().slice(0, 10)
+      required: true,
+    },
     vouched: {
       type: {
-        // total verifications in Vouched == total number of Vouched jobs
-        totalVerifications: Number,
-        lastUpdated: Number, // timestamp
+        jobCount: Number,
       },
       required: false,
     },
     veriff: {
       type: {
-        // total verifications in Veriff == total number of Veriff session decisions
-        totalVerifications: Number,
-        lastUpdated: Number, // timestamp
+        // Veriff charges per _decision_. We are tracking sessions since each session
+        // can have a decision, and we want to pre-emptively stop serving requests
+        // for new sessions in case all current sessions end up with a decision.
+        sessionCount: Number,
       },
       required: false,
     },
   });
-  const VerificationCount = mongoose.model(
-    "VerificationCount",
-    VerificationCountSchema
+  const DailyVerificationCount = mongoose.model(
+    "DailyVerificationCount",
+    DailyVerificationCountSchema
   );
-  await initializeVerificationCount(VerificationCount);
-  return { UserVerifications, UserCredentials, UserProofMetadata, VerificationCount };
+  await initializeDailyVerificationCount(DailyVerificationCount);
+  return {
+    UserVerifications,
+    UserCredentials,
+    UserProofMetadata,
+    DailyVerificationCount,
+  };
 }
 
-let UserVerifications, UserCredentials, UserProofMetadata, VerificationCount;
+let UserVerifications, UserCredentials, UserProofMetadata, DailyVerificationCount;
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
-    VerificationCount = result.VerificationCount;
+    DailyVerificationCount = result.DailyVerificationCount;
   } else {
     console.log("MongoDB initialization failed");
   }
@@ -170,6 +178,6 @@ export {
   UserVerifications,
   UserCredentials,
   UserProofMetadata,
-  VerificationCount,
+  DailyVerificationCount,
   zokProvider,
 };

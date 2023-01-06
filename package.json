@@ -21,6 +21,7 @@
     "mongodb": "^4.11.0",
     "mongoose": "^6.7.2",
     "pg": "^8.8.0",
+    "uuid": "^9.0.0",
     "zokrates-js": "^1.1.4"
   },
   "devDependencies": {
