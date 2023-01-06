@@ -1,3 +1,4 @@
+import { createHash, randomBytes } from "crypto";
 import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
@@ -91,4 +92,13 @@ export async function sendEmail(to, subject, text, html) {
       console.error(error.response.body);
     }
   }
+}
+
+export function hash(data) {
+  // returns Buffer
+  return createHash("sha256").update(data).digest();
+}
+
+export function generateSecret(numBytes = 16) {
+  return "0x" + randomBytes(numBytes).toString("hex");
 }

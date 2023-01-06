@@ -1,23 +1,20 @@
 import axios from "axios";
 import { strict as assert } from "node:assert";
-import { createHash, randomBytes } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../init.js";
-import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
+import {
+  sign,
+  createLeaf,
+  getDateAsInt,
+  logWithTimestamp,
+  hash,
+  generateSecret,
+} from "../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
-
-function hash(data) {
-  // returns Buffer
-  return createHash("sha256").update(data).digest();
-}
-
-function generateSecret(numBytes = 16) {
-  return "0x" + randomBytes(numBytes).toString("hex");
-}
 
 /**
  * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf

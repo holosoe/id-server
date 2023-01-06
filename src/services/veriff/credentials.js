@@ -1,26 +1,23 @@
 import axios from "axios";
 import { strict as assert } from "node:assert";
-import { createHash, randomBytes, createHmac } from "crypto";
+import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { v4 as uuidV4 } from "uuid";
-import { UserVerifications, DailyVerificationCount } from "../init.js";
-import { sign, createLeaf, getDateAsInt, logWithTimestamp } from "../utils/utils.js";
-import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
+import { UserVerifications } from "../../init.js";
+import {
+  sign,
+  createLeaf,
+  getDateAsInt,
+  logWithTimestamp,
+  hash,
+  generateSecret,
+} from "../../utils/utils.js";
+import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
 const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
 const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
-
-function hash(data) {
-  // returns Buffer
-  return createHash("sha256").update(data).digest();
-}
-
-function generateSecret(numBytes = 16) {
-  return "0x" + randomBytes(numBytes).toString("hex");
-}
 
 /**
  * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
@@ -310,12 +307,8 @@ async function redactVeriffSession(sessionId) {
 }
 
 /**
- * End helper functions
- * ---------------------------------------------------
- * Vouched verification
- */
-
-/**
+ * ENDPOINT
+ *
  * Allows user to retrieve their Vouched verification info
  */
 async function getCredentials(req, res) {
@@ -399,121 +392,4 @@ async function getCredentials(req, res) {
   return res.status(200).json(response);
 }
 
-async function createSession(req, res) {
-  logWithTimestamp("POST veriff/session: Entered");
-
-  // Increment sessionCount in today's verification count doc. If doc doesn't exist,
-  // create it, and set Veriff sessionCount to 1.
-  // findOneAndUpdate is used so that the operation is atomic.
-  const verificationCountDoc = await DailyVerificationCount.findOneAndUpdate(
-    { date: new Date().toISOString().slice(0, 10) },
-    { $inc: { "veriff.sessionCount": 1 } },
-    { upsert: true, returnOriginal: false }
-  ).exec();
-  const sessionCountToday = verificationCountDoc.veriff.sessionCount;
-
-  // Send 2 emails after 5k verifications
-  if (sessionCountToday > 5000 && sessionCountToday <= 5002) {
-    for (const email of ADMIN_EMAILS) {
-      const subject = "Veriff session count for the day exceeded 5000!!";
-      const message = `Veriff session count for the day is ${sessionCountToday}.`;
-      await sendEmail(email, subject, message);
-    }
-  }
-  if (sessionCountToday > 5000) {
-    return res.status(503).json({
-      error: "We cannot service more verifications today. Please try again tomorrow.",
-    });
-  }
-
-  const frontendUrl =
-    process.NODE_ENV === "development"
-      ? "http://localhost:3002"
-      : "https://holonym.id";
-  const reqBody = {
-    verification: {
-      // TODO: Is callback necessary if we handle "FINISHED" event in frontend?
-      callback: `${frontendUrl}/mint`,
-      document: {
-        type: "DRIVERS_LICENSE",
-      },
-      vendorData: uuidV4(),
-      timestamp: new Date().toISOString(),
-    },
-  };
-  if (process.NODE_ENV === "development") {
-    reqBody.verification.person = {
-      firstName: "John",
-      lastName: "Doe",
-      dateOfBirth: "1990-01-01",
-    };
-  }
-  try {
-    console.log(process.env.VERIFF_PUBLIC_API_KEY);
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-        "X-AUTH-CLIENT": process.env.VERIFF_PUBLIC_API_KEY,
-      },
-    };
-    const resp = await axios.post(
-      "https://stationapi.veriff.com/v1/sessions",
-      reqBody,
-      config
-    );
-    const verification = resp?.data?.verification;
-    logWithTimestamp(`POST veriff/session: Created session ${verification?.id}`);
-    return res.status(200).json({ url: verification?.url, id: verification?.id });
-  } catch (err) {
-    logWithTimestamp(`POST veriff/session: Error creating session`);
-    console.log(err.message);
-    console.log(err?.response?.data);
-    return res.status(500).json({ error: "An unknown error occurred" });
-  }
-}
-
-async function decisionWebhook(req, res) {
-  logWithTimestamp("veriff/decision-webhook: Entered");
-  console.log(req.body);
-  return res.status(200).json({ message: "OK" });
-}
-
-export { getCredentials, createSession, decisionWebhook };
-
-// interface GovIdResponse {
-//   signature: string; // signature of hash of serializedCreds
-//   secret: Secret;
-//   issuer: Address;
-//   // rawCreds is a useful category because it indicates that these fields can be displayed to the user
-//   rawCreds: {
-//     birthdate: string;
-//     city: string;
-//     completedAt: string;
-//     countryCode: number;
-//     firstName: string;
-//     lastName: string;
-//     middleName: string;
-//     streetName: string;
-//     streetNumber: number;
-//     streetUnit: string;
-//     subdivision: string;
-//     zipCode: number;
-//   };
-//   // derivedCreds is an optional field, present only if fieldsInLeaf depends on it.
-//   derivedCreds: {
-//     [string]: any;
-//     //  // For example...
-//     //    nameHash: {
-//     //      derivation-function: string; // e.g., 'poseidon'
-//     //      inputFields: any[]; // e.g., ['rawCreds.firstName', 'rawCreds.middleName', 'rawCreds.lastName']
-//     //      type: string; // e.g., 'string'
-//     //      value: string;
-//     //    };
-//     //    // Or...
-//     //    nameHash: string;
-//     //    streetHash: string;
-//     //    nameDobCitySubdivisionZipStreetHash: string;
-//   };
-//   serializedCreds: string[]; // i.e., leaf preimage
-//   fieldsInLeaf: string[]; // for gov-id, will be: ['issuer', 'secret', 'rawCreds.countryCode', 'derivedCreds.nameDobCitySubdivisionZipStreetHash', 'rawCreds.completedAt', 'rawCreds.birthdate']
-// }
+export { getCredentials };
