@@ -57,6 +57,12 @@ function validateJob(job, jobID) {
     return { error: "Verification failed" };
   }
   // Assert ID not expired
+  if (!job.result.expireDate) {
+    logWithTimestamp(
+      `registerVouched/vouchedCredentials: ID expiration not found. expireDate is ${job.result.expireDate}. Exiting.`
+    );
+    return { error: "ID expiration date not found" };
+  }
   if (new Date(job.result.expireDate) < new Date()) {
     logWithTimestamp(
       `registerVouched/vouchedCredentials: ID expired. expireDate is ${job.result.expireDate}. Exiting.`
