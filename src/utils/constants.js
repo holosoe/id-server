@@ -16,19 +16,18 @@ export const newDummyUserCreds = {
     streetUnit: "",
     subdivision: "NY",
     zipCode: 12345,
+    expirationDate: "2023-09-16",
   },
   derivedCreds: {
-    nameDobCitySubdivisionZipStreetHash: {
+    nameDobCitySubdivisionZipStreetExpireHash: {
       value:
         "10661486706529852150200226111599067623527314510572034955353660669031775117944",
       derivationFunction: "poseidon",
       inputFields: [
-        "derivedCreds.nameHash",
+        "derivedCreds.nameHash.value",
         "rawCreds.birthdate",
-        "rawCreds.city",
-        "rawCreds.subdivision",
-        "rawCreds.zipCode",
-        "derivedCreds.streetHash",
+        "derivedCreds.addressHash.value",
+        "rawCreds.expirationDate",
       ],
     },
     streetHash: {
@@ -39,6 +38,17 @@ export const newDummyUserCreds = {
         "rawCreds.streetNumber",
         "rawCreds.streetName",
         "rawCreds.streetUnit",
+      ],
+    },
+    addressHash: {
+      value:
+        "10661486706529852150200226111599067623527314510572034955353660669031775117940",
+      derivationFunction: "poseidon",
+      inputFields: [
+        "rawCreds.city",
+        "rawCreds.subdivision",
+        "rawCreds.zipCode",
+        "derivedCreds.streetHash.value",
       ],
     },
     nameHash: {
@@ -52,7 +62,7 @@ export const newDummyUserCreds = {
     "issuer",
     "secret",
     "rawCreds.countryCode",
-    "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
+    "derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value",
     "rawCreds.completedAt",
     "scope",
   ],

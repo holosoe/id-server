@@ -29,7 +29,7 @@ function serializeCreds(creds) {
     creds.issuer,
     creds.secret,
     "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     creds.scope.toString(),
   ];
@@ -84,6 +84,7 @@ function validateJob(job, jobID) {
 function extractCreds(job) {
   const countryCode = countryCodeToPrime[job.result.country];
   assert.ok(countryCode, "Unsupported country");
+  // todo: use getDateAsInt on birthdate
   let birthdate = job.result?.dob?.split("/");
   if (birthdate?.length == 3) {
     assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
@@ -132,16 +133,30 @@ function extractCreds(job) {
   const zipCode = Number(
     job.result?.idAddress?.postalCode ? job.result.idAddress.postalCode : 0
   );
-  const nameDobCitySubStreetZipArgs = [
+  const addressArgs = [cityBuffer, subdivisionBuffer, zipCode, streetHash].map((x) =>
+    ethers.BigNumber.from(x)
+  );
+  const addressHash = ethers.BigNumber.from(poseidon(addressArgs)).toString();
+  let expireDateSr = job.result?.expireDate ? job.result.expireDate : "";
+  if (expireDateSr?.length == 3) {
+    expireDateSr = job.result?.expireDate?.split("/");
+    assert.equal(expireDateSr[2].length, 4, "expireDate year is not 4 characters"); // Ensures we are placing year in correct location in formatted date
+    expireDateSr = [expireDateSr[2], expireDateSr[0], expireDateSr[1]].join("-");
+  } else {
+    logWithTimestamp(
+      `registerVouched/vouchedCredentials: expireDateSr == ${expireDateSr}. Setting expireDateSr to ""`
+    );
+    expireDateSr = "";
+  }
+  const expireDateNum = expireDateSr ? getDateAsInt(expireDateSr) : 0;
+  const nameDobAddrExpireArgs = [
     nameHash,
     birthdateBuffer,
-    cityBuffer,
-    subdivisionBuffer,
-    zipCode,
-    streetHash,
+    addressHash,
+    expireDateNum,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameDobCitySubZipStreet = ethers.BigNumber.from(
-    poseidon(nameDobCitySubStreetZipArgs)
+  const nameDobAddrExpire = ethers.BigNumber.from(
+    poseidon(nameDobAddrExpireArgs)
   ).toString();
   return {
     rawCreds: {
@@ -157,18 +172,17 @@ function extractCreds(job) {
       streetUnit: streetUnit,
       completedAt: job.updatedAt ? job.updatedAt.split("T")[0] : "",
       birthdate: birthdate,
+      expirationDate: expireDateSr,
     },
     derivedCreds: {
-      nameDobCitySubdivisionZipStreetHash: {
-        value: nameDobCitySubZipStreet,
+      nameDobCitySubdivisionZipStreetExpireHash: {
+        value: nameDobAddrExpire,
         derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.birthdate",
-          "rawCreds.city",
-          "rawCreds.subdivision",
-          "rawCreds.zipCode",
-          "derivedCreds.streetHash.value",
+          "derivedCreds.addressHash.value",
+          "rawCreds.expirationDate",
         ],
       },
       streetHash: {
@@ -178,6 +192,16 @@ function extractCreds(job) {
           "rawCreds.streetNumber",
           "rawCreds.streetName",
           "rawCreds.streetUnit",
+        ],
+      },
+      addressHash: {
+        value: addressHash,
+        derivationFunction: "poseidon",
+        inputFields: [
+          "rawCreds.city",
+          "rawCreds.subdivision",
+          "rawCreds.zipCode",
+          "derivedCreds.streetHash.value",
         ],
       },
       nameHash: {
@@ -194,7 +218,7 @@ function extractCreds(job) {
       "issuer",
       "secret",
       "rawCreds.countryCode",
-      "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
+      "derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value",
       "rawCreds.completedAt",
       "scope",
     ],
@@ -216,7 +240,7 @@ async function generateSignature(creds) {
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
     getDateAsInt(creds.rawCreds.completedAt),
     creds.scope
   );
