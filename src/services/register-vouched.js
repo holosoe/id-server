@@ -84,7 +84,6 @@ function validateJob(job, jobID) {
 function extractCreds(job) {
   const countryCode = countryCodeToPrime[job.result.country];
   assert.ok(countryCode, "Unsupported country");
-  // todo: use getDateAsInt on birthdate
   let birthdate = job.result?.dob?.split("/");
   if (birthdate?.length == 3) {
     assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
@@ -95,7 +94,7 @@ function extractCreds(job) {
     );
     birthdate = "";
   }
-  const birthdateBuffer = birthdate ? Buffer.from(birthdate) : Buffer.alloc(1);
+  const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = job.result?.firstName ? job.result.firstName : "";
   const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
   const middleNameStr = job.result?.middleName ? job.result.middleName : "";
@@ -151,7 +150,7 @@ function extractCreds(job) {
   const expireDateNum = expireDateSr ? getDateAsInt(expireDateSr) : 0;
   const nameDobAddrExpireArgs = [
     nameHash,
-    birthdateBuffer,
+    birthdateNum,
     addressHash,
     expireDateNum,
   ].map((x) => ethers.BigNumber.from(x).toString());
