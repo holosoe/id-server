@@ -197,9 +197,20 @@ async function initializeMongoDb() {
       type: String,
       required: true,
     },
-    stale: {
-      type: Boolean,
+    createdAt: {
+      // UNIX timestamp
+      type: Number,
       required: true,
+    },
+    consumedAt: {
+      // UNIX timestamp
+      type: Number,
+      required: false,
+    },
+    consumedBy: {
+      // IP address
+      type: String,
+      required: false,
     },
   });
   const ProofSession = mongoose.model("ProofSession", ProofSessionSchema);

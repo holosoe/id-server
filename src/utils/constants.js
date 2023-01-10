@@ -1,5 +1,9 @@
 export const ADMIN_EMAILS = process.env.ADMIN_EMAILS.split(",");
 
+// time in milliseconds between a session being retrieved and the session being
+// marked as expired.
+export const PROOF_SESSION_ACTIVE_DURATION = 60 * 1000;
+
 // newDummyUserCreds does not include the following fields, though they should be
 // returned in the final response: issuer, secret, signature, or serializedCreds.
 export const newDummyUserCreds = {
