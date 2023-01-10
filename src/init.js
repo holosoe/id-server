@@ -37,7 +37,7 @@ async function initializeDailyVerificationCount(DailyVerificationCount) {
 }
 
 async function initializeProofClient(ProofClient) {
-  if (process.env.NODE_ENV == "development") {
+  if (process.env.ENVIRONMENT == "dev") {
     const testClientData = {
       clientId: "0",
       name: "Holonym",
