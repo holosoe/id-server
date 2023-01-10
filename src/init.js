@@ -36,6 +36,21 @@ async function initializeDailyVerificationCount(DailyVerificationCount) {
   }
 }
 
+async function initializeProofClient(ProofClient) {
+  if (process.env.NODE_ENV == "development") {
+    const testClientData = {
+      clientId: "0",
+      name: "Holonym",
+      apiKey: "123",
+    };
+    const testClientDoc = await ProofClient.findOne(testClientData);
+    if (!testClientDoc) {
+      const newProofClient = new ProofClient(testClientData);
+      await newProofClient.save();
+    }
+  }
+}
+
 async function initializeMongoDb() {
   if (process.env.ENVIRONMENT != "dev") {
     // Download certificate used for TLS connection
@@ -147,22 +162,73 @@ async function initializeMongoDb() {
     "DailyVerificationCount",
     DailyVerificationCountSchema
   );
+  // ProofClients are clients of off-chain proofs
+  const ProofClientSchema = new Schema({
+    // TODO: What information do we need to do proper accounting for off-chain proofs?
+    // We will need more identifying info for each client, but it will depend on what
+    // we use to handle payments.
+    clientId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    name: {
+      type: String,
+      required: true,
+    },
+    // TODO: Implement API key management
+    apiKey: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    // TODO: Add public encryption key for client. This will be used to encrypt
+    // proofs sent to client.
+  });
+  const ProofClient = mongoose.model("ProofClient", ProofClientSchema);
+  // ProofSessions are for off-chain proofs
+  const ProofSessionSchema = new Schema({
+    sessionId: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    clientId: {
+      type: String,
+      required: true,
+    },
+    stale: {
+      type: Boolean,
+      required: true,
+    },
+  });
+  const ProofSession = mongoose.model("ProofSession", ProofSessionSchema);
   await initializeDailyVerificationCount(DailyVerificationCount);
+  await initializeProofClient(ProofClient);
   return {
     UserVerifications,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
+    ProofClient,
+    ProofSession,
   };
 }
 
-let UserVerifications, UserCredentials, UserProofMetadata, DailyVerificationCount;
+let UserVerifications,
+  UserCredentials,
+  UserProofMetadata,
+  DailyVerificationCount,
+  ProofClient,
+  ProofSession;
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
+    ProofClient = result.ProofClient;
+    ProofSession = result.ProofSession;
   } else {
     console.log("MongoDB initialization failed");
   }
@@ -179,5 +245,7 @@ export {
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
+  ProofClient,
+  ProofSession,
   zokProvider,
 };
