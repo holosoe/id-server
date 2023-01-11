@@ -4,7 +4,7 @@
     "start:dev": "bash scripts/run.sh dev",
     "start:prod": "bash scripts/run.sh prod",
     "build:prod": "bash scripts/build.sh prod",
-    "test": "TESTING=true npx mocha --require ./test/fixtures.js --timeout 5s"
+    "test": "TESTING=true npx mocha --timeout 5s"
   },
   "type": "module",
   "dependencies": {

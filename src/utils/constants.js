@@ -1,4 +1,4 @@
-export const ADMIN_EMAILS = process.env.ADMIN_EMAILS.split(",");
+export const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(",");
 
 // time in milliseconds between a session being retrieved and the session being
 // marked as expired.
