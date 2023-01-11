@@ -6,8 +6,8 @@ import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
 import { logWithTimestamp, hash } from "./utils/utils.js";
-import dotenv from "dotenv";
 import { SALT } from "./utils/constants.js";
+import dotenv from "dotenv";
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -187,6 +187,7 @@ async function initializeMongoDb() {
     username: {
       type: String,
       required: true,
+      unique: true,
     },
     // passwordDigest == sha256(password + salt)
     passwordDigest: {
