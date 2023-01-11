@@ -5,8 +5,9 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
-import { logWithTimestamp } from "./utils/utils.js";
+import { logWithTimestamp, hash } from "./utils/utils.js";
 import dotenv from "dotenv";
+import { SALT } from "./utils/constants.js";
 dotenv.config();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -38,12 +39,19 @@ async function initializeDailyVerificationCount(DailyVerificationCount) {
 
 async function initializeProofClient(ProofClient) {
   if (process.env.ENVIRONMENT == "dev") {
+    const passwordDigest = hash(
+      Buffer.from(process.env.ADMIN_PASSWORD + SALT)
+    ).toString("hex");
     const testClientData = {
       clientId: "0",
       name: "Holonym",
-      apiKey: "123",
+      username: "holonym",
+      passwordDigest,
+      apiKeys: [{ key: "123", active: true }],
     };
-    const testClientDoc = await ProofClient.findOne(testClientData);
+    const testClientDoc = await ProofClient.findOne({
+      clientId: testClientData.clientId,
+    }).exec();
     if (!testClientDoc) {
       const newProofClient = new ProofClient(testClientData);
       await newProofClient.save();
@@ -176,11 +184,32 @@ async function initializeMongoDb() {
       type: String,
       required: true,
     },
-    // TODO: Implement API key management
-    apiKey: {
+    username: {
       type: String,
       required: true,
-      unique: true,
+    },
+    // passwordDigest == sha256(password + salt)
+    passwordDigest: {
+      type: String,
+      required: true,
+    },
+    // TODO: Implement endpoints for API key management
+    apiKeys: {
+      type: [
+        {
+          type: {
+            key: {
+              type: String,
+              required: true,
+            },
+            active: {
+              type: Boolean,
+              required: true,
+            },
+          },
+        },
+      ],
+      required: true,
     },
     // TODO: Add public encryption key for client. This will be used to encrypt
     // proofs sent to client.

@@ -5,10 +5,11 @@ import { PROOF_SESSION_ACTIVE_DURATION } from "../utils/constants.js";
 
 async function createSession(req, res) {
   logWithTimestamp("POST sessions/: Entered");
-  // TODO: Better API key management
   const apiKey = req.headers["x-api-key"];
 
-  const client = await ProofClient.findOne({ apiKey }).exec();
+  const client = await ProofClient.findOne({
+    apiKeys: { $elemMatch: { key: apiKey, active: true } },
+  }).exec();
   if (!client) {
     logWithTimestamp("POST sessions/: Client not found");
     return res.status(401).json({ error: "Client not found" });
