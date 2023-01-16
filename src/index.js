@@ -5,9 +5,6 @@ import vouchedMisc from "./routes/vouched.js";
 import veriff from "./routes/veriff.js";
 import credentials from "./routes/credentials.js";
 import proofMetadata from "./routes/proof-metadata.js";
-import sessions from "./routes/sessions.js";
-import proofClients from "./routes/proof-clients.js";
-import admin from "./routes/admin.js";
 
 const app = express();
 
@@ -25,9 +22,6 @@ app.use("/vouched", vouchedMisc);
 app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
-app.use("/sessions", sessions);
-app.use("/proof-clients", proofClients);
-app.use("/admin", admin);
 
 app.get("/", (req, res) => {
   console.log(`${new Date().toISOString()} GET /`);
