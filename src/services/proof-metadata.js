@@ -1,7 +1,3 @@
-import axios from "axios";
-import { strict as assert } from "node:assert";
-import ethersPkg from "ethers";
-const { ethers } = ethersPkg;
 import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 
@@ -49,6 +45,7 @@ async function postProofMetadata(req, res) {
   const sigDigest = req?.body?.sigDigest;
   const encryptedProofMetadata = req?.body?.encryptedProofMetadata;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
+  const encryptedProofMetadataAES = req?.body?.encryptedProofMetadataAES;
 
   // Require that args are present
   if (!sigDigest) {
@@ -126,11 +123,13 @@ async function postProofMetadata(req, res) {
   if (userProofMetadataDoc) {
     userProofMetadataDoc.encryptedProofMetadata = encryptedProofMetadata;
     userProofMetadataDoc.encryptedSymmetricKey = encryptedSymmetricKey;
+    userProofMetadataDoc.encryptedProofMetadataAES = encryptedProofMetadataAES;
   } else {
     userProofMetadataDoc = new UserProofMetadata({
       sigDigest,
       encryptedProofMetadata,
       encryptedSymmetricKey,
+      encryptedProofMetadataAES,
     });
   }
   try {

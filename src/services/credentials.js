@@ -93,12 +93,6 @@ async function validatePostCredentialsArgs(
   if (sigDigest.length != 64) {
     return { error: "sigDigest is not 64 characters long" };
   }
-  if (encryptedCredentials.length > 10000) {
-    return { error: "encryptedCredentials is too large" };
-  }
-  if (encryptedSymmetricKey.length > 10000) {
-    return { error: "encryptedSymmetricKey is too large" };
-  }
   return { success: true };
 }
 
@@ -106,7 +100,8 @@ async function storeOrUpdateUserCredentials(
   sigDigest,
   proofDigest,
   encryptedCredentials,
-  encryptedSymmetricKey
+  encryptedSymmetricKey,
+  encryptedCredentialsAES
 ) {
   let userCredentialsDoc;
   try {
@@ -135,12 +130,14 @@ async function storeOrUpdateUserCredentials(
     userCredentialsDoc.sigDigest = sigDigest;
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
+    userCredentialsDoc.encryptedCredentialsAES = encryptedCredentialsAES;
   } else {
     userCredentialsDoc = new UserCredentials({
       proofDigest,
       sigDigest,
       encryptedCredentials,
       encryptedSymmetricKey,
+      encryptedCredentialsAES,
     });
   }
   try {
@@ -205,6 +202,7 @@ async function postCredentials(req, res) {
   const proof = req?.body?.proof;
   const encryptedCredentials = req?.body?.encryptedCredentials;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;
+  const encryptedCredentialsAES = req?.body?.encryptedCredentialsAES;
 
   const validationResult = await validatePostCredentialsArgs(
     sigDigest,
@@ -228,7 +226,8 @@ async function postCredentials(req, res) {
     sigDigest,
     proofDigest,
     encryptedCredentials,
-    encryptedSymmetricKey
+    encryptedSymmetricKey,
+    encryptedCredentialsAES
   );
   if (storeOrUpdateResult.error) {
     logWithTimestamp(`POST /credentials: ${storeOrUpdateResult.error}. Exiting.`);
