@@ -109,8 +109,16 @@ async function initializeMongoDb() {
     proofDigest: String,
     sigDigest: String,
     // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
-    encryptedCredentials: String, // For backwards compatibility (for the version that uses Lit). TODO: Remove after some time
-    encryptedSymmetricKey: String, // For backwards compatibility (for the version that uses Lit). TODO: Remove after some time
+    // For backwards compatibility (for the version that uses Lit). TODO: Remove after some time
+    encryptedCredentials: {
+      type: String,
+      required: false,
+    },
+    // For backwards compatibility (for the version that uses Lit). TODO: Remove after some time
+    encryptedSymmetricKey: {
+      type: String,
+      required: false,
+    },
     encryptedCredentialsAES: {
       type: String,
       required: false,
@@ -119,8 +127,14 @@ async function initializeMongoDb() {
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
   const userProofMetadataSchema = new Schema({
     sigDigest: String,
-    encryptedProofMetadata: String,
-    encryptedSymmetricKey: String,
+    encryptedProofMetadata: {
+      type: String,
+      required: false,
+    },
+    encryptedSymmetricKey: {
+      type: String,
+      required: false,
+    },
     encryptedProofMetadataAES: {
       type: String,
       required: false,

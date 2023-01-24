@@ -63,30 +63,10 @@ async function validatePostCredentialsArgs(
   if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
     return { error: "No sigDigest specified" };
   }
-  if (
-    !encryptedCredentials ||
-    encryptedCredentials == "null" ||
-    encryptedCredentials == "undefined"
-  ) {
-    return { error: "No encryptedCredentials specified" };
-  }
-  if (
-    !encryptedSymmetricKey ||
-    encryptedSymmetricKey == "null" ||
-    encryptedSymmetricKey == "undefined"
-  ) {
-    return { error: "No encryptedSymmetricKey specified" };
-  }
 
   // Require that args are correct types
   if (typeof sigDigest != "string") {
     return { error: "sigDigest isn't a string" };
-  }
-  if (typeof encryptedCredentials != "string") {
-    return { error: "encryptedCredentials isn't a string" };
-  }
-  if (typeof encryptedSymmetricKey != "string") {
-    return { error: "encryptedSymmetricKey isn't a string" };
   }
 
   // Ensure that args are not too large

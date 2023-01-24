@@ -52,35 +52,11 @@ async function postProofMetadata(req, res) {
     logWithTimestamp("POST /proof-metadata: No sigDigest specified. Exiting.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (!encryptedProofMetadata) {
-    logWithTimestamp(
-      "POST /proof-metadata: No encryptedProofMetadata specified. Exiting."
-    );
-    return res.status(400).json({ error: "No encryptedProofMetadata specified" });
-  }
-  if (!encryptedSymmetricKey) {
-    logWithTimestamp(
-      "POST /proof-metadata: No encryptedSymmetricKey specified. Exiting."
-    );
-    return res.status(400).json({ error: "No encryptedSymmetricKey specified" });
-  }
 
   // Require that args are correct types
   if (typeof sigDigest != "string") {
     logWithTimestamp("POST /proof-metadata: sigDigest isn't a string. Exiting.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
-  }
-  if (typeof encryptedProofMetadata != "string") {
-    logWithTimestamp(
-      "POST /proof-metadata: encryptedProofMetadata isn't a string. Exiting."
-    );
-    return res.status(400).json({ error: "encryptedProofMetadata isn't a string" });
-  }
-  if (typeof encryptedSymmetricKey != "string") {
-    logWithTimestamp(
-      "POST /proof-metadata: encryptedSymmetricKey isn't a string. Exiting."
-    );
-    return res.status(400).json({ error: "encryptedSymmetricKey isn't a string" });
   }
 
   // Ensure user exists
