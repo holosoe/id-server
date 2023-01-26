@@ -4,19 +4,22 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 // @ts-ignore
 import { poseidon } from "circomlibjs-old";
-// @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
-import { mongoose, UserCredentials, zokProvider } from "../init";
+
+import { UserCredentials, zokProvider } from "../init";
 import { logWithTimestamp } from "../utils/utils";
-import contractAddresses from "../constants/contractAddresses";
-import { holonymIssuers, relayerURL } from "../constants";
+import contractAddresses from "@/constants/contractAddresses";
+import { holonymIssuers, relayerURL } from "@/constants";
+
+export interface Proof {
+	proof: object;
+	inputs: string[];
+}
 
 async function validatePostCredentialsArgs(
-	sigDigest: $TSFixMe,
-	proof: $TSFixMe,
-	// @ts-expect-error TS(6133) FIXME: 'encryptedCredentials' is declared but its value i... Remove this comment to see the full error message
-	encryptedCredentials: $TSFixMe,
-	// @ts-expect-error TS(6133) FIXME: 'encryptedSymmetricKey' is declared but its value ... Remove this comment to see the full error message
-	encryptedSymmetricKey: $TSFixMe,
+	sigDigest: string,
+	proof: Proof,
+	_encryptedCredentials: string,
+	_encryptedSymmetricKey: string,
 ) {
 	const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 	const issuer = ethers.BigNumber.from(proof?.inputs?.[1]).toHexString();
@@ -40,8 +43,15 @@ async function validatePostCredentialsArgs(
 				break;
 			}
 		} catch (err) {
-			// @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
-			console.log(err.message);
+			console.log(
+				`${
+					(typeof err === "object" &&
+						err !== null &&
+						"message" in err &&
+						err.message) ||
+					err
+				}`,
+			);
 		}
 	}
 	if (!leafIsInTree) {
@@ -55,7 +65,6 @@ async function validatePostCredentialsArgs(
 		);
 		const verificationKey = verifKeyResp.data;
 		// console.log(proof);
-		// @ts-expect-error TS(7005) FIXME: Variable 'zokProvider' implicitly has an 'any' typ... Remove this comment to see the full error message
 		const isVerified = zokProvider.verify(verificationKey, proof);
 		if (!isVerified) {
 			console.log("isVerified", isVerified);
@@ -94,7 +103,6 @@ async function storeOrUpdateUserCredentials(
 	try {
 		// Try getting user by proofDigest first. This prevents a single proof
 		// from being used multiple times for different users/sigDigests.
-		// @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
 		userCredentialsDoc = await UserCredentials.findOne({
 			proofDigest: proofDigest,
 		}).exec();
@@ -102,7 +110,6 @@ async function storeOrUpdateUserCredentials(
 		// sigDigest. The user might be appending to a credential set that they
 		// have already stored.
 		if (!userCredentialsDoc) {
-			// @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
 			userCredentialsDoc = await UserCredentials.findOne({
 				sigDigest: sigDigest,
 			}).exec();
@@ -121,7 +128,6 @@ async function storeOrUpdateUserCredentials(
 		userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
 		userCredentialsDoc.encryptedCredentialsAES = encryptedCredentialsAES;
 	} else {
-		// @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
 		userCredentialsDoc = new UserCredentials({
 			proofDigest,
 			sigDigest,
@@ -162,7 +168,6 @@ async function getCredentials(req: Request, res: Response) {
 	}
 
 	try {
-		// @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
 		const userCreds = await UserCredentials.findOne({
 			sigDigest: sigDigest,
 		}).exec();
@@ -212,8 +217,9 @@ async function postCredentials(req: Request, res: Response) {
 	// To save space, we store a hash of the proof, instead of the proof itself.
 	// The `toLowerCase` step is important because case differences could allow users
 	// to use the same proof (varying only casing) to store multiple sets of data.
-	const serializedProof =
-		`0x${Buffer.from(JSON.stringify(proof).toLowerCase()).toString("hex")}`;
+	const serializedProof = `0x${Buffer.from(
+		JSON.stringify(proof).toLowerCase(),
+	).toString("hex")}`;
 	const proofDigest = poseidon([serializedProof]).toString();
 
 	const storeOrUpdateResult = await storeOrUpdateUserCredentials(

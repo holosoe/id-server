@@ -1,5 +1,5 @@
 import express from "express";
-import { getJobCount } from "../services/vouched";
+import { getJobCount } from "../services/vouched/endpoints";
 
 const router = express.Router();
 
