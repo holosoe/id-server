@@ -24,4 +24,4 @@ COPY . .
 
 EXPOSE 3000
 
-CMD ["dumb-init", "node", "./src/server"]
+CMD ["dumb-init", "node", "./build/index"]

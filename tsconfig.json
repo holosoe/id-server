@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2018",
+    "target": "esnext",
     "lib": [],
     "module": "es2022",
     "rootDir": "./",
@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "sourceMap": true,
-    "outDir": "dist",
+    "outDir": "build",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -38,6 +38,11 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
-  ]
+    "build"
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
 }

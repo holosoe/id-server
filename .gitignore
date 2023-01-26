@@ -8,4 +8,4 @@ lobby3-id-server.json
 
 rds-combined-ca-bundle.pem
 
-dist
+build

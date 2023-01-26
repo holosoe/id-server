@@ -20,11 +20,11 @@ const userVerificationsSchema = new Schema({
 		sessionId: String,
 	},
 });
-const UserVerifications = mongoose.model(
+export const UserVerifications = mongoose.model(
 	"UserVerifications",
 	userVerificationsSchema,
 );
-const userCredentialsSchema = new Schema({
+export const userCredentialsSchema = new Schema({
 	proofDigest: String,
 	sigDigest: String,
 	// NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
@@ -43,11 +43,11 @@ const userCredentialsSchema = new Schema({
 		required: false,
 	},
 });
-const UserCredentials = mongoose.model(
+export const UserCredentials = mongoose.model(
 	"UserCredentials",
 	userCredentialsSchema,
 );
-const userProofMetadataSchema = new Schema({
+export const userProofMetadataSchema = new Schema({
 	sigDigest: String,
 	encryptedProofMetadata: {
 		type: String,
@@ -62,11 +62,11 @@ const userProofMetadataSchema = new Schema({
 		required: false,
 	},
 });
-const UserProofMetadata = mongoose.model(
+export const UserProofMetadata = mongoose.model(
 	"UserProofMetadata",
 	userProofMetadataSchema,
 );
-const DailyVerificationCountSchema = new Schema({
+export const DailyVerificationCountSchema = new Schema({
 	date: {
 		type: String, // use: new Date().toISOString().slice(0, 10)
 		required: true,
@@ -87,7 +87,7 @@ const DailyVerificationCountSchema = new Schema({
 		required: false,
 	},
 });
-const DailyVerificationCount = mongoose.model(
+export const DailyVerificationCount = mongoose.model(
 	"DailyVerificationCount",
 	DailyVerificationCountSchema,
 );
@@ -189,16 +189,9 @@ initializeMongoDb().then((result) => {
 	}
 });
 
-let zokProvider: ZoKratesProvider;
+export let zokProvider: ZoKratesProvider;
 initialize().then((provider) => {
 	zokProvider = provider;
 });
 
-export {
-	mongoose,
-	UserVerifications,
-	UserCredentials,
-	UserProofMetadata,
-	DailyVerificationCount,
-	zokProvider,
-};
+export const close = () => mongoose.connection.close();
