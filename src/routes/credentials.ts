@@ -1,4 +1,3 @@
-// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'expr... Remove this comment to see the full error message
 import express from "express";
 import { getCredentials, postCredentials } from "../services/credentials.js";
 

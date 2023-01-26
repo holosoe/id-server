@@ -1,5 +1,5 @@
 import axios from "axios";
-// @ts-expect-error TS(2307) FIXME: Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
+// @ts-ignore
 import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;

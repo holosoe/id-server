@@ -1,10 +1,10 @@
 import axios from "axios";
-// @ts-expect-error TS(2307) FIXME: Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
+// @ts-ignore
 import { strict as assert } from "node:assert";
 import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-ignore
 import { poseidon } from "circomlibjs-old";
 // @ts-expect-error TS(7034) FIXME: Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
 import { UserVerifications } from "../../init.js";

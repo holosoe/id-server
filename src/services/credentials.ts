@@ -1,7 +1,7 @@
 import axios from "axios";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-ignore
 import { poseidon } from "circomlibjs-old";
 // @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
 import { mongoose, UserCredentials, zokProvider } from "../init.js";

@@ -1,5 +1,4 @@
 import axios from "axios";
-// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'uuid... Remove this comment to see the full error message
 import { v4 as uuidV4 } from "uuid";
 // @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
 import { DailyVerificationCount } from "../../init.js";
