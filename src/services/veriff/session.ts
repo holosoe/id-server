@@ -1,11 +1,11 @@
 import axios from "axios";
+import { Request, Response } from "express";
 import { v4 as uuidV4 } from "uuid";
 // @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
 import { DailyVerificationCount } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 
-// @ts-expect-error TS(6133) FIXME: 'req' is declared but its value is never read.
-async function createSession(req: $TSFixMe, res: $TSFixMe) {
+async function createSession(_: Request, res: Response) {
   logWithTimestamp("POST veriff/session: Entered");
 
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,

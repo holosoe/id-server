@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Request, Response } from "express";
 // @ts-ignore
 import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
@@ -317,7 +318,7 @@ async function redactVouchedJob(jobID: $TSFixMe) {
 /**
  * Allows user to retrieve their Vouched verification info
  */
-async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
+async function getCredentials(req: Request, res: Response) {
   logWithTimestamp("registerVouched/vouchedCredentials: Entered");
 
   if (process.env.ENVIRONMENT == "dev") {

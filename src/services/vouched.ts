@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Request, Response } from "express";
 // @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
 import { DailyVerificationCount } from "../init.js";
 import { logWithTimestamp, sendEmail } from "../utils/utils.js";
@@ -9,8 +10,7 @@ const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY;
 /**
  * Get the total number of Vouched jobs in our account
  */
-// @ts-expect-error TS(6133) FIXME: 'req' is declared but its value is never read.
-async function getJobCount(req: $TSFixMe, res: $TSFixMe) {
+async function getJobCount(_: Request, res: Response) {
   logWithTimestamp("vouched/job-count: Entered");
 
   try {

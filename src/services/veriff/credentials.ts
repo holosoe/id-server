@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Request, Response } from "express";
 // @ts-ignore
 import { strict as assert } from "node:assert";
 import { createHmac } from "crypto";
@@ -323,7 +324,7 @@ async function redactVeriffSession(sessionId: $TSFixMe) {
  *
  * Allows user to retrieve their Vouched verification info
  */
-async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
+async function getCredentials(req: Request, res: Response) {
   logWithTimestamp("veriff/credentials: Entered");
 
   if (process.env.ENVIRONMENT == "dev") {

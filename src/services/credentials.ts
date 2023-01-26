@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { Request, Response } from "express";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 // @ts-ignore
@@ -144,7 +145,7 @@ async function storeOrUpdateUserCredentials(
 /**
  * Get user's encrypted credentials and symmetric key from document store.
  */
-async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
+async function getCredentials(req: Request, res: Response) {
   logWithTimestamp("GET /credentials: Entered");
 
   const sigDigest = req?.query?.sigDigest;
@@ -185,7 +186,7 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
  * Ideally, each user can store only 1 credential set. However, given our privacy
  * guarantees, it is not clear that any design can reach this ideal.
  */
-async function postCredentials(req: $TSFixMe, res: $TSFixMe) {
+async function postCredentials(req: Request, res: Response) {
   logWithTimestamp("POST /credentials: Entered");
 
   const sigDigest = req?.body?.sigDigest;

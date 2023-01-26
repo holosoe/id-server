@@ -1,11 +1,11 @@
 // @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
 import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
+import type { Request, Response } from "express";
 import { logWithTimestamp } from "../utils/utils.js";
-
 /**
  * Get user's encrypted proof metadata and symmetric key from document store.
  */
-async function getProofMetadata(req: $TSFixMe, res: $TSFixMe) {
+async function getProofMetadata(req: Request, res: Response) {
   logWithTimestamp("GET /proof-metadata: Entered");
 
   const sigDigest = req?.query?.sigDigest;
@@ -41,7 +41,7 @@ async function getProofMetadata(req: $TSFixMe, res: $TSFixMe) {
 /**
  * Set user's encrypted proof metadata and symmetric key.
  */
-async function postProofMetadata(req: $TSFixMe, res: $TSFixMe) {
+async function postProofMetadata(req: Request, res: Response) {
   logWithTimestamp("POST /proof-metadata: Entered");
 
   const sigDigest = req?.body?.sigDigest;
