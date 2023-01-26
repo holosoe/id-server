@@ -1,18 +1,18 @@
 import axios from "axios";
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'uuid... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'uuid... Remove this comment to see the full error message
 import { v4 as uuidV4 } from "uuid";
-// @ts-expect-error TS(7034): Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
+// @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
 import { DailyVerificationCount } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 
-// @ts-expect-error TS(6133): 'req' is declared but its value is never read.
+// @ts-expect-error TS(6133) FIXME: 'req' is declared but its value is never read.
 async function createSession(req: $TSFixMe, res: $TSFixMe) {
   logWithTimestamp("POST veriff/session: Entered");
 
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,
   // create it, and set Veriff sessionCount to 1.
   // findOneAndUpdate is used so that the operation is atomic.
-  // @ts-expect-error TS(7005): Variable 'DailyVerificationCount' implicitly has a... Remove this comment to see the full error message
+  // @ts-expect-error TS(7005) FIXME: Variable 'DailyVerificationCount' implicitly has a... Remove this comment to see the full error message
   const verificationCountDoc = await DailyVerificationCount.findOneAndUpdate(
     { date: new Date().toISOString().slice(0, 10) },
     { $inc: { "veriff.sessionCount": 1 } },
@@ -22,11 +22,11 @@ async function createSession(req: $TSFixMe, res: $TSFixMe) {
 
   // Send 2 emails after 5k verifications
   if (sessionCountToday > 5000 && sessionCountToday <= 5002) {
-    // @ts-expect-error TS(2304): Cannot find name 'ADMIN_EMAILS'.
+    // @ts-expect-error TS(2304) FIXME: Cannot find name 'ADMIN_EMAILS'.
     for (const email of ADMIN_EMAILS) {
       const subject = "Veriff session count for the day exceeded 5000!!";
       const message = `Veriff session count for the day is ${sessionCountToday}.`;
-      // @ts-expect-error TS(2554): Expected 4 arguments, but got 3.
+      // @ts-expect-error TS(2554) FIXME: Expected 4 arguments, but got 3.
       await sendEmail(email, subject, message);
     }
   }
@@ -38,7 +38,7 @@ async function createSession(req: $TSFixMe, res: $TSFixMe) {
 
   // Prepare request and create session
   const frontendUrl =
-    // @ts-expect-error TS(2339): Property 'NODE_ENV' does not exist on type 'Proces... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'NODE_ENV' does not exist on type 'Proces... Remove this comment to see the full error message
     process.NODE_ENV === "development"
       ? "http://localhost:3002"
       : "https://holonym.id";
@@ -53,9 +53,9 @@ async function createSession(req: $TSFixMe, res: $TSFixMe) {
       timestamp: new Date().toISOString(),
     },
   };
-  // @ts-expect-error TS(2339): Property 'NODE_ENV' does not exist on type 'Proces... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'NODE_ENV' does not exist on type 'Proces... Remove this comment to see the full error message
   if (process.NODE_ENV === "development") {
-    // @ts-expect-error TS(2339): Property 'person' does not exist on type '{ callba... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'person' does not exist on type '{ callba... Remove this comment to see the full error message
     reqBody.verification.person = {
       firstName: "John",
       lastName: "Doe",
@@ -73,7 +73,7 @@ async function createSession(req: $TSFixMe, res: $TSFixMe) {
     const resp = await axios.post(
       "https://stationapi.veriff.com/v1/sessions",
       reqBody,
-      // @ts-expect-error TS(2345): Argument of type '{ headers: { "Content-Type": str... Remove this comment to see the full error message
+      // @ts-expect-error TS(2345) FIXME: Argument of type '{ headers: { "Content-Type": str... Remove this comment to see the full error message
       config
     );
     const verification = resp?.data?.verification;
@@ -81,9 +81,9 @@ async function createSession(req: $TSFixMe, res: $TSFixMe) {
     return res.status(200).json({ url: verification?.url, id: verification?.id });
   } catch (err) {
     logWithTimestamp(`POST veriff/session: Error creating session`);
-    // @ts-expect-error TS(2571): Object is of type 'unknown'.
+    // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     console.log(err.message);
-    // @ts-expect-error TS(2571): Object is of type 'unknown'.
+    // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     console.log(err?.response?.data);
     return res.status(500).json({ error: "An unknown error occurred" });
   }

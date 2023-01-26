@@ -1,9 +1,9 @@
 import axios from "axios";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
-// @ts-expect-error TS(6133): 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
+// @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
 import { mongoose, UserCredentials, zokProvider } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 import contractAddresses from "../constants/contractAddresses.js";
@@ -12,9 +12,9 @@ import { holonymIssuers, relayerURL } from "../constants/misc.js";
 async function validatePostCredentialsArgs(
   sigDigest: $TSFixMe,
   proof: $TSFixMe,
-  // @ts-expect-error TS(6133): 'encryptedCredentials' is declared but its value i... Remove this comment to see the full error message
+  // @ts-expect-error TS(6133) FIXME: 'encryptedCredentials' is declared but its value i... Remove this comment to see the full error message
   encryptedCredentials: $TSFixMe,
-  // @ts-expect-error TS(6133): 'encryptedSymmetricKey' is declared but its value ... Remove this comment to see the full error message
+  // @ts-expect-error TS(6133) FIXME: 'encryptedSymmetricKey' is declared but its value ... Remove this comment to see the full error message
   encryptedSymmetricKey: $TSFixMe
 ) {
   const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
@@ -39,7 +39,7 @@ async function validatePostCredentialsArgs(
         break;
       }
     } catch (err) {
-      // @ts-expect-error TS(2571): Object is of type 'unknown'.
+      // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
       console.log(err.message);
     }
   }
@@ -54,7 +54,7 @@ async function validatePostCredentialsArgs(
     );
     const verificationKey = verifKeyResp.data;
     // console.log(proof);
-    // @ts-expect-error TS(7005): Variable 'zokProvider' implicitly has an 'any' typ... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'zokProvider' implicitly has an 'any' typ... Remove this comment to see the full error message
     const isVerified = zokProvider.verify(verificationKey, proof);
     if (!isVerified) {
       console.log("isVerified", isVerified);
@@ -93,7 +93,7 @@ async function storeOrUpdateUserCredentials(
   try {
     // Try getting user by proofDigest first. This prevents a single proof
     // from being used multiple times for different users/sigDigests.
-    // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
     userCredentialsDoc = await UserCredentials.findOne({
       proofDigest: proofDigest,
     }).exec();
@@ -101,7 +101,7 @@ async function storeOrUpdateUserCredentials(
     // sigDigest. The user might be appending to a credential set that they
     // have already stored.
     if (!userCredentialsDoc) {
-      // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
+      // @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
       userCredentialsDoc = await UserCredentials.findOne({
         sigDigest: sigDigest,
       }).exec();
@@ -120,7 +120,7 @@ async function storeOrUpdateUserCredentials(
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
     userCredentialsDoc.encryptedCredentialsAES = encryptedCredentialsAES;
   } else {
-    // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
     userCredentialsDoc = new UserCredentials({
       proofDigest,
       sigDigest,
@@ -159,7 +159,7 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   }
 
   try {
-    // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
     const userCreds = await UserCredentials.findOne({
       sigDigest: sigDigest,
     }).exec();

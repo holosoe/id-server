@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
 import sgMail from "@sendgrid/mail";
 
@@ -10,7 +10,7 @@ import sgMail from "@sendgrid/mail";
  * Sign data with the server's private key
  */
 export async function sign(data: $TSFixMe) {
-  // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
+  // @ts-expect-error TS(2345) FIXME: Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const signature = await wallet.signMessage(data);
   return signature;
@@ -77,7 +77,7 @@ export async function createLeaf(
 }
 
 export async function sendEmail(to: $TSFixMe, subject: $TSFixMe, text: $TSFixMe, html: $TSFixMe) {
-  // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
+  // @ts-expect-error TS(2345) FIXME: Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
   // TODO: Setup SendGrid account, configure email in SendGrid, and test
   const msg = {
@@ -91,9 +91,9 @@ export async function sendEmail(to: $TSFixMe, subject: $TSFixMe, text: $TSFixMe,
     await sgMail.send(msg);
   } catch (error) {
     console.error(error);
-    // @ts-expect-error TS(2571): Object is of type 'unknown'.
+    // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     if (error.response) {
-      // @ts-expect-error TS(2571): Object is of type 'unknown'.
+      // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
       console.error(error.response.body);
     }
   }

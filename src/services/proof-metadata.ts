@@ -1,4 +1,4 @@
-// @ts-expect-error TS(6133): 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
+// @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
 import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 
@@ -20,7 +20,7 @@ async function getProofMetadata(req: $TSFixMe, res: $TSFixMe) {
   }
 
   try {
-    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     const userProofMetadata = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -64,7 +64,7 @@ async function postProofMetadata(req: $TSFixMe, res: $TSFixMe) {
   // Ensure user exists
   let userCredentialsDoc;
   try {
-    // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
     userCredentialsDoc = await UserCredentials.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -86,7 +86,7 @@ async function postProofMetadata(req: $TSFixMe, res: $TSFixMe) {
   // Store proof metadata
   let userProofMetadataDoc;
   try {
-    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     userProofMetadataDoc = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -105,7 +105,7 @@ async function postProofMetadata(req: $TSFixMe, res: $TSFixMe) {
     userProofMetadataDoc.encryptedSymmetricKey = encryptedSymmetricKey;
     userProofMetadataDoc.encryptedProofMetadataAES = encryptedProofMetadataAES;
   } else {
-    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
+    // @ts-expect-error TS(7005) FIXME: Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     userProofMetadataDoc = new UserProofMetadata({
       sigDigest,
       encryptedProofMetadata,

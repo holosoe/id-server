@@ -1,11 +1,11 @@
 import axios from "axios";
-// @ts-expect-error TS(2307): Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
+// @ts-expect-error TS(2307) FIXME: Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
 import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
-// @ts-expect-error TS(7034): Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
+// @ts-expect-error TS(7034) FIXME: Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
 import { UserVerifications } from "../init.js";
 import {
   sign,
@@ -79,7 +79,7 @@ function validateJob(job: $TSFixMe, jobID: $TSFixMe) {
 }
 
 function extractCreds(job: $TSFixMe) {
-  // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
+  // @ts-expect-error TS(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const countryCode = countryCodeToPrime[job.result.country];
   assert.ok(countryCode, "Unsupported country");
   let birthdate = job.result?.dob?.split("/");
@@ -234,7 +234,7 @@ async function generateSignature(creds: $TSFixMe) {
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
   const leafAsBigInt = await createLeaf(
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
+    // @ts-expect-error TS(2532) FIXME: Object is possibly 'undefined'.
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -247,7 +247,7 @@ async function generateSignature(creds: $TSFixMe) {
 }
 
 async function saveUserToDb(uuid: $TSFixMe, jobID: $TSFixMe) {
-  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
+  // @ts-expect-error TS(7005) FIXME: Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const userVerificationsDoc = new UserVerifications({
     govId: {
       uuid: uuid,
@@ -322,11 +322,11 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
-    // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.issuer = process.env.ADDRESS;
-    // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.secret = generateSecret();
-    // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
     creds.scope = 0;
 
     logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
@@ -363,7 +363,7 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
-  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
+  // @ts-expect-error TS(7005) FIXME: Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
   if (user) {
     logWithTimestamp(
@@ -380,11 +380,11 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(job);
-  // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.issuer = process.env.ADDRESS;
-  // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.secret = generateSecret();
-  // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
   creds.scope = 0;
 
   logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");

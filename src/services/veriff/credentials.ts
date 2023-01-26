@@ -1,12 +1,12 @@
 import axios from "axios";
-// @ts-expect-error TS(2307): Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
+// @ts-expect-error TS(2307) FIXME: Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
 import { strict as assert } from "node:assert";
 import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
-// @ts-expect-error TS(7034): Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
+// @ts-expect-error TS(7034) FIXME: Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
 import { UserVerifications } from "../../init.js";
 import {
   sign,
@@ -109,7 +109,7 @@ function validateSession(session: $TSFixMe, sessionId: $TSFixMe) {
 function extractCreds(session: $TSFixMe) {
   const person = session.verification.person;
   const address = person.addresses?.[0]?.parsedAddress;
-  // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
+  // @ts-expect-error TS(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const countryCode = countryCodeToPrime[session.verification.document.country];
   assert.ok(countryCode, "Unsupported country");
   const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
@@ -229,7 +229,7 @@ async function generateSignature(creds: $TSFixMe) {
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
   const leafAsBigInt = await createLeaf(
-    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
+    // @ts-expect-error TS(2532) FIXME: Object is possibly 'undefined'.
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -242,7 +242,7 @@ async function generateSignature(creds: $TSFixMe) {
 }
 
 async function saveUserToDb(uuid: $TSFixMe, sessionId: $TSFixMe) {
-  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
+  // @ts-expect-error TS(7005) FIXME: Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const userVerificationsDoc = new UserVerifications({
     govId: {
       uuid: uuid,
@@ -266,7 +266,7 @@ async function saveUserToDb(uuid: $TSFixMe, sessionId: $TSFixMe) {
 
 async function getVeriffSessionDecision(sessionId: $TSFixMe) {
   try {
-    // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
+    // @ts-expect-error TS(2345) FIXME: Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
     const hmacSignature = createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
       .digest("hex")
@@ -275,7 +275,7 @@ async function getVeriffSessionDecision(sessionId: $TSFixMe) {
       `https://stationapi.veriff.com/v1/sessions/${sessionId}/decision`,
       {
         headers: {
-          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
+          // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           "X-AUTH-CLIENT": veriffPublicKey,
           "X-HMAC-SIGNATURE": hmacSignature,
           "Content-Type": "application/json",
@@ -285,7 +285,7 @@ async function getVeriffSessionDecision(sessionId: $TSFixMe) {
     // console.log(resp.data);
     return resp.data;
   } catch (err) {
-    // @ts-expect-error TS(2571): Object is of type 'unknown'.
+    // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     console.error(`Error getting session with ID ${sessionId}`, err.message);
     return {};
   }
@@ -293,7 +293,7 @@ async function getVeriffSessionDecision(sessionId: $TSFixMe) {
 
 async function redactVeriffSession(sessionId: $TSFixMe) {
   try {
-    // @ts-expect-error TS(2304): Cannot find name 'crypto'.
+    // @ts-expect-error TS(2304) FIXME: Cannot find name 'crypto'.
     const hmacSignature = crypto
       .createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
@@ -303,7 +303,7 @@ async function redactVeriffSession(sessionId: $TSFixMe) {
       `https://stationapi.veriff.com/v1/sessions/${sessionId}`,
       {
         headers: {
-          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
+          // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           "X-AUTH-CLIENT": veriffPublicKey,
           "X-HMAC-SIGNATURE": hmacSignature,
           "Content-Type": "application/json",
@@ -312,7 +312,7 @@ async function redactVeriffSession(sessionId: $TSFixMe) {
     );
     return resp.data;
   } catch (err) {
-    // @ts-expect-error TS(2571): Object is of type 'unknown'.
+    // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     console.log(err.message);
     return {};
   }
@@ -328,11 +328,11 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
-    // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.issuer = process.env.ADDRESS;
-    // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.secret = generateSecret();
-    // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
+    // @ts-expect-error TS(2339) FIXME: Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
     creds.scope = 0;
 
     logWithTimestamp("veriff/credentials: Generating signature");
@@ -369,7 +369,7 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
-  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
+  // @ts-expect-error TS(7005) FIXME: Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
   if (user) {
     logWithTimestamp(
@@ -386,11 +386,11 @@ async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(session);
-  // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.issuer = process.env.ADDRESS;
-  // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.secret = generateSecret();
-  // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
+  // @ts-expect-error TS(2339) FIXME: Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
   creds.scope = 0;
 
   logWithTimestamp("veriff/credentials: Generating signature");

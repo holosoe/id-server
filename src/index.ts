@@ -1,6 +1,6 @@
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'expr... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'expr... Remove this comment to see the full error message
 import express from "express";
-// @ts-expect-error TS(7016): Could not find a declaration file for module 'cors... Remove this comment to see the full error message
+// @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'cors... Remove this comment to see the full error message
 import cors from "cors";
 import registerVouched from "./routes/register-vouched.js";
 import vouchedMisc from "./routes/vouched.js";
@@ -25,7 +25,7 @@ app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
 
-// @ts-expect-error TS(6133): 'req' is declared but its value is never read.
+// @ts-expect-error TS(6133) FIXME: 'req' is declared but its value is never read.
 app.get("/", (req: $TSFixMe, res: $TSFixMe) => {
   console.log(`${new Date().toISOString()} GET /`);
   const routes = [
@@ -39,7 +39,7 @@ app.get("/", (req: $TSFixMe, res: $TSFixMe) => {
   res.status(200).json({ routes: routes });
 });
 
-// @ts-expect-error TS(6133): 'req' is declared but its value is never read.
+// @ts-expect-error TS(6133) FIXME: 'req' is declared but its value is never read.
 app.get("/aws-health", (req: $TSFixMe, res: $TSFixMe) => {
   // console.log(`${new Date().toISOString()} GET /aws-health`);
   return res.status(200).json({ healthy: true });

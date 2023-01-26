@@ -5,12 +5,12 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
-// @ts-expect-error TS(6133): 'hash' is declared but its value is never read.
+// @ts-expect-error TS(6133) FIXME: 'hash' is declared but its value is never read.
 import { logWithTimestamp, hash } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// @ts-expect-error TS(1343): The 'import.meta' meta-property is only allowed wh... Remove this comment to see the full error message
+// @ts-expect-error TS(1343) FIXME: The 'import.meta' meta-property is only allowed wh... Remove this comment to see the full error message
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
@@ -21,7 +21,7 @@ async function initializeDailyVerificationCount(DailyVerificationCount: $TSFixMe
   if (DailyverificationCountCollection.length == 0) {
     const url = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;
     const resp = await axios.get(url, {
-      // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
+      // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
       headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
     });
     const vouchedJobCount = resp.data?.total || 0;
@@ -45,9 +45,9 @@ async function initializeMongoDb() {
     try {
       const s3 = new AWS.S3({
         credentials: {
-          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
+          // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
+          // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         },
         region: "us-east-1",
@@ -69,13 +69,13 @@ async function initializeMongoDb() {
               console.log("entered writeFile cb");
               if (writeFileErr) {
                 console.log("writeFileErr...", writeFileErr);
-                // @ts-expect-error TS(2794): Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
+                // @ts-expect-error TS(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
                 resolve();
               }
               logWithTimestamp(
                 "Successfully downloaded certificate for MongoDB connection"
               );
-              // @ts-expect-error TS(2794): Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
+              // @ts-expect-error TS(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
               resolve();
             }
           );
@@ -94,7 +94,7 @@ async function initializeMongoDb() {
       sslCA: `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
     };
     await mongoose.connect(
-      // @ts-expect-error TS(2769): No overload matches this call.
+      // @ts-expect-error TS(2769) FIXME: No overload matches this call.
       process.env.MONGO_DB_CONNECTION_STR,
       process.env.ENVIRONMENT == "dev" ? {} : mongoConfig
     );
