@@ -2,8 +2,8 @@ import axios from "axios";
 import { Request, Response } from "express";
 import { v4 as uuidV4 } from "uuid";
 // @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
-import { DailyVerificationCount } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { DailyVerificationCount } from "../../init";
+import { logWithTimestamp, sendEmail } from "../../utils/utils";
 
 async function createSession(_: Request, res: Response) {
   logWithTimestamp("POST veriff/session: Entered");

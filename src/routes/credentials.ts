@@ -1,5 +1,5 @@
 import express from "express";
-import { getCredentials, postCredentials } from "../services/credentials.js";
+import { getCredentials, postCredentials } from "../services/credentials";
 
 const router = express.Router();
 

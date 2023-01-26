@@ -8,7 +8,7 @@ const { ethers } = ethersPkg;
 // @ts-ignore
 import { poseidon } from "circomlibjs-old";
 // @ts-expect-error TS(7034) FIXME: Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
-import { UserVerifications } from "../../init.js";
+import { UserVerifications } from "../../init";
 import {
   sign,
   createLeaf,
@@ -16,9 +16,9 @@ import {
   logWithTimestamp,
   hash,
   generateSecret,
-} from "../../utils/utils.js";
-import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
-// import { getPaymentStatus } from "../utils/paypal.js";
+} from "../../utils/utils";
+import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants";
+// import { getPaymentStatus } from "../utils/paypal";
 
 const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
 const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;

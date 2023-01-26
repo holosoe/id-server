@@ -1,9 +1,9 @@
 import axios from "axios";
 import type { Request, Response } from "express";
 // @ts-expect-error TS(7034) FIXME: Variable 'DailyVerificationCount' implicitly has t... Remove this comment to see the full error message
-import { DailyVerificationCount } from "../init.js";
-import { logWithTimestamp, sendEmail } from "../utils/utils.js";
-import { ADMIN_EMAILS } from "../utils/constants.js";
+import { DailyVerificationCount } from "../init";
+import { logWithTimestamp, sendEmail } from "../utils/utils";
+import { ADMIN_EMAILS } from "../utils/constants";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY;
 

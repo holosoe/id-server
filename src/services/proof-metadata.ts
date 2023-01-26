@@ -1,7 +1,7 @@
 // @ts-expect-error TS(6133) FIXME: 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
-import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
+import { mongoose, UserCredentials, UserProofMetadata } from "../init";
 import type { Request, Response } from "express";
-import { logWithTimestamp } from "../utils/utils.js";
+import { logWithTimestamp } from "../utils/utils";
 /**
  * Get user's encrypted proof metadata and symmetric key from document store.
  */

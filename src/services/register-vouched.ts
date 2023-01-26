@@ -7,7 +7,7 @@ const { ethers } = ethersPkg;
 // @ts-expect-error TS(7016) FIXME: Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
 // @ts-expect-error TS(7034) FIXME: Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
-import { UserVerifications } from "../init.js";
+import { UserVerifications } from "../init";
 import {
   sign,
   createLeaf,
@@ -15,8 +15,8 @@ import {
   logWithTimestamp,
   hash,
   generateSecret,
-} from "../utils/utils.js";
-import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
+} from "../utils/utils";
+import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
 

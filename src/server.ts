@@ -1,5 +1,5 @@
-import { mongoose } from "./init.js";
-import { app } from "./index.js";
+import { mongoose } from "./init";
+import { app } from "./index";
 
 const PORT = 3000;
 // @ts-ignore

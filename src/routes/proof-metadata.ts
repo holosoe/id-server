@@ -1,5 +1,5 @@
 import express from "express";
-import { getProofMetadata, postProofMetadata } from "../services/proof-metadata.js";
+import { getProofMetadata, postProofMetadata } from "../services/proof-metadata";
 
 const router = express.Router();
 

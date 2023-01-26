@@ -1,5 +1,5 @@
 import express from "express";
-import { getCredentials } from "../services/register-vouched.js";
+import { getCredentials } from "../services/register-vouched";
 
 const router = express.Router();
 

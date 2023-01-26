@@ -2,11 +2,11 @@ import express from "express";
 import type { Request, Response } from "express";
 
 import cors from "cors";
-import registerVouched from "./routes/register-vouched.js";
-import vouchedMisc from "./routes/vouched.js";
-import veriff from "./routes/veriff.js";
-import credentials from "./routes/credentials.js";
-import proofMetadata from "./routes/proof-metadata.js";
+import registerVouched from "./routes/register-vouched";
+import vouchedMisc from "./routes/vouched";
+import veriff from "./routes/veriff";
+import credentials from "./routes/credentials";
+import proofMetadata from "./routes/proof-metadata";
 
 const app = express();
 

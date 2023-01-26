@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
 // @ts-expect-error TS(6133) FIXME: 'hash' is declared but its value is never read.
-import { logWithTimestamp, hash } from "./utils/utils.js";
+import { logWithTimestamp, hash } from "./utils/utils";
 import dotenv from "dotenv";
 dotenv.config();
 
