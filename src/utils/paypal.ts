@@ -15,7 +15,9 @@ async function getAccessToken() {
     }),
     {
       auth: {
+        // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
         username: process.env.PAYPAL_CLIENT_ID,
+        // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
         password: process.env.PAYPAL_SECRET,
       },
     }
@@ -25,7 +27,7 @@ async function getAccessToken() {
 
 // Gets whether a transaction has gone thru and is the correct amount, taking only transaction's ID as an argument
 // NOTE: this does not check whether the user has minted a Holo using this transaction ID yet
-async function getPaymentStatus(id) {
+async function getPaymentStatus(id: $TSFixMe) {
   try {
     const accessToken = await getAccessToken();
     console.log("accessTokn", accessToken);

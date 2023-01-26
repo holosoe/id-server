@@ -2,13 +2,15 @@ import { createHash, randomBytes } from "crypto";
 import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
 import sgMail from "@sendgrid/mail";
 
 /**
  * Sign data with the server's private key
  */
-export async function sign(data) {
+export async function sign(data: $TSFixMe) {
+  // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
   const signature = await wallet.signMessage(data);
   return signature;
@@ -17,7 +19,7 @@ export async function sign(data) {
 /**
  * @param {string} date Must be of form yyyy-mm-dd
  */
-export function getDateAsInt(date) {
+export function getDateAsInt(date: $TSFixMe) {
   // Format input
   const [year, month, day] = date.split("-");
   assert.ok(year && month && day); // Make sure Y M D all given
@@ -27,11 +29,11 @@ export function getDateAsInt(date) {
   return time;
 }
 
-export function logWithTimestamp(message) {
+export function logWithTimestamp(message: $TSFixMe) {
   console.log(`${new Date().toISOString()} ${message}`);
 }
 
-function assertLengthIs(item, length, itemName) {
+function assertLengthIs(item: $TSFixMe, length: $TSFixMe, itemName: $TSFixMe) {
   const errMsg = `${itemName} must be ${length} bytes but is ${item.length} bytes`;
   assert.equal(item.length, length, errMsg);
 }
@@ -49,12 +51,12 @@ function assertLengthIs(item, length, itemName) {
  * a base 10 number represented as a string.
  */
 export async function createLeaf(
-  issuer,
-  secret,
-  countryCode,
-  nameCitySubdivisionZipStreetHash,
-  completedAt,
-  birthdate
+  issuer: $TSFixMe,
+  secret: $TSFixMe,
+  countryCode: $TSFixMe,
+  nameCitySubdivisionZipStreetHash: $TSFixMe,
+  completedAt: $TSFixMe,
+  birthdate: $TSFixMe
 ) {
   assertLengthIs(issuer, 20, "issuer");
   assertLengthIs(secret, 16, "secret");
@@ -74,7 +76,8 @@ export async function createLeaf(
   }
 }
 
-export async function sendEmail(to, subject, text, html) {
+export async function sendEmail(to: $TSFixMe, subject: $TSFixMe, text: $TSFixMe, html: $TSFixMe) {
+  // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
   // TODO: Setup SendGrid account, configure email in SendGrid, and test
   const msg = {
@@ -88,13 +91,15 @@ export async function sendEmail(to, subject, text, html) {
     await sgMail.send(msg);
   } catch (error) {
     console.error(error);
+    // @ts-expect-error TS(2571): Object is of type 'unknown'.
     if (error.response) {
+      // @ts-expect-error TS(2571): Object is of type 'unknown'.
       console.error(error.response.body);
     }
   }
 }
 
-export function hash(data) {
+export function hash(data: $TSFixMe) {
   // returns Buffer
   return createHash("sha256").update(data).digest();
 }

@@ -2,7 +2,7 @@ import { mongoose } from "./init.js";
 import { app } from "./index.js";
 
 const PORT = 3000;
-const server = app.listen(PORT, (err) => {
+const server = app.listen(PORT, (err: $TSFixMe) => {
   if (err) throw err;
   console.log(`Server running, exposed at http://127.0.0.1:${PORT}`);
 });

@@ -1,10 +1,11 @@
+// @ts-expect-error TS(6133): 'mongoose' is declared but its value is never read... Remove this comment to see the full error message
 import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 
 /**
  * Get user's encrypted proof metadata and symmetric key from document store.
  */
-async function getProofMetadata(req, res) {
+async function getProofMetadata(req: $TSFixMe, res: $TSFixMe) {
   logWithTimestamp("GET /proof-metadata: Entered");
 
   const sigDigest = req?.query?.sigDigest;
@@ -19,6 +20,7 @@ async function getProofMetadata(req, res) {
   }
 
   try {
+    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     const userProofMetadata = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -39,7 +41,7 @@ async function getProofMetadata(req, res) {
 /**
  * Set user's encrypted proof metadata and symmetric key.
  */
-async function postProofMetadata(req, res) {
+async function postProofMetadata(req: $TSFixMe, res: $TSFixMe) {
   logWithTimestamp("POST /proof-metadata: Entered");
 
   const sigDigest = req?.body?.sigDigest;
@@ -62,6 +64,7 @@ async function postProofMetadata(req, res) {
   // Ensure user exists
   let userCredentialsDoc;
   try {
+    // @ts-expect-error TS(7005): Variable 'UserCredentials' implicitly has an 'any'... Remove this comment to see the full error message
     userCredentialsDoc = await UserCredentials.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -83,6 +86,7 @@ async function postProofMetadata(req, res) {
   // Store proof metadata
   let userProofMetadataDoc;
   try {
+    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     userProofMetadataDoc = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
@@ -101,6 +105,7 @@ async function postProofMetadata(req, res) {
     userProofMetadataDoc.encryptedSymmetricKey = encryptedSymmetricKey;
     userProofMetadataDoc.encryptedProofMetadataAES = encryptedProofMetadataAES;
   } else {
+    // @ts-expect-error TS(7005): Variable 'UserProofMetadata' implicitly has an 'an... Remove this comment to see the full error message
     userProofMetadataDoc = new UserProofMetadata({
       sigDigest,
       encryptedProofMetadata,

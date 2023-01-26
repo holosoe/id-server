@@ -1,9 +1,12 @@
 import axios from "axios";
+// @ts-expect-error TS(2307): Cannot find module 'node:assert' or its correspond... Remove this comment to see the full error message
 import { strict as assert } from "node:assert";
 import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+// @ts-expect-error TS(7016): Could not find a declaration file for module 'circ... Remove this comment to see the full error message
 import { poseidon } from "circomlibjs-old";
+// @ts-expect-error TS(7034): Variable 'UserVerifications' implicitly has type '... Remove this comment to see the full error message
 import { UserVerifications } from "../../init.js";
 import {
   sign,
@@ -24,7 +27,7 @@ const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
  * @param {Object} creds Object containing a full string representation of every credential.
  * @returns 6 string representations of the preimage's 6 field elements, in order
  */
-function serializeCreds(creds) {
+function serializeCreds(creds: $TSFixMe) {
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
@@ -38,7 +41,7 @@ function serializeCreds(creds) {
   ];
 }
 
-function validateSession(session, sessionId) {
+function validateSession(session: $TSFixMe, sessionId: $TSFixMe) {
   if (!session) {
     return {
       error: "Failed to retrieve Verrif session.",
@@ -103,9 +106,10 @@ function validateSession(session, sessionId) {
   return { success: true };
 }
 
-function extractCreds(session) {
+function extractCreds(session: $TSFixMe) {
   const person = session.verification.person;
   const address = person.addresses?.[0]?.parsedAddress;
+  // @ts-expect-error TS(7053): Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const countryCode = countryCodeToPrime[session.verification.document.country];
   assert.ok(countryCode, "Unsupported country");
   const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
@@ -219,12 +223,13 @@ function extractCreds(session) {
  * @returns Object containing one smallCreds signature for every
  *          credential and one bigCreds signature.
  */
-async function generateSignature(creds) {
+async function generateSignature(creds: $TSFixMe) {
   const serverAddress = process.env.ADDRESS;
   let countryBuffer = Buffer.alloc(2);
   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
 
   const leafAsBigInt = await createLeaf(
+    // @ts-expect-error TS(2532): Object is possibly 'undefined'.
     Buffer.from(serverAddress.replace("0x", ""), "hex"),
     Buffer.from(creds.secret.replace("0x", ""), "hex"),
     countryBuffer,
@@ -236,7 +241,8 @@ async function generateSignature(creds) {
   return await sign(leaf);
 }
 
-async function saveUserToDb(uuid, sessionId) {
+async function saveUserToDb(uuid: $TSFixMe, sessionId: $TSFixMe) {
+  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const userVerificationsDoc = new UserVerifications({
     govId: {
       uuid: uuid,
@@ -258,8 +264,9 @@ async function saveUserToDb(uuid, sessionId) {
   return { success: true };
 }
 
-async function getVeriffSessionDecision(sessionId) {
+async function getVeriffSessionDecision(sessionId: $TSFixMe) {
   try {
+    // @ts-expect-error TS(2345): Argument of type 'string | undefined' is not assig... Remove this comment to see the full error message
     const hmacSignature = createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
       .digest("hex")
@@ -268,6 +275,7 @@ async function getVeriffSessionDecision(sessionId) {
       `https://stationapi.veriff.com/v1/sessions/${sessionId}/decision`,
       {
         headers: {
+          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           "X-AUTH-CLIENT": veriffPublicKey,
           "X-HMAC-SIGNATURE": hmacSignature,
           "Content-Type": "application/json",
@@ -277,13 +285,15 @@ async function getVeriffSessionDecision(sessionId) {
     // console.log(resp.data);
     return resp.data;
   } catch (err) {
+    // @ts-expect-error TS(2571): Object is of type 'unknown'.
     console.error(`Error getting session with ID ${sessionId}`, err.message);
     return {};
   }
 }
 
-async function redactVeriffSession(sessionId) {
+async function redactVeriffSession(sessionId: $TSFixMe) {
   try {
+    // @ts-expect-error TS(2304): Cannot find name 'crypto'.
     const hmacSignature = crypto
       .createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
@@ -293,6 +303,7 @@ async function redactVeriffSession(sessionId) {
       `https://stationapi.veriff.com/v1/sessions/${sessionId}`,
       {
         headers: {
+          // @ts-expect-error TS(2322): Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
           "X-AUTH-CLIENT": veriffPublicKey,
           "X-HMAC-SIGNATURE": hmacSignature,
           "Content-Type": "application/json",
@@ -301,6 +312,7 @@ async function redactVeriffSession(sessionId) {
     );
     return resp.data;
   } catch (err) {
+    // @ts-expect-error TS(2571): Object is of type 'unknown'.
     console.log(err.message);
     return {};
   }
@@ -311,13 +323,16 @@ async function redactVeriffSession(sessionId) {
  *
  * Allows user to retrieve their Vouched verification info
  */
-async function getCredentials(req, res) {
+async function getCredentials(req: $TSFixMe, res: $TSFixMe) {
   logWithTimestamp("veriff/credentials: Entered");
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
+    // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.issuer = process.env.ADDRESS;
+    // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.secret = generateSecret();
+    // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
     creds.scope = 0;
 
     logWithTimestamp("veriff/credentials: Generating signature");
@@ -354,6 +369,7 @@ async function getCredentials(req, res) {
   const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
   // Assert user hasn't registered yet
+  // @ts-expect-error TS(7005): Variable 'UserVerifications' implicitly has an 'an... Remove this comment to see the full error message
   const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
   if (user) {
     logWithTimestamp(
@@ -370,8 +386,11 @@ async function getCredentials(req, res) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(session);
+  // @ts-expect-error TS(2339): Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.issuer = process.env.ADDRESS;
+  // @ts-expect-error TS(2339): Property 'secret' does not exist on type '{ rawCre... Remove this comment to see the full error message
   creds.secret = generateSecret();
+  // @ts-expect-error TS(2339): Property 'scope' does not exist on type '{ rawCred... Remove this comment to see the full error message
   creds.scope = 0;
 
   logWithTimestamp("veriff/credentials: Generating signature");
