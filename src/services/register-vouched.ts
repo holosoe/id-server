@@ -32,7 +32,7 @@ function serializeCreds(creds: $TSFixMe) {
   return [
     creds.issuer,
     creds.secret,
-    "0x" + countryBuffer.toString("hex"),
+    `0x${countryBuffer.toString("hex")}`,
     creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     creds.scope.toString(),
@@ -70,7 +70,7 @@ function validateJob(job: $TSFixMe, jobID: $TSFixMe) {
   // Assert no errors in job
   if (job.result.errors?.length > 0) {
     logWithTimestamp(
-      `registerVouched/vouchedCredentials: errors in job (see next log). Exiting.`
+      "registerVouched/vouchedCredentials: errors in job (see next log). Exiting."
     );
     console.log(job.result.errors);
     const errorNames = job.result.errors.map((err: $TSFixMe) => err.type);
@@ -84,7 +84,7 @@ function extractCreds(job: $TSFixMe) {
   const countryCode = countryCodeToPrime[job.result.country];
   assert.ok(countryCode, "Unsupported country");
   let birthdate = job.result?.dob?.split("/");
-  if (birthdate?.length == 3) {
+  if (birthdate?.length === 3) {
     assert.equal(birthdate[2].length, 4, "Birthdate year is not 4 characters"); // Ensures we are placing year in correct location in formatted birthdate
     birthdate = [birthdate[2], birthdate[0], birthdate[1]].join("-");
   } else {
@@ -136,7 +136,7 @@ function extractCreds(job: $TSFixMe) {
   );
   const addressHash = ethers.BigNumber.from(poseidon(addressArgs)).toString();
   let expireDateSr = job.result?.expireDate ? job.result.expireDate : "";
-  if (expireDateSr?.length == 3) {
+  if (expireDateSr?.length === 3) {
     expireDateSr = job.result?.expireDate?.split("/");
     assert.equal(expireDateSr[2].length, 4, "expireDate year is not 4 characters"); // Ensures we are placing year in correct location in formatted date
     expireDateSr = [expireDateSr[2], expireDateSr[0], expireDateSr[1]].join("-");
@@ -274,7 +274,7 @@ async function getVouchedJob(jobID: $TSFixMe) {
   try {
     const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
     const liveUrl = `https://verify.vouched.id/api/jobs?id=${jobID}`;
-    const url = process.env.TESTING == "true" ? testUrl : liveUrl;
+    const url = process.env.TESTING === "true" ? testUrl : liveUrl;
     const resp = await axios.get(url, {
       headers: { "X-API-Key": vouchedPrivateKey },
     });
@@ -296,7 +296,7 @@ async function redactVouchedJob(jobID: $TSFixMe) {
   try {
     const testUrl = `http://localhost:3005/vouched/api/jobs?id=${jobID}`;
     const liveUrl = `https://verify.vouched.id/api/jobs/${jobID}`;
-    const url = process.env.TESTING == "true" ? testUrl : liveUrl;
+    const url = process.env.TESTING === "true" ? testUrl : liveUrl;
     const resp = await axios.delete(url, {
       headers: {
         "X-API-Key": vouchedPrivateKey,
@@ -321,7 +321,7 @@ async function redactVouchedJob(jobID: $TSFixMe) {
 async function getCredentials(req: Request, res: Response) {
   logWithTimestamp("registerVouched/vouchedCredentials: Entered");
 
-  if (process.env.ENVIRONMENT == "dev") {
+  if (process.env.ENVIRONMENT === "dev") {
     const creds = newDummyUserCreds;
     // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.issuer = process.env.ADDRESS;
@@ -376,7 +376,7 @@ async function getCredentials(req: Request, res: Response) {
   }
 
   // Store UUID for Sybil resistance
-  logWithTimestamp(`registerVouched/vouchedCredentials: Inserting user into database`);
+  logWithTimestamp("registerVouched/vouchedCredentials: Inserting user into database");
   const dbResponse = await saveUserToDb(uuid, req.query.jobID);
   if (dbResponse.error) return res.status(400).json(dbResponse);
 

@@ -11,16 +11,16 @@ const server = app.listen(PORT, (err: unknown) => {
 async function terminate() {
 	try {
 		await mongoose.connection.close();
-		console.log(`Closed MongoDB database connection`);
+		console.log("Closed MongoDB database connection");
 	} catch (err) {
 		console.log(err);
 		console.log(
 			"An error occurred while attempting to close the MongoDB connection",
 		);
 	}
-	console.log(`Closing server`);
+	console.log("Closing server");
 	server.close(() => {
-		console.log(`Closed server`);
+		console.log("Closed server");
 		process.exit(0);
 	});
 }

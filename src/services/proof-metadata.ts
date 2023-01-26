@@ -14,7 +14,7 @@ async function getProofMetadata(req: Request, res: Response) {
     logWithTimestamp("GET /proof-metadata: No sigDigest specified. Exiting.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
-  if (typeof sigDigest != "string") {
+  if (typeof sigDigest !== "string") {
     logWithTimestamp("GET /proof-metadata: sigDigest isn't a string. Exiting.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
   }
@@ -56,7 +56,7 @@ async function postProofMetadata(req: Request, res: Response) {
   }
 
   // Require that args are correct types
-  if (typeof sigDigest != "string") {
+  if (typeof sigDigest !== "string") {
     logWithTimestamp("POST /proof-metadata: sigDigest isn't a string. Exiting.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
   }

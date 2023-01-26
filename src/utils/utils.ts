@@ -105,5 +105,5 @@ export function hash(data: $TSFixMe) {
 }
 
 export function generateSecret(numBytes = 16) {
-  return "0x" + randomBytes(numBytes).toString("hex");
+  return `0x${randomBytes(numBytes).toString("hex")}`;
 }

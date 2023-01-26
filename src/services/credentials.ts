@@ -67,17 +67,17 @@ async function validatePostCredentialsArgs(
 	}
 
 	// Require that args are present
-	if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
+	if (!sigDigest || sigDigest === "null" || sigDigest === "undefined") {
 		return { error: "No sigDigest specified" };
 	}
 
 	// Require that args are correct types
-	if (typeof sigDigest != "string") {
+	if (typeof sigDigest !== "string") {
 		return { error: "sigDigest isn't a string" };
 	}
 
 	// Ensure that args are not too large
-	if (sigDigest.length != 64) {
+	if (sigDigest.length !== 64) {
 		return { error: "sigDigest is not 64 characters long" };
 	}
 	return { success: true };
@@ -156,7 +156,7 @@ async function getCredentials(req: Request, res: Response) {
 		logWithTimestamp("GET /credentials: No sigDigest specified. Exiting.");
 		return res.status(400).json({ error: "No sigDigest specified" });
 	}
-	if (typeof sigDigest != "string") {
+	if (typeof sigDigest !== "string") {
 		logWithTimestamp("GET /credentials: sigDigest isn't a string. Exiting.");
 		return res.status(400).json({ error: "sigDigest isn't a string" });
 	}
@@ -213,7 +213,7 @@ async function postCredentials(req: Request, res: Response) {
 	// The `toLowerCase` step is important because case differences could allow users
 	// to use the same proof (varying only casing) to store multiple sets of data.
 	const serializedProof =
-		"0x" + Buffer.from(JSON.stringify(proof).toLowerCase()).toString("hex");
+		`0x${Buffer.from(JSON.stringify(proof).toLowerCase()).toString("hex")}`;
 	const proofDigest = poseidon([serializedProof]).toString();
 
 	const storeOrUpdateResult = await storeOrUpdateUserCredentials(

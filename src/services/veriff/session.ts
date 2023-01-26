@@ -79,7 +79,7 @@ async function createSession(_: Request, res: Response) {
     logWithTimestamp(`POST veriff/session: Created session ${verification?.id}`);
     return res.status(200).json({ url: verification?.url, id: verification?.id });
   } catch (err) {
-    logWithTimestamp(`POST veriff/session: Error creating session`);
+    logWithTimestamp("POST veriff/session: Error creating session");
     // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.
     console.log(err.message);
     // @ts-expect-error TS(2571) FIXME: Object is of type 'unknown'.

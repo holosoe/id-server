@@ -15,7 +15,7 @@ async function getJobCount(_: Request, res: Response) {
 
   try {
     // Use pageSize=1 so that the response is as small as possible
-    const url1 = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;
+    const url1 = "https://verify.vouched.id/api/jobs?page=1&pageSize=1";
     const resp1 = await axios.get(url1, {
       // @ts-expect-error TS(2322) FIXME: Type 'string | undefined' is not assignable to typ... Remove this comment to see the full error message
       headers: { "X-API-Key": vouchedPrivateKey },

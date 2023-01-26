@@ -35,7 +35,7 @@ function serializeCreds(creds: $TSFixMe) {
   return [
     creds.issuer,
     creds.secret,
-    "0x" + countryBuffer.toString("hex"),
+    `0x${countryBuffer.toString("hex")}`,
     creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
     getDateAsInt(creds.rawCreds.completedAt).toString(),
     creds.scope.toString(),
@@ -82,26 +82,26 @@ function validateSession(session: $TSFixMe, sessionId: $TSFixMe) {
   if (!address) {
     return {
       error: "Verification missing necessary field: address.",
-      log: `veriff/credentials: Verification missing necessary field: address. Exiting.`,
+      log: "veriff/credentials: Verification missing necessary field: address. Exiting.",
     };
   }
   if (!("postcode" in address)) {
     return {
       error: "Verification missing necessary field: postcode.",
-      log: `veriff/credentials: Verification missing necessary field: postcode. Exiting.`,
+      log: "veriff/credentials: Verification missing necessary field: postcode. Exiting.",
     };
   }
   const doc = session.verification.document;
   if (!doc) {
     return {
       error: "Verification missing necessary field: document.",
-      log: `veriff/credentials: Verification missing necessary field: document. Exiting.`,
+      log: "veriff/credentials: Verification missing necessary field: document. Exiting.",
     };
   }
   if (!("country" in doc)) {
     return {
       error: "Verification missing necessary field: country.",
-      log: `veriff/credentials: Verification missing necessary field: country. Exiting.`,
+      log: "veriff/credentials: Verification missing necessary field: country. Exiting.",
     };
   }
   return { success: true };
@@ -327,7 +327,7 @@ async function redactVeriffSession(sessionId: $TSFixMe) {
 async function getCredentials(req: Request, res: Response) {
   logWithTimestamp("veriff/credentials: Entered");
 
-  if (process.env.ENVIRONMENT == "dev") {
+  if (process.env.ENVIRONMENT === "dev") {
     const creds = newDummyUserCreds;
     // @ts-expect-error TS(2339) FIXME: Property 'issuer' does not exist on type '{ rawCre... Remove this comment to see the full error message
     creds.issuer = process.env.ADDRESS;
@@ -382,7 +382,7 @@ async function getCredentials(req: Request, res: Response) {
   }
 
   // Store UUID for Sybil resistance
-  logWithTimestamp(`veriff/credentials: Inserting user into database`);
+  logWithTimestamp("veriff/credentials: Inserting user into database");
   const dbResponse = await saveUserToDb(uuid, req.query.sessionId);
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
