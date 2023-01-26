@@ -10,7 +10,6 @@ import { logWithTimestamp, hash } from "./utils/utils.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-// @ts-expect-error TS(1343) FIXME: The 'import.meta' meta-property is only allowed wh... Remove this comment to see the full error message
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
