@@ -227,20 +227,20 @@ function extractCreds(job) {
  */
 // async function generateSignature(creds) {
 
-  // const serverAddress = process.env.ADDRESS;
-  // let countryBuffer = Buffer.alloc(2);
-  // countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-  
-  // const leafAsBigInt = await createLeaf(
-  //   Buffer.from(serverAddress.replace("0x", ""), "hex"),
-  //   Buffer.from(creds.secret.replace("0x", ""), "hex"),
-  //   countryBuffer,
-  //   creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
-  //   getDateAsInt(creds.rawCreds.completedAt),
-  //   creds.scope
-  // );
-  // const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
-  // return await sign(leaf);
+// const serverAddress = process.env.ADDRESS;
+// let countryBuffer = Buffer.alloc(2);
+// countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
+
+// const leafAsBigInt = await createLeaf(
+//   Buffer.from(serverAddress.replace("0x", ""), "hex"),
+//   Buffer.from(creds.secret.replace("0x", ""), "hex"),
+//   countryBuffer,
+//   creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
+//   getDateAsInt(creds.rawCreds.completedAt),
+//   creds.scope
+// );
+// const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
+// return await sign(leaf);
 // }
 
 async function saveUserToDb(uuid, jobID) {
@@ -318,17 +318,18 @@ async function getCredentials(req, res) {
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
-    creds.issuer = process.env.ADDRESS;
-    creds.secret = generateSecret();
-    creds.scope = 0;
+    // creds.issuer = process.env.ADDRESS;
+    // creds.secret = generateSecret();
+    // creds.scope = 0;
 
     logWithTimestamp("registerVouched/vouchedCredentials: Generating signature");
 
     const response = issue(
-      process.env.HOLONYM_ISSUER_PRIVKEY, 
-      creds.rawCreds.countryCode.toString(), 
+      process.env.HOLONYM_ISSUER_PRIVKEY,
+      creds.rawCreds.countryCode.toString(),
       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
     );
+    response.metadata = newDummyUserCreds;
     // const signature = await generateSignature(creds);
 
     // const serializedCreds = serializeCreds(creds);
@@ -392,11 +393,12 @@ async function getCredentials(req, res) {
   //   signature: signature, // server-generated signature
   //   serializedCreds: serializedCreds,
   // };
-  const response =  issue(
-    process.env.HOLONYM_ISSUER_PRIVKEY, 
-    creds.rawCreds.countryCode.toString(), 
+  const response = issue(
+    process.env.HOLONYM_ISSUER_PRIVKEY,
+    creds.rawCreds.countryCode.toString(),
     creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
   );
+  response.metadata = creds;
   await redactVouchedJob(req.query.jobID);
 
   logWithTimestamp(
