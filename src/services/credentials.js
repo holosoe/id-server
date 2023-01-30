@@ -13,31 +13,12 @@ async function validatePostCredentialsArgs(
   encryptedCredentials,
   encryptedSymmetricKey
 ) {
+  if (!proof) {
+    return { error: "proof is empty" };
+  }
   const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
-  const issuer = ethers.BigNumber.from(proof?.inputs?.[1]).toHexString();
 
-  if (!holonymIssuers.includes(issuer)) {
-    return { error: `Issuer ${issuer} is not whitelisted` };
-  }
-
-  // Check that leaf is in the Merkle tree
-  let leafIsInTree = false;
-  const networks = [
-    ...Object.keys(contractAddresses.Hub.mainnet),
-    ...Object.keys(contractAddresses.Hub.testnet),
-  ];
-  for (const network of networks) {
-    try {
-      const leavesResp = await axios.get(`${relayerURL}/getLeaves/${network}`);
-      const leaves = leavesResp.data;
-      if (leaves.includes(leaf)) {
-        leafIsInTree = true;
-        break;
-      }
-    } catch (err) {
-      console.log(err.message);
-    }
-  }
+  const leafIsInTree = (await axios.get(`${relayerURL}/leafExists/${leaf}`)).data;
   if (!leafIsInTree) {
     return { error: "No Merkle tree includes the specified leaf" };
   }
