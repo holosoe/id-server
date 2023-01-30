@@ -18,9 +18,14 @@ async function validatePostCredentialsArgs(
   }
   const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 
-  const leafIsInTree = (await axios.get(`${relayerURL}/leafExists/${leaf}`)).data;
-  if (!leafIsInTree) {
-    return { error: "No Merkle tree includes the specified leaf" };
+  try {
+    const leafIsInTree = (await axios.get(`${relayerURL}/leafExists/${leaf}`)).data;
+    if (!leafIsInTree) {
+      return { error: "No Merkle tree includes the specified leaf" };
+    }
+  } catch (err) {
+    console.error(err);
+    return { error: "An error occurred while checking if leaf is in tree" };
   }
 
   // Verify proof of knowledge of leaf preimage
