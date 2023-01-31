@@ -19,7 +19,7 @@ async function validatePostCredentialsArgs(
   const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 
   try {
-    const leafIsInTree = (await axios.get(`${relayerURL}/leafExists/${leaf}`)).data;
+    const leafIsInTree = (await axios.get(`${relayerURL}/v2/leafExists/${leaf}`)).data;
     if (!leafIsInTree) {
       return { error: "No Merkle tree includes the specified leaf" };
     }
