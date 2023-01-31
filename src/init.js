@@ -19,6 +19,11 @@ function validateEnv() {
   assert.ok(process.env.PRIVATE_KEY, "PRIVATE_KEY environment variable is not set");
   assert.ok(process.env.ADDRESS, "ADDRESS environment variable is not set");
 
+  assert.ok(
+    process.env.HOLONYM_ISSUER_PRIVKEY,
+    "HOLONYM_ISSUER_PRIVKEY environment variable is not set"
+  );
+
   assert.ok(process.env.ENVIRONMENT, "ENVIRONMENT environment variable is not set");
   assert.ok(process.env.NODE_ENV, "NODE_ENV environment variable is not set");
 
