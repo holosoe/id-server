@@ -17,7 +17,8 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
-app.use("/registerVouched", registerVouched);
+app.use("/registerVouched", registerVouched.routerV1);
+app.use("/v2/registerVouched", registerVouched.routerV2);
 app.use("/vouched", vouchedMisc);
 app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);

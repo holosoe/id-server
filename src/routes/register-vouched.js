@@ -1,8 +1,11 @@
 import express from "express";
-import { getCredentials } from "../services/register-vouched.js";
+import { getCredentialsV1, getCredentialsV2 } from "../services/register-vouched.js";
 
-const router = express.Router();
+const routerV1 = express.Router();
+const routerV2 = express.Router();
 
-router.get("/vouchedCredentials", getCredentials);
+routerV1.get("/vouchedCredentials", getCredentialsV1);
+routerV2.get("/vouchedCredentials", getCredentialsV2);
 
-export default router;
+const routers = { routerV1, routerV2 };
+export default routers;
