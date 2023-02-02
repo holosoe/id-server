@@ -16,6 +16,7 @@ export async function sign(data) {
 
 /**
  * @param {string} date Must be of form yyyy-mm-dd
+ * @returns {number} Date as seconds since 1900
  */
 export function getDateAsInt(date) {
   // Format input
