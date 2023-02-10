@@ -5,6 +5,7 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../../init.js";
+import { issue } from "holonym-wasm-issuer";
 import {
   sign,
   createLeaf,
@@ -109,7 +110,7 @@ function extractCreds(session) {
   const countryCode = countryCodeToPrime[session.verification.document.country];
   assert.ok(countryCode, "Unsupported country");
   const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
-  const birthdateBuffer = birthdate ? Buffer.from(birthdate) : Buffer.alloc(1);
+  const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = person.firstName ? person.firstName : "";
   const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
   // Veriff doesn't support middle names, but we keep it for backwards compatibility
@@ -142,16 +143,20 @@ function extractCreds(session) {
   );
   const streetHash = ethers.BigNumber.from(poseidon(addrArgs)).toString();
   const zipCode = Number(address?.postcode ? address.postcode : 0);
-  const nameDobCitySubStreetZipArgs = [
+  const addressArgs = [cityBuffer, subdivisionBuffer, zipCode, streetHash].map((x) =>
+    ethers.BigNumber.from(x)
+  );
+  const addressHash = ethers.BigNumber.from(poseidon(addressArgs)).toString();
+  const expireDateSr = session.verification.document?.validUntil ?? "";
+  const expireDateNum = expireDateSr ? getDateAsInt(expireDateSr) : 0;
+  const nameDobAddrExpireArgs = [
     nameHash,
-    birthdateBuffer,
-    cityBuffer,
-    subdivisionBuffer,
-    zipCode,
-    streetHash,
+    birthdateNum,
+    addressHash,
+    expireDateNum,
   ].map((x) => ethers.BigNumber.from(x).toString());
-  const nameDobCitySubZipStreet = ethers.BigNumber.from(
-    poseidon(nameDobCitySubStreetZipArgs)
+  const nameDobAddrExpire = ethers.BigNumber.from(
+    poseidon(nameDobAddrExpireArgs)
   ).toString();
   return {
     rawCreds: {
@@ -171,16 +176,14 @@ function extractCreds(session) {
       birthdate: birthdate,
     },
     derivedCreds: {
-      nameDobCitySubdivisionZipStreetHash: {
-        value: nameDobCitySubZipStreet,
+      nameDobCitySubdivisionZipStreetExpireHash: {
+        value: nameDobAddrExpire,
         derivationFunction: "poseidon",
         inputFields: [
           "derivedCreds.nameHash.value",
           "rawCreds.birthdate",
-          "rawCreds.city",
-          "rawCreds.subdivision",
-          "rawCreds.zipCode",
-          "derivedCreds.streetHash.value",
+          "derivedCreds.addressHash.value",
+          "rawCreds.expirationDate",
         ],
       },
       streetHash: {
@@ -190,6 +193,16 @@ function extractCreds(session) {
           "rawCreds.streetNumber",
           "rawCreds.streetName",
           "rawCreds.streetUnit",
+        ],
+      },
+      addressHash: {
+        value: addressHash,
+        derivationFunction: "poseidon",
+        inputFields: [
+          "rawCreds.city",
+          "rawCreds.subdivision",
+          "rawCreds.zipCode",
+          "derivedCreds.streetHash.value",
         ],
       },
       nameHash: {
@@ -314,24 +327,32 @@ async function redactVeriffSession(sessionId) {
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
 
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = newDummyUserCreds;
-    creds.issuer = process.env.ADDRESS;
-    creds.secret = generateSecret();
-    creds.scope = 0;
+  // if (process.env.ENVIRONMENT == "dev") {
+  //   const creds = newDummyUserCreds;
+  //   // creds.issuer = process.env.ADDRESS;
+  //   // creds.secret = generateSecret();
+  //   // creds.scope = 0;
 
-    logWithTimestamp("veriff/credentials: Generating signature");
-    const signature = await generateSignature(creds);
+  //   logWithTimestamp("veriff/credentials: Generating signature");
 
-    const serializedCreds = serializeCreds(creds);
+  //   const response = issue(
+  //     process.env.HOLONYM_ISSUER_PRIVKEY,
+  //     creds.rawCreds.countryCode.toString(),
+  //     creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+  //   );
+  //   response.metadata = newDummyUserCreds;
 
-    const response = {
-      ...creds, // credentials from Veriff (plus secret and issuer)
-      signature: signature, // server-generated signature
-      serializedCreds: serializedCreds,
-    };
-    return res.status(200).json(response);
-  }
+  //   // const signature = await generateSignature(creds);
+
+  //   // const serializedCreds = serializeCreds(creds);
+
+  //   // const response = {
+  //   //   ...creds, // credentials from Veriff (plus secret and issuer)
+  //   //   signature: signature, // server-generated signature
+  //   //   serializedCreds: serializedCreds,
+  //   // };
+  //   return res.status(200).json(response);
+  // }
 
   if (!req?.query?.sessionId) {
     logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
@@ -370,22 +391,29 @@ async function getCredentials(req, res) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(session);
-  creds.issuer = process.env.ADDRESS;
-  creds.secret = generateSecret();
-  creds.scope = 0;
+  // creds.issuer = process.env.ADDRESS;
+  // creds.secret = generateSecret();
+  // creds.scope = 0;
 
   logWithTimestamp("veriff/credentials: Generating signature");
-  const signature = await generateSignature(creds);
+  // const signature = await generateSignature(creds);
 
-  const serializedCreds = serializeCreds(creds);
+  // const serializedCreds = serializeCreds(creds);
 
-  const response = {
-    ...creds, // credentials from Veriff (plus secret and issuer)
-    signature: signature, // server-generated signature
-    serializedCreds: serializedCreds,
-  };
+  // const response = {
+  //   ...creds, // credentials from Veriff (plus secret and issuer)
+  //   signature: signature, // server-generated signature
+  //   serializedCreds: serializedCreds,
+  // };
 
-  await redactVeriffSession(req.query.sessionId);
+  const response = issue(
+    process.env.HOLONYM_ISSUER_PRIVKEY,
+    creds.rawCreds.countryCode.toString(),
+    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+  );
+  response.metadata = creds;
+
+  // await redactVeriffSession(req.query.sessionId);
 
   logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
 
