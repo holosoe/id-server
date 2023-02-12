@@ -5,36 +5,10 @@ const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications } from "../init.js";
 import { issue } from "holonym-wasm-issuer";
-import {
-  sign,
-  createLeaf,
-  getDateAsInt,
-  logWithTimestamp,
-  hash,
-  generateSecret,
-} from "../utils/utils.js";
+import { getDateAsInt, logWithTimestamp, hash } from "../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../utils/constants.js";
 
 const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY || "test";
-
-/**
- * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
- * @param {Object} creds Object containing a full string representation of every credential.
- * @returns 6 string representations of the preimage's 6 field elements, in order
- */
-// function serializeCreds(creds) {
-//   let countryBuffer = Buffer.alloc(2);
-//   countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-
-//   return [
-//     creds.issuer,
-//     creds.secret,
-//     "0x" + countryBuffer.toString("hex"),
-//     creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
-//     getDateAsInt(creds.rawCreds.completedAt).toString(),
-//     creds.scope.toString(),
-//   ];
-// }
 
 function validateJob(job, jobID) {
   if (!job) {
@@ -219,30 +193,6 @@ function extractCreds(job) {
   };
 }
 
-/**
- * With the server's blockchain account, sign the given credentials.
- * @param creds Object containing a full string representation of every credential.
- * @returns Object containing one smallCreds signature for every
- *          credential and one bigCreds signature.
- */
-// async function generateSignature(creds) {
-
-// const serverAddress = process.env.ADDRESS;
-// let countryBuffer = Buffer.alloc(2);
-// countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-
-// const leafAsBigInt = await createLeaf(
-//   Buffer.from(serverAddress.replace("0x", ""), "hex"),
-//   Buffer.from(creds.secret.replace("0x", ""), "hex"),
-//   countryBuffer,
-//   creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
-//   getDateAsInt(creds.rawCreds.completedAt),
-//   creds.scope
-// );
-// const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
-// return await sign(leaf);
-// }
-
 async function saveUserToDb(uuid, jobID) {
   const userVerificationsDoc = new UserVerifications({
     govId: {
@@ -318,9 +268,6 @@ async function getCredentialsV2(req, res) {
 
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
-    // creds.issuer = process.env.ADDRESS;
-    // creds.secret = generateSecret();
-    // creds.scope = 0;
 
     logWithTimestamp("registerVouched/vouchedCredentials (v2): Generating signature");
 
@@ -330,15 +277,6 @@ async function getCredentialsV2(req, res) {
       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
     );
     response.metadata = newDummyUserCreds;
-    // const signature = await generateSignature(creds);
-
-    // const serializedCreds = serializeCreds(creds);
-
-    // const response = {
-    //   ...creds, // credentials from Vouched (plus secret and issuer)
-    //   signature: signature, // server-generated signature
-    //   serializedCreds: serializedCreds,
-    // };
     return res.status(200).json(response);
   }
 
@@ -349,8 +287,6 @@ async function getCredentialsV2(req, res) {
     return res.status(400).json({ error: "No job specified" });
   }
   const job = await getVouchedJob(req.query.jobID);
-
-  // TODO: Check job.result.ipFraudCheck ?
 
   const validationResult = validateJob(job, req.query.jobID);
   if (validationResult.error) return res.status(400).json(validationResult);
@@ -383,20 +319,9 @@ async function getCredentialsV2(req, res) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(job);
-  // creds.issuer = process.env.ADDRESS;
-  // creds.secret = generateSecret();
-  // creds.scope = 0;
 
   logWithTimestamp("registerVouched/vouchedCredentials (v2): Issuing credentials");
-  // const signature = await generateSignature(creds);
 
-  // const serializedCreds = serializeCreds(creds);
-
-  // const response = {
-  //   ...creds, // credentials from Vouched (plus secret and issuer)
-  //   signature: signature, // server-generated signature
-  //   serializedCreds: serializedCreds,
-  // };
   const response = issue(
     process.env.HOLONYM_ISSUER_PRIVKEY,
     creds.rawCreds.countryCode.toString(),
@@ -412,139 +337,4 @@ async function getCredentialsV2(req, res) {
   return res.status(200).json(response);
 }
 
-/**
- * END v2.
- * ---------------------------------------------------
- * START v1.
- * TODO: Delete v1 stuff once v2 has been deployed
- */
-
-/**
- * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
- * @param {Object} creds Object containing a full string representation of every credential.
- * @returns 6 string representations of the preimage's 6 field elements, in order
- */
-function serializeCreds(creds) {
-  let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-  return [
-    creds.issuer,
-    creds.secret,
-    "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
-    getDateAsInt(creds.rawCreds.completedAt).toString(),
-    creds.scope.toString(),
-  ];
-}
-
-/**
- * With the server's blockchain account, sign the given credentials.
- * @param creds Object containing a full string representation of every credential.
- * @returns Object containing one smallCreds signature for every
- *          credential and one bigCreds signature.
- */
-async function generateSignature(creds) {
-  const serverAddress = process.env.ADDRESS;
-  let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-  const leafAsBigInt = await createLeaf(
-    Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.from(creds.secret.replace("0x", ""), "hex"),
-    countryBuffer,
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value,
-    getDateAsInt(creds.rawCreds.completedAt),
-    creds.scope
-  );
-  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
-  return await sign(leaf);
-}
-
-/**
- * Allows user to retrieve their Vouched verification info
- */
-async function getCredentialsV1(req, res) {
-  logWithTimestamp("registerVouched/vouchedCredentials (v1): Entered");
-
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = newDummyUserCreds;
-    creds.issuer = process.env.ADDRESS;
-    creds.secret = generateSecret();
-    creds.scope = 0;
-
-    logWithTimestamp("registerVouched/vouchedCredentials (v1): Generating signature");
-    const signature = await generateSignature(creds);
-
-    const serializedCreds = serializeCreds(creds);
-
-    const response = {
-      ...creds, // credentials from Vouched (plus secret and issuer)
-      signature: signature, // server-generated signature
-      serializedCreds: serializedCreds,
-    };
-    return res.status(200).json(response);
-  }
-
-  if (!req?.query?.jobID) {
-    logWithTimestamp(
-      "registerVouched/vouchedCredentials (v1): No job specified. Exiting."
-    );
-    return res.status(400).json({ error: "No job specified" });
-  }
-  const job = await getVouchedJob(req.query.jobID);
-
-  const validationResult = validateJob(job, req.query.jobID);
-  if (validationResult.error) return res.status(400).json(validationResult);
-
-  // Get UUID
-  const uuidConstituents =
-    (job.result.firstName || "") +
-    (job.result.lastName || "") +
-    // (job.result.country || "") +
-    (job.result.idAddress?.postalCode || "") +
-    (job.result.dob || ""); // Date of birth
-  const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
-
-  // Assert user hasn't registered yet
-  const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
-  if (user) {
-    logWithTimestamp(
-      `registerVouched/vouchedCredentials (v1): User has already registered. Exiting. UUID == ${uuid}`
-    );
-    return res
-      .status(400)
-      .json({ error: `User has already registered. UUID: ${uuid}` });
-  }
-
-  // Store UUID for Sybil resistance
-  logWithTimestamp(
-    `registerVouched/vouchedCredentials (v1): Inserting user into database`
-  );
-  const dbResponse = await saveUserToDb(uuid, req.query.jobID);
-  if (dbResponse.error) return res.status(400).json(dbResponse);
-
-  const creds = extractCreds(job);
-  creds.issuer = process.env.ADDRESS;
-  creds.secret = generateSecret();
-  creds.scope = 0;
-
-  logWithTimestamp("registerVouched/vouchedCredentials (v1): Generating signature");
-  const signature = await generateSignature(creds);
-
-  const serializedCreds = serializeCreds(creds);
-
-  const response = {
-    ...creds, // credentials from Vouched (plus secret and issuer)
-    signature: signature, // server-generated signature
-    serializedCreds: serializedCreds,
-  };
-
-  await redactVouchedJob(req.query.jobID);
-
-  logWithTimestamp(
-    `registerVouched/vouchedCredentials (v1): Returning user whose UUID is ${uuid}`
-  );
-
-  return res.status(200).json(response);
-}
-
-export { getCredentialsV2, getCredentialsV1 };
+export { getCredentialsV2 };
