@@ -329,10 +329,6 @@ async function getCredentials(req, res) {
 
   // if (process.env.ENVIRONMENT == "dev") {
   //   const creds = newDummyUserCreds;
-  //   // creds.issuer = process.env.ADDRESS;
-  //   // creds.secret = generateSecret();
-  //   // creds.scope = 0;
-
   //   logWithTimestamp("veriff/credentials: Generating signature");
 
   //   const response = issue(
@@ -342,15 +338,6 @@ async function getCredentials(req, res) {
   //   );
   //   response.metadata = newDummyUserCreds;
 
-  //   // const signature = await generateSignature(creds);
-
-  //   // const serializedCreds = serializeCreds(creds);
-
-  //   // const response = {
-  //   //   ...creds, // credentials from Veriff (plus secret and issuer)
-  //   //   signature: signature, // server-generated signature
-  //   //   serializedCreds: serializedCreds,
-  //   // };
   //   return res.status(200).json(response);
   // }
 
@@ -391,20 +378,8 @@ async function getCredentials(req, res) {
   if (dbResponse.error) return res.status(400).json(dbResponse);
 
   const creds = extractCreds(session);
-  // creds.issuer = process.env.ADDRESS;
-  // creds.secret = generateSecret();
-  // creds.scope = 0;
 
   logWithTimestamp("veriff/credentials: Generating signature");
-  // const signature = await generateSignature(creds);
-
-  // const serializedCreds = serializeCreds(creds);
-
-  // const response = {
-  //   ...creds, // credentials from Veriff (plus secret and issuer)
-  //   signature: signature, // server-generated signature
-  //   serializedCreds: serializedCreds,
-  // };
 
   const response = issue(
     process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -413,7 +388,7 @@ async function getCredentials(req, res) {
   );
   response.metadata = creds;
 
-  // await redactVeriffSession(req.query.sessionId);
+  await redactVeriffSession(req.query.sessionId);
 
   logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
 
