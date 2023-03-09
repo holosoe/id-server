@@ -137,7 +137,11 @@ function extractCreds(session) {
   const streetNameBuffer = streetNameStr
     ? Buffer.from(streetNameStr)
     : Buffer.alloc(1);
-  const streetUnit = Number(address?.unit ? address.unit : 0);
+  const streetUnit = address?.unit?.includes("apt ")
+    ? Number(address?.unit?.replace("apt ", ""))
+    : typeof Number(address?.unit) == "number"
+    ? Number(address?.unit)
+    : 0;
   const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
     ethers.BigNumber.from(x).toString()
   );
