@@ -178,6 +178,7 @@ function extractCreds(session) {
         ? session.verification.decisionTime.split("T")[0]
         : "",
       birthdate: birthdate,
+      expirationDate: expireDateSr,
     },
     derivedCreds: {
       nameDobCitySubdivisionZipStreetExpireHash: {
