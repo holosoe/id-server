@@ -20,7 +20,7 @@ async function validatePostCredentialsArgs(
 
   try {
     const rootIsRecent = (await axios.get(`${relayerURL}/v2/rootIsRecent/${root}`))
-      .data;
+      .data?.isRecent;
     if (!rootIsRecent) {
       return { error: "Root is not recent" };
     }
