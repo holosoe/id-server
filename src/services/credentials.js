@@ -16,22 +16,23 @@ async function validatePostCredentialsArgs(
   if (!proof) {
     return { error: "proof is empty" };
   }
-  const leaf = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
+  const root = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 
   try {
-    const leafIsInTree = (await axios.get(`${relayerURL}/v2/leafExists/${leaf}`)).data;
-    if (!leafIsInTree) {
-      return { error: "No Merkle tree includes the specified leaf" };
+    const rootIsRecent = (await axios.get(`${relayerURL}/v2/rootIsRecent/${root}`))
+      .data;
+    if (!rootIsRecent) {
+      return { error: "Root is not recent" };
     }
   } catch (err) {
     console.error(err);
-    return { error: "An error occurred while checking if leaf is in tree" };
+    return { error: "An error occurred while checking whether the root is recent" };
   }
 
   // Verify proof of knowledge of leaf preimage
   try {
     const verifKeyResp = await axios.get(
-      "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowPreimage.verification.key"
+      "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowledgeOfLeafPreimage.verifying.key"
     );
     const verificationKey = verifKeyResp.data;
     // console.log(proof);
@@ -115,6 +116,9 @@ async function storeOrUpdateUserCredentials(
     console.log(err);
     return { error: "An error occurred while trying to save object to database." };
   }
+  logWithTimestamp(
+    `POST /credentials: Saved credentials for user with sigDigest ${sigDigest}. Exiting.`
+  );
   return { success: true };
 }
 
