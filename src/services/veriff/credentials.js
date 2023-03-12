@@ -332,19 +332,19 @@ async function redactVeriffSession(sessionId) {
 async function getCredentials(req, res) {
   logWithTimestamp("veriff/credentials: Entered");
 
-  // if (process.env.ENVIRONMENT == "dev") {
-  //   const creds = newDummyUserCreds;
-  //   logWithTimestamp("veriff/credentials: Generating signature");
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = newDummyUserCreds;
+    logWithTimestamp("veriff/credentials: Generating signature");
 
-  //   const response = issue(
-  //     process.env.HOLONYM_ISSUER_PRIVKEY,
-  //     creds.rawCreds.countryCode.toString(),
-  //     creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-  //   );
-  //   response.metadata = newDummyUserCreds;
+    const response = issue(
+      process.env.HOLONYM_ISSUER_PRIVKEY,
+      creds.rawCreds.countryCode.toString(),
+      creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+    );
+    response.metadata = newDummyUserCreds;
 
-  //   return res.status(200).json(response);
-  // }
+    return res.status(200).json(response);
+  }
 
   if (!req?.query?.sessionId) {
     logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
