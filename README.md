@@ -5,7 +5,7 @@ Backend for Holonym's ID service.
 - Node.js ^18.9.0
 - Docker ^20.10.18
 
-(Other versions might work too, but the above versions were the ones used for testing.)
+(Other versions might work too.)
 
 ## Local environment setup
 
