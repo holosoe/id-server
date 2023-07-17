@@ -224,7 +224,7 @@ function extractCreds(session) {
       "issuer",
       "secret",
       "rawCreds.countryCode",
-      "derivedCreds.nameDobCitySubdivisionZipStreetHash.value",
+      "derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value",
       "rawCreds.completedAt",
       "scope",
     ],
