@@ -75,19 +75,21 @@ function validateSession(session, sessionId) {
     }
   }
   // NOTE: Veriff does not include addresses in test sessions
-  const address = person.addresses?.[0]?.parsedAddress;
-  if (!address) {
-    return {
-      error: "Verification missing necessary field: address.",
-      log: `veriff/credentials: Verification missing necessary field: address. Exiting.`,
-    };
-  }
-  if (!("postcode" in address)) {
-    return {
-      error: "Verification missing necessary field: postcode.",
-      log: `veriff/credentials: Verification missing necessary field: postcode. Exiting.`,
-    };
-  }
+  // BIG NOTE: We are removing address temporarily since Veriff only supports
+  // it for their enterprise clients.
+  // const address = person.addresses?.[0]?.parsedAddress;
+  // if (!address) {
+  //   return {
+  //     error: "Verification missing necessary field: address.",
+  //     log: `veriff/credentials: Verification missing necessary field: address. Exiting.`,
+  //   };
+  // }
+  // if (!("postcode" in address)) {
+  //   return {
+  //     error: "Verification missing necessary field: postcode.",
+  //     log: `veriff/credentials: Verification missing necessary field: postcode. Exiting.`,
+  //   };
+  // }
   const doc = session.verification.document;
   if (!doc) {
     return {
@@ -126,6 +128,10 @@ function extractCreds(session) {
     ethers.BigNumber.from(x).toString()
   );
   const nameHash = ethers.BigNumber.from(poseidon(nameArgs)).toString();
+  // BIG NOTE: We assume all address fields are empty since Veriff only supports
+  // parsedAddress field for their enterprise clients. If you are reading this
+  // and we have become an enterprise client with the parsedAddress option, this
+  // note is obsolete.
   const cityStr = address?.city ? address.city : "";
   const cityBuffer = cityStr ? Buffer.from(cityStr) : Buffer.alloc(1);
   const subdivisionStr = address?.state ? address.state : "";
@@ -139,7 +145,7 @@ function extractCreds(session) {
     : Buffer.alloc(1);
   const streetUnit = address?.unit?.includes("apt ")
     ? Number(address?.unit?.replace("apt ", ""))
-    : typeof Number(address?.unit) == "number"
+    : address?.unit != null && typeof Number(address?.unit) == "number"
     ? Number(address?.unit)
     : 0;
   const addrArgs = [streetNumber, streetNameBuffer, streetUnit].map((x) =>
