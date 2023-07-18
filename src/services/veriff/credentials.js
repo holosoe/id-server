@@ -370,7 +370,7 @@ async function getCredentials(req, res) {
     const uuidConstituents =
       (session.verification.person.firstName || "") +
       (session.verification.person.lastName || "") +
-      (session.verification.person.addresses?.[0].postcode || "") +
+      (session.verification.person.addresses?.[0]?.postcode || "") +
       (session.verification.person.dateOfBirth || "");
     const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
 
