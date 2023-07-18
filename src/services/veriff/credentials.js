@@ -337,10 +337,61 @@ async function redactVeriffSession(sessionId) {
  * Allows user to retrieve their Vouched verification info
  */
 async function getCredentials(req, res) {
-  logWithTimestamp("veriff/credentials: Entered");
+  try {
+    logWithTimestamp("veriff/credentials: Entered");
 
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = newDummyUserCreds;
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = newDummyUserCreds;
+      logWithTimestamp("veriff/credentials: Generating signature");
+
+      const response = issue(
+        process.env.HOLONYM_ISSUER_PRIVKEY,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      );
+      response.metadata = newDummyUserCreds;
+
+      return res.status(200).json(response);
+    }
+
+    if (!req?.query?.sessionId) {
+      logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
+      return res.status(400).json({ error: "No sessionId specified" });
+    }
+    const session = await getVeriffSessionDecision(req.query.sessionId);
+
+    const validationResult = validateSession(session, req.query.sessionId);
+    if (validationResult.error) {
+      logWithTimestamp(validationResult.log);
+      return res.status(400).json({ error: validationResult.error });
+    }
+
+    // Get UUID
+    const uuidConstituents =
+      (session.verification.person.firstName || "") +
+      (session.verification.person.lastName || "") +
+      (session.verification.person.addresses?.[0].postcode || "") +
+      (session.verification.person.dateOfBirth || "");
+    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    if (user) {
+      logWithTimestamp(
+        `veriff/credentials: User has already registered. Exiting. UUID == ${uuid}`
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. UUID: ${uuid}` });
+    }
+
+    // Store UUID for Sybil resistance
+    logWithTimestamp(`veriff/credentials: Inserting user into database`);
+    const dbResponse = await saveUserToDb(uuid, req.query.sessionId);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(session);
+
     logWithTimestamp("veriff/credentials: Generating signature");
 
     const response = issue(
@@ -348,63 +399,17 @@ async function getCredentials(req, res) {
       creds.rawCreds.countryCode.toString(),
       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
     );
-    response.metadata = newDummyUserCreds;
+    response.metadata = creds;
+
+    await redactVeriffSession(req.query.sessionId);
+
+    logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
 
     return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
   }
-
-  if (!req?.query?.sessionId) {
-    logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
-    return res.status(400).json({ error: "No sessionId specified" });
-  }
-  const session = await getVeriffSessionDecision(req.query.sessionId);
-
-  const validationResult = validateSession(session, req.query.sessionId);
-  if (validationResult.error) {
-    logWithTimestamp(validationResult.log);
-    return res.status(400).json({ error: validationResult.error });
-  }
-
-  // Get UUID
-  const uuidConstituents =
-    (session.verification.person.firstName || "") +
-    (session.verification.person.lastName || "") +
-    (session.verification.person.addresses?.[0].postcode || "") +
-    (session.verification.person.dateOfBirth || "");
-  const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
-
-  // Assert user hasn't registered yet
-  const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
-  if (user) {
-    logWithTimestamp(
-      `veriff/credentials: User has already registered. Exiting. UUID == ${uuid}`
-    );
-    return res
-      .status(400)
-      .json({ error: `User has already registered. UUID: ${uuid}` });
-  }
-
-  // Store UUID for Sybil resistance
-  logWithTimestamp(`veriff/credentials: Inserting user into database`);
-  const dbResponse = await saveUserToDb(uuid, req.query.sessionId);
-  if (dbResponse.error) return res.status(400).json(dbResponse);
-
-  const creds = extractCreds(session);
-
-  logWithTimestamp("veriff/credentials: Generating signature");
-
-  const response = issue(
-    process.env.HOLONYM_ISSUER_PRIVKEY,
-    creds.rawCreds.countryCode.toString(),
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-  );
-  response.metadata = creds;
-
-  await redactVeriffSession(req.query.sessionId);
-
-  logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
-
-  return res.status(200).json(response);
 }
 
 export { getCredentials };
