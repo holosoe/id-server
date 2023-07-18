@@ -265,7 +265,7 @@ async function saveUserToDb(uuid, sessionId) {
     govId: {
       uuid: uuid,
       sessionId: sessionId,
-      createdAt: new Date(),
+      issuedAt: new Date(),
     },
   });
   try {

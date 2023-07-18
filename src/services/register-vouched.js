@@ -198,7 +198,7 @@ async function saveUserToDb(uuid, jobID) {
     govId: {
       uuid: uuid,
       sessionId: jobID,
-      createdAt: new Date(),
+      issuedAt: new Date(),
     },
   });
   try {

@@ -160,6 +160,7 @@ async function initializeMongoDb() {
     govId: {
       uuid: String,
       sessionId: String,
+      issuedAt: Date,
     },
   });
   const UserVerifications = mongoose.model(
