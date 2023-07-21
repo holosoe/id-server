@@ -157,7 +157,10 @@ function extractCreds(session) {
     ethers.BigNumber.from(x)
   );
   const addressHash = ethers.BigNumber.from(poseidon(addressArgs)).toString();
-  const expireDateSr = session.verification.document?.validUntil ?? "";
+  // BIG NOTE: We are not including expiration date in issued credentials, but
+  // we might in the future.
+  // const expireDateSr = session.verification.document?.validUntil ?? "";
+  const expireDateSr = "";
   const expireDateNum = expireDateSr ? getDateAsInt(expireDateSr) : 0;
   const nameDobAddrExpireArgs = [
     nameHash,
