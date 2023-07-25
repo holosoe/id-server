@@ -62,7 +62,7 @@ async function createSession(req, res) {
       },
     };
     const resp = await axios.post(
-      "https://stationapi.veriff.com/v1/sessions",
+      "https://api.veriff.me/v1/sessions",
       reqBody,
       config
     );

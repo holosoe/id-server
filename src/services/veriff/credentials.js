@@ -293,7 +293,7 @@ async function getVeriffSessionDecision(sessionId) {
       .digest("hex")
       .toLowerCase();
     const resp = await axios.get(
-      `https://stationapi.veriff.com/v1/sessions/${sessionId}/decision`,
+      `https://api.veriff.me/v1/sessions/${sessionId}/decision`,
       {
         headers: {
           "X-AUTH-CLIENT": veriffPublicKey,
@@ -317,16 +317,13 @@ async function redactVeriffSession(sessionId) {
       .update(Buffer.from(sessionId, "utf8"))
       .digest("hex")
       .toLowerCase();
-    const resp = await axios.delete(
-      `https://stationapi.veriff.com/v1/sessions/${sessionId}`,
-      {
-        headers: {
-          "X-AUTH-CLIENT": veriffPublicKey,
-          "X-HMAC-SIGNATURE": hmacSignature,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const resp = await axios.delete(`https://api.veriff.me/v1/sessions/${sessionId}`, {
+      headers: {
+        "X-AUTH-CLIENT": veriffPublicKey,
+        "X-HMAC-SIGNATURE": hmacSignature,
+        "Content-Type": "application/json",
+      },
+    });
     return resp.data;
   } catch (err) {
     console.log(err.message);
