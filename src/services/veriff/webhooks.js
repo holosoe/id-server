@@ -1,4 +1,4 @@
-// import { logWithTimestamp } from "../utils/utils.js";
+import { logWithTimestamp } from "../../utils/utils.js";
 
 async function decisionWebhook(req, res) {
   try {
@@ -7,6 +7,7 @@ async function decisionWebhook(req, res) {
     return res.status(200).json({ message: "OK" });
   } catch (err) {
     console.log(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
 
