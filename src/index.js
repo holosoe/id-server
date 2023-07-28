@@ -23,7 +23,7 @@ app.use("/vouched", vouchedMisc);
 app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
-app.use("/admin", admin);
+// app.use("/admin", admin);
 
 app.get("/", (req, res) => {
   console.log(`${new Date().toISOString()} GET /`);
