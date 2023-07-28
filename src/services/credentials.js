@@ -25,7 +25,13 @@ async function validatePostCredentialsArgs(
       return { error: "Root is not recent" };
     }
   } catch (err) {
-    console.error(err);
+    if (err.response) {
+      console.error(err.response.data);
+    } else if (err.request) {
+      console.error(err.request.data);
+    } else {
+      console.error(err.message);
+    }
     return { error: "An error occurred while checking whether the root is recent" };
   }
 
