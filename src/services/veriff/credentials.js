@@ -4,7 +4,7 @@ import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { UserVerifications } from "../../init.js";
+import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import {
   sign,
@@ -263,6 +263,34 @@ async function generateSignature(creds) {
   return await sign(leaf);
 }
 
+async function saveCollisionMetadata(uuid, sessionId, session) {
+  try {
+    const collisionMetadataDoc = new VerificationCollisionMetadata({
+      uuid: uuid,
+      timestamp: new Date(),
+      sessionId: sessionId,
+      uuidConstituents: {
+        firstName: {
+          populated: !!session.verification.person.firstName,
+        },
+        lastName: {
+          populated: !!session.verification.person.lastName,
+        },
+        postcode: {
+          populated: !!session.verification.person.addresses?.[0]?.postcode,
+        },
+        dateOfBirth: {
+          populated: !!session.verification.person.dateOfBirth,
+        },
+      },
+    });
+
+    await collisionMetadataDoc.save();
+  } catch (err) {
+    console.log("Error recording collision metadata", err);
+  }
+}
+
 async function saveUserToDb(uuid, sessionId) {
   const userVerificationsDoc = new UserVerifications({
     govId: {
@@ -377,6 +405,8 @@ async function getCredentials(req, res) {
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
     if (user) {
+      await saveCollisionMetadata(uuid, req.query.sessionId, session);
+
       logWithTimestamp(
         `veriff/credentials: User has already registered. Exiting. UUID == ${uuid}`
       );

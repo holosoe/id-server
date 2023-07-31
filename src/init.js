@@ -231,24 +231,53 @@ async function initializeMongoDb() {
     "DailyVerificationCount",
     DailyVerificationCountSchema
   );
+  const VerificationCollisionMetadataSchema = new Schema({
+    uuid: String,
+    timestamp: Date,
+    sessionId: String,
+    uuidConstituents: {
+      firstName: {
+        populated: Boolean,
+      },
+      lastName: {
+        populated: Boolean,
+      },
+      postcode: {
+        populated: Boolean,
+      },
+      dateOfBirth: {
+        populated: Boolean,
+      },
+    },
+  });
+  const VerificationCollisionMetadata = mongoose.model(
+    "VerificationCollisionMetadata",
+    VerificationCollisionMetadataSchema
+  );
   await initializeDailyVerificationCount(DailyVerificationCount);
   return {
     UserVerifications,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
+    VerificationCollisionMetadata,
   };
 }
 
 validateEnv();
 
-let UserVerifications, UserCredentials, UserProofMetadata, DailyVerificationCount;
+let UserVerifications,
+  UserCredentials,
+  UserProofMetadata,
+  DailyVerificationCount,
+  VerificationCollisionMetadata;
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
+    VerificationCollisionMetadata = result.VerificationCollisionMetadata;
   } else {
     console.log("MongoDB initialization failed");
   }
@@ -265,5 +294,6 @@ export {
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
+  VerificationCollisionMetadata,
   zokProvider,
 };
