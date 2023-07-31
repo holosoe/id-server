@@ -97,6 +97,17 @@ async function initializeDailyVerificationCount(DailyVerificationCount) {
   }
 }
 
+async function initializeDailyVerificationDeletions(DailyVerificationDeletions) {
+  const DailyVerificationDeletionsCollection = await DailyVerificationDeletions.find();
+  if (DailyVerificationDeletionsCollection.length == 0) {
+    const newDailyVerificationDeletions = new DailyVerificationDeletions({
+      date: new Date().toISOString().slice(0, 10),
+      deletionCount: 0,
+    });
+    await newDailyVerificationDeletions.save();
+  }
+}
+
 async function initializeMongoDb() {
   if (process.env.ENVIRONMENT != "dev") {
     // Download certificate used for TLS connection
@@ -231,6 +242,17 @@ async function initializeMongoDb() {
     "DailyVerificationCount",
     DailyVerificationCountSchema
   );
+  const DailyVerificationDeletionsSchema = new Schema({
+    date: {
+      type: String, // use: new Date().toISOString().slice(0, 10)
+      required: true,
+    },
+    deletionCount: Number,
+  });
+  const DailyVerificationDeletions = mongoose.model(
+    "DailyVerificationDeletionsSchema",
+    DailyVerificationDeletionsSchema
+  );
   const VerificationCollisionMetadataSchema = new Schema({
     uuid: String,
     timestamp: Date,
@@ -255,11 +277,13 @@ async function initializeMongoDb() {
     VerificationCollisionMetadataSchema
   );
   await initializeDailyVerificationCount(DailyVerificationCount);
+  await initializeDailyVerificationDeletions(DailyVerificationDeletions);
   return {
     UserVerifications,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
+    DailyVerificationDeletions,
     VerificationCollisionMetadata,
   };
 }
@@ -270,6 +294,7 @@ let UserVerifications,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
+  DailyVerificationDeletions,
   VerificationCollisionMetadata;
 initializeMongoDb().then((result) => {
   if (result) {
@@ -277,6 +302,7 @@ initializeMongoDb().then((result) => {
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
+    DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
   } else {
     console.log("MongoDB initialization failed");
@@ -294,6 +320,7 @@ export {
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
+  DailyVerificationDeletions,
   VerificationCollisionMetadata,
   zokProvider,
 };
