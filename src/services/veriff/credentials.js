@@ -48,19 +48,19 @@ function validateSession(session, sessionId) {
   }
   if (session.status !== "success") {
     return {
-      error: "Verification failed.",
+      error: `Verification failed. Status is '${session.status}'. Expected 'success'.`,
       log: `veriff/credentials: Verification failed. Status: ${session.status}. Exiting.`,
     };
   }
   if (session.verification?.code !== 9001) {
     return {
-      error: "Verification failed.",
+      error: `Verification failed. Verification code is ${session.verification?.code}. Expected 9001.`,
       log: `veriff/credentials: Verification failed. Verification code: ${session.verification?.code}. Exiting.`,
     };
   }
   if (session.verification.status !== "approved") {
     return {
-      error: "Verification failed.",
+      error: `Verification failed. Verification status is ${session.verification.status}. Expected 'approved'.`,
       log: `veriff/credentials: Verification status is ${session.verification.status}. Exiting.`,
     };
   }
