@@ -54,7 +54,6 @@ async function createSession(req, res) {
     };
   }
   try {
-    console.log(process.env.VERIFF_PUBLIC_API_KEY);
     const config = {
       headers: {
         "Content-Type": "application/json",
