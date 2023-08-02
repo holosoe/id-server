@@ -84,12 +84,16 @@ async function initializeDailyVerificationCount(DailyVerificationCount) {
     });
     const vouchedJobCount = resp.data?.total || 0;
     // TODO: Get total Veriff verifications
+    // TODO: Get total iDenfy verifications
     const newDailyVerificationCount = new DailyVerificationCount({
       date: new Date().toISOString().slice(0, 10),
       vouched: {
         jobCount: vouchedJobCount,
       },
       veriff: {
+        sessionCount: 0,
+      },
+      idenfy: {
         sessionCount: 0,
       },
     });
@@ -237,6 +241,12 @@ async function initializeMongoDb() {
       },
       required: false,
     },
+    idenfy: {
+      type: {
+        sessionCount: Number,
+      },
+      required: false,
+    },
   });
   const DailyVerificationCount = mongoose.model(
     "DailyVerificationCount",
@@ -256,7 +266,14 @@ async function initializeMongoDb() {
   const VerificationCollisionMetadataSchema = new Schema({
     uuid: String,
     timestamp: Date,
-    sessionId: String,
+    sessionId: {
+      type: String,
+      required: false,
+    },
+    scanRef: {
+      type: String,
+      required: false,
+    },
     uuidConstituents: {
       firstName: {
         populated: Boolean,
@@ -265,7 +282,16 @@ async function initializeMongoDb() {
         populated: Boolean,
       },
       postcode: {
-        populated: Boolean,
+        populated: {
+          type: Boolean,
+          required: false,
+        },
+      },
+      address: {
+        populated: {
+          type: Boolean,
+          required: false,
+        },
       },
       dateOfBirth: {
         populated: Boolean,
