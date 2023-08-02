@@ -41,6 +41,8 @@ async function createSession(req, res) {
     // Prepare request and create session
     const reqBody = {
       clientId: sigDigest,
+      // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
+      // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
     };
     const config = {
       headers: {
