@@ -2,6 +2,7 @@ import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { hash } from "../../utils/utils.js";
 
 async function createSession(req, res) {
   try {
@@ -40,7 +41,7 @@ async function createSession(req, res) {
 
     // Prepare request and create session
     const reqBody = {
-      clientId: sigDigest,
+      clientId: hash(Buffer.from(sigDigest)).toString("hex"),
       // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
       // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
     };
