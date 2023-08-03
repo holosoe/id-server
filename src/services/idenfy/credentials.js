@@ -309,22 +309,25 @@ async function getIdenfySessionVerificationData(scanRef) {
   }
 }
 
-async function redactVeriffSession(sessionId) {
+async function deleteIdenfySession(scanRef) {
   try {
-    const hmacSignature = createHmac("sha256", veriffSecretKey)
-      .update(Buffer.from(sessionId, "utf8"))
-      .digest("hex")
-      .toLowerCase();
-    const resp = await axios.delete(`https://api.veriff.me/v1/sessions/${sessionId}`, {
-      headers: {
-        "X-AUTH-CLIENT": veriffPublicKey,
-        "X-HMAC-SIGNATURE": hmacSignature,
-        "Content-Type": "application/json",
+    const resp = await axios.post(
+      "https://ivs.idenfy.com/api/v2/delete",
+      {
+        scanRef,
       },
-    });
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${Buffer.from(
+            `${idenfyApiKey}:${idenfyApiKeySecret}`
+          ).toString("base64")}`,
+        },
+      }
+    );
     return resp.data;
   } catch (err) {
-    console.log(err.message);
+    console.log("idenfy/credentials: encountered error deleting session:", err);
     return {};
   }
 }
@@ -403,7 +406,7 @@ async function getCredentials(req, res) {
     );
     response.metadata = creds;
 
-    await redactVeriffSession(scanRef);
+    await deleteIdenfySession(scanRef);
 
     logWithTimestamp(`idenfy/credentials: Returning user whose UUID is ${uuid}`);
 
