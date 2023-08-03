@@ -340,8 +340,7 @@ async function getVeriffSessionDecision(sessionId) {
 
 async function redactVeriffSession(sessionId) {
   try {
-    const hmacSignature = crypto
-      .createHmac("sha256", veriffSecretKey)
+    const hmacSignature = createHmac("sha256", veriffSecretKey)
       .update(Buffer.from(sessionId, "utf8"))
       .digest("hex")
       .toLowerCase();
