@@ -132,8 +132,6 @@ async function storeOrUpdateUserCredentials(
  * Get user's encrypted credentials and symmetric key from document store.
  */
 async function getCredentials(req, res) {
-  logWithTimestamp("GET /credentials: Entered");
-
   const sigDigest = req?.query?.sigDigest;
 
   if (!sigDigest) {
@@ -172,8 +170,6 @@ async function getCredentials(req, res) {
  * guarantees, it is not clear that any design can reach this ideal.
  */
 async function postCredentials(req, res) {
-  logWithTimestamp("POST /credentials: Entered");
-
   const sigDigest = req?.body?.sigDigest;
   const proof = req?.body?.proof;
   const encryptedCredentials = req?.body?.encryptedCredentials;

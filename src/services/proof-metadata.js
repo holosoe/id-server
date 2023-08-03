@@ -5,8 +5,6 @@ import { logWithTimestamp } from "../utils/utils.js";
  * Get user's encrypted proof metadata and symmetric key from document store.
  */
 async function getProofMetadata(req, res) {
-  logWithTimestamp("GET /proof-metadata: Entered");
-
   const sigDigest = req?.query?.sigDigest;
 
   if (!sigDigest) {
@@ -40,8 +38,6 @@ async function getProofMetadata(req, res) {
  * Set user's encrypted proof metadata and symmetric key.
  */
 async function postProofMetadata(req, res) {
-  logWithTimestamp("POST /proof-metadata: Entered");
-
   const sigDigest = req?.body?.sigDigest;
   const encryptedProofMetadata = req?.body?.encryptedProofMetadata;
   const encryptedSymmetricKey = req?.body?.encryptedSymmetricKey;

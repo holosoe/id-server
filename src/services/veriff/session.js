@@ -4,8 +4,6 @@ import { DailyVerificationCount } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 
 async function createSession(req, res) {
-  logWithTimestamp("POST veriff/session: Entered");
-
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,
   // create it, and set Veriff sessionCount to 1.
   // findOneAndUpdate is used so that the operation is atomic.

@@ -366,8 +366,6 @@ async function redactVeriffSession(sessionId) {
  */
 async function getCredentials(req, res) {
   try {
-    logWithTimestamp("veriff/credentials: Entered");
-
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
       logWithTimestamp("veriff/credentials: Generating signature");

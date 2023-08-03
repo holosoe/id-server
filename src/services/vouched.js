@@ -9,8 +9,6 @@ const vouchedPrivateKey = process.env.VOUCHED_PRIVATE_KEY;
  * Get the total number of Vouched jobs in our account
  */
 async function getJobCount(req, res) {
-  logWithTimestamp("vouched/job-count: Entered");
-
   try {
     // Use pageSize=1 so that the response is as small as possible
     const url1 = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;

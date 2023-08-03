@@ -308,8 +308,6 @@ async function redactVouchedJob(jobID) {
  * Allows user to retrieve their Vouched verification info
  */
 async function getCredentials(req, res) {
-  logWithTimestamp("registerVouched/vouchedCredentials (v2): Entered");
-
   if (process.env.ENVIRONMENT == "dev") {
     const creds = newDummyUserCreds;
 
