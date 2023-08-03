@@ -59,12 +59,12 @@ async function deleteUserVerification(req, res) {
     }).exec();
     // NOTE: If we add other verification providers, we need to update the following line
     const sessionCountToday =
-      verificationCountDoc.veriff.sessionCount +
+      (verificationCountDoc?.veriff?.sessionCount ?? 0) +
       (verificationCountDoc?.vouched?.jobCount ?? 0);
     const deletionCountDoc = await DailyVerificationDeletions.findOne({
       date: new Date().toISOString().slice(0, 10),
     }).exec();
-    const deletionCountToday = deletionCountDoc.deletionCount;
+    const deletionCountToday = deletionCountDoc?.deletionCount ?? 0;
     if (deletionCountToday >= sessionCountToday * 0.02) {
       logWithTimestamp(
         "DELETE admin/user-verifications: Deletion limit reached for today. Exiting."
