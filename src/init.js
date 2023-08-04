@@ -247,6 +247,19 @@ async function initializeMongoDb() {
       },
       required: false,
     },
+    onfido: {
+      type: {
+        applicantCount: {
+          type: Number,
+          required: false,
+        },
+        checkCount: {
+          type: Number,
+          required: false,
+        },
+      },
+      required: false,
+    },
   });
   const DailyVerificationCount = mongoose.model(
     "DailyVerificationCount",

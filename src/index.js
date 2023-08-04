@@ -4,6 +4,7 @@ import registerVouched from "./routes/register-vouched.js";
 import vouchedMisc from "./routes/vouched.js";
 import veriff from "./routes/veriff.js";
 import idenfy from "./routes/idenfy.js";
+import onfido from "./routes/onfido.js";
 import credentials from "./routes/credentials.js";
 import proofMetadata from "./routes/proof-metadata.js";
 import admin from "./routes/admin.js";
@@ -25,6 +26,7 @@ app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
 app.use("/idenfy", idenfy);
+app.use("/onfido", onfido);
 app.use("/admin", admin);
 
 app.get("/", (req, res) => {
