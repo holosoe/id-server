@@ -146,202 +146,365 @@ const primes = [
 ]; // 1171, 1181, 1187,
 
 export const countryCodeToPrime = {
-  // Used
-  US: 2, // United States
-  // Unused
-  AL: 3, // Albania
-  DZ: 5, // Algeria
-  AD: 7, // Andorra
-  AO: 11, // Angola
-  AG: 13, // Antigua and Barbuda
-  AR: 17, // Argentina
-  AM: 19, // Armenia
-  AU: 23, // Australia
-  AT: 29, // Austria
-  AZ: 31, // Azerbaijan
-  BS: 37, // Bahamas
-  BH: 41, // Bahrain
-  BD: 43, // Bangladesh
-  BB: 47, // Barbados
-  BY: 53, // Belarus
-  BE: 59, // Belgium
-  BZ: 61, // Belize
-  BJ: 67, // Benin
-  BT: 71, // Bhutan
-  BO: 73, // "Bolivia, Plurinational State of"
-  BA: 79, // Bosnia and Herzegovina
-  BW: 83, // Botswana
-  BR: 89, // Brazil
-  BN: 97, // Brunei Darussalam
-  BG: 101, // Bulgaria
-  BF: 103, // Burkina Faso
-  BI: 107, // Burundi
-  KH: 109, // Cambodia
-  CM: 113, // Cameroon
-  CA: 127, // Canada
-  CV: 131, // Cape Verde
-  CF: 137, // Central African Republic
-  TD: 139, // Chad
-  CL: 149, // Chile
-  CN: 151, // China
-  CO: 157, // Colombia
-  KM: 163, // Comoros
-  CG: 167, // Congo
-  CD: 173, // "Congo, the Democratic Republic of the",
-  CR: 179, // Costa Rica
-  CI: 181, // Côte d'Ivoire
-  HR: 191, // Croatia
-  CU: 193, // Cuba
-  CY: 197, // Cyprus
-  CZ: 199, // Czech Republic
-  DK: 211, // Denmark
-  DJ: 223, // Djibouti
-  DM: 227, // Dominica
-  DO: 229, // Dominican Republic
-  EC: 233, // Ecuador
-  EG: 239, // Egypt
-  SV: 241, // El Salvador
-  GQ: 251, // Equatorial Guinea
-  ER: 257, // Eritrea
-  EE: 263, // Estonia
-  SZ: 269, // Eswatini, Kingdom of // (formerly Swaziland)
-  ET: 271, // Ethiopia
-  FJ: 277, // Fiji
-  FI: 281, // Finland
-  FR: 283, // France
-  GA: 293, // Gabon
-  GM: 307, // Gambia
-  GE: 311, // Georgia
-  DE: 313, // Germany
-  GH: 317, // Ghana
-  GR: 331, // Greece
-  GD: 337, // Grenada
-  GT: 347, // Guatemala
-  GN: 349, // Guinea
-  GW: 353, // Guinea-Bissau
-  GY: 359, // Guyana
-  HT: 367, // Haiti
-  HN: 373, // Honduras
-  // HK: 10000, // Hong Kong
-  HU: 379, // Hungary
-  IS: 383, // Iceland
-  IN: 389, // India
-  ID: 397, // Indonesia
-  IR: 401, // "Iran, Islamic Republic of"
-  IQ: 409, // Iraq
-  IE: 419, // Ireland
-  IL: 421, // Israel
-  IT: 431, // Italy
-  JM: 433, // Jamaica
-  JP: 439, // Japan
-  JO: 443, // Jordan
-  KZ: 449, // Kazakhstan
-  KE: 457, // Kenya
-  KI: 461, // Kiribati
-  KP: 463, // "Korea, Democratic People's Republic of"
-  KR: 467, // "Korea, Republic of"
-  KW: 479, // Kuwait
-  KG: 487, // Kyrgyzstan
-  LA: 491, // Lao People's Democratic Republic
-  LV: 499, // Latvia
-  LB: 503, // Lebanon
-  LS: 509, // Lesotho
-  LR: 521, // Liberia
-  LY: 523, // Libya // (formerly Libyan Arab Jamahiriya)
-  LI: 541, // Liechtenstein
-  LT: 547, // Lithuania
-  LU: 557, // Luxembourg
-  MK: 563, // North Macedonia // (formerly "Macedonia, the former Yugoslav Republic of")
-  MG: 569, // Madagascar
-  MW: 571, // Malawi
-  MY: 577, // Malaysia
-  MV: 587, // Maldives
-  ML: 593, // Mali
-  MT: 599, // Malta
-  MH: 601, // Marshall Islands
-  MR: 607, // Mauritania
-  MU: 613, // Mauritius
-  MX: 617, // Mexico
-  FM: 619, // "Micronesia, Federated States of"
-  MD: 631, // "Moldova, Republic of",
-  MC: 641, // Monaco
-  MN: 643, // Mongolia
-  ME: 647, // Montenegro
-  MA: 653, // Morocco
-  MZ: 659, // Mozambique
-  MM: 661, // Myanmar
-  NA: 673, // Namibia
-  NR: 677, // Nauru
-  NP: 683, // Nepal
-  NL: 691, // Netherlands
-  NZ: 701, // New Zealand
-  NI: 709, // Nicaragua
-  NE: 719, // Niger
-  NG: 727, // Nigeria
-  NO: 733, // Norway
-  OM: 739, // Oman
-  PK: 743, // Pakistan
-  PW: 751, // Palau
-  PA: 757, // Panama
-  PG: 761, // Papua New Guinea
-  PY: 769, // Paraguay
-  PE: 773, // Peru
-  PH: 787, // Philippines
-  PL: 797, // Poland
-  PT: 809, // Portugal
-  // PR: 10000, // Puerto Rico
-  QA: 811, // Qatar
-  RO: 821, // Romania
-  RU: 823, // Russian Federation
-  RW: 827, // Rwanda
-  KN: 829, // Saint Kitts and Nevis
-  LC: 839, // Saint Lucia
-  VC: 853, // Saint Vincent and the Grenadines
-  WS: 857, // Samoa
-  SM: 859, // San Marino
-  ST: 863, // Sao Tome and Principe
-  SA: 877, // Saudi Arabia
-  SN: 881, // Senegal
-  RS: 883, // Serbia
-  SC: 887, // Seychelles
-  SL: 907, // Sierra Leone
-  SG: 911, // Singapore
-  SK: 919, // Slovakia
-  SI: 929, // Slovenia
-  SB: 937, // Solomon Islands
-  SO: 941, // Somalia
-  ZA: 947, // South Africa
+  US: 2, // United States (ISO 3166-1 alpha-2)
+  USA: 2, // United States (ISO 3166-1 alpha-3)
+  AL: 3, // Albania (ISO 3166-1 alpha-2)
+  ALB: 3, // Albania (ISO 3166-1 alpha-3)
+  DZ: 5, // Algeria (ISO 3166-1 alpha-2)
+  DZA: 5, // Algeria (ISO 3166-1 alpha-3)
+  AD: 7, // Andorra (ISO 3166-1 alpha-2)
+  AND: 7, // Andorra (ISO 3166-1 alpha-3)
+  AO: 11, // Angola (ISO 3166-1 alpha-2)
+  AG: 13, // Antigua and Barbuda (ISO 3166-1 alpha-2)
+  ATG: 13, // Antigua and Barbuda (ISO 3166-1 alpha-3)
+  AR: 17, // Argentina (ISO 3166-1 alpha-2)
+  ARG: 17, // Argentina (ISO 3166-1 alpha-3)
+  AM: 19, // Armenia (ISO 3166-1 alpha-2)
+  ARM: 19, // Armenia (ISO 3166-1 alpha-3)
+  AU: 23, // Australia (ISO 3166-1 alpha-2)
+  AUS: 23, // Australia (ISO 3166-1 alpha-3)
+  AT: 29, // Austria (ISO 3166-1 alpha-2)
+  AUT: 29, // Austria (ISO 3166-1 alpha-3)
+  AZ: 31, // Azerbaijan (ISO 3166-1 alpha-2)
+  AZE: 31, // Azerbaijan (ISO 3166-1 alpha-3)
+  BS: 37, // Bahamas (ISO 3166-1 alpha-2)
+  BH: 41, // Bahrain (ISO 3166-1 alpha-2)
+  BHR: 41, // Bahrain (ISO 3166-1 alpha-3)
+  BD: 43, // Bangladesh (ISO 3166-1 alpha-2)
+  BB: 47, // Barbados (ISO 3166-1 alpha-2)
+  BRB: 47, // Barbados (ISO 3166-1 alpha-3)
+  BY: 53, // Belarus (ISO 3166-1 alpha-2)
+  BLR: 53, // Belarus (ISO 3166-1 alpha-3)
+  BE: 59, // Belgium (ISO 3166-1 alpha-2)
+  BEL: 59, // Belgium (ISO 3166-1 alpha-3)
+  BZ: 61, // Belize (ISO 3166-1 alpha-2)
+  BLZ: 61, // Belize (ISO 3166-1 alpha-3)
+  BJ: 67, // Benin (ISO 3166-1 alpha-2)
+  BEN: 67, // Benin (ISO 3166-1 alpha-3)
+  BT: 71, // Bhutan (ISO 3166-1 alpha-2)
+  BTN: 71, // Bhutan (ISO 3166-1 alpha-3)
+  BO: 73, // "Bolivia, Plurinational State of" (ISO 3166-1 alpha-2)
+  BA: 79, // Bosnia and Herzegovina (ISO 3166-1 alpha-2)
+  BIH: 79, // Bosnia and Herzegovina (ISO 3166-1 alpha-3)
+  BW: 83, // Botswana (ISO 3166-1 alpha-2)
+  BR: 89, // Brazil (ISO 3166-1 alpha-2)
+  BRA: 89, // Brazil (ISO 3166-1 alpha-3)
+  BN: 97, // Brunei Darussalam (ISO 3166-1 alpha-2)
+  BRN: 97, // Brunei Darussalam (ISO 3166-1 alpha-3)
+  BG: 101, // Bulgaria (ISO 3166-1 alpha-2)
+  BGR: 101, // Bulgaria (ISO 3166-1 alpha-3)
+  BF: 103, // Burkina Faso (ISO 3166-1 alpha-2)
+  BFA: 103, // Burkina Faso (ISO 3166-1 alpha-3)
+  BI: 107, // Burundi (ISO 3166-1 alpha-2)
+  BDI: 107, // Burundi (ISO 3166-1 alpha-3)
+  KH: 109, // Cambodia (ISO 3166-1 alpha-2)
+  KHM: 109, // Cambodia (ISO 3166-1 alpha-3)
+  CM: 113, // Cameroon (ISO 3166-1 alpha-2)
+  CMR: 113, // Cameroon (ISO 3166-1 alpha-3)
+  CA: 127, // Canada (ISO 3166-1 alpha-2)
+  CAN: 127, // Canada (ISO 3166-1 alpha-3)
+  CV: 131, // Cape Verde (ISO 3166-1 alpha-2)
+  CF: 137, // Central African Republic (ISO 3166-1 alpha-2)
+  CAF: 137, // Central African Republic (ISO 3166-1 alpha-3)
+  TD: 139, // Chad (ISO 3166-1 alpha-2)
+  CL: 149, // Chile (ISO 3166-1 alpha-2)
+  CHL: 149, // Chile (ISO 3166-1 alpha-3)
+  CN: 151, // China (ISO 3166-1 alpha-2)
+  CHN: 151, // China (ISO 3166-1 alpha-3)
+  CO: 157, // Colombia (ISO 3166-1 alpha-2)
+  COL: 157, // Colombia (ISO 3166-1 alpha-3)
+  KM: 163, // Comoros (ISO 3166-1 alpha-2)
+  CG: 167, // Congo (ISO 3166-1 alpha-2)
+  COG: 167, // Congo (ISO 3166-1 alpha-3)
+  CD: 173, // "Congo, the Democratic Republic of the", (ISO 3166-1 alpha-2)
+  CR: 179, // Costa Rica (ISO 3166-1 alpha-2)
+  CRI: 179, // Costa Rica (ISO 3166-1 alpha-3)
+  CI: 181, // Côte d'Ivoire (ISO 3166-1 alpha-2)
+  CIV: 181, // Côte d'Ivoire (ISO 3166-1 alpha-3)
+  HR: 191, // Croatia (ISO 3166-1 alpha-2)
+  HRV: 191, // Croatia (ISO 3166-1 alpha-3)
+  CU: 193, // Cuba (ISO 3166-1 alpha-2)
+  CUB: 193, // Cuba (ISO 3166-1 alpha-3)
+  CY: 197, // Cyprus (ISO 3166-1 alpha-2)
+  CYP: 197, // Cyprus (ISO 3166-1 alpha-3)
+  CZ: 199, // Czech Republic (ISO 3166-1 alpha-2)
+  CZE: 199, // Czech Republic (ISO 3166-1 alpha-3)
+  DK: 211, // Denmark (ISO 3166-1 alpha-2)
+  DNK: 211, // Denmark (ISO 3166-1 alpha-3)
+  DJ: 223, // Djibouti (ISO 3166-1 alpha-2)
+  DJI: 233, // Djibouti (ISO 3166-1 alpha-3)
+  DM: 227, // Dominica (ISO 3166-1 alpha-2)
+  DMA: 227, // Dominica (ISO 3166-1 alpha-3)
+  DO: 229, // Dominican Republic (ISO 3166-1 alpha-2)
+  DOM: 229, // Dominican Republic (ISO 3166-1 alpha-3)
+  EC: 233, // Ecuador (ISO 3166-1 alpha-2)
+  ECU: 233, // Ecuador (ISO 3166-1 alpha-3)
+  EG: 239, // Egypt (ISO 3166-1 alpha-2)
+  EGY: 239, // Egypt (ISO 3166-1 alpha-3)
+  SV: 241, // El Salvador (ISO 3166-1 alpha-2)
+  SLV: 241, // El Salvador (ISO 3166-1 alpha-3)
+  GQ: 251, // Equatorial Guinea (ISO 3166-1 alpha-2)
+  GNQ: 251, // Equatorial Guinea (ISO 3166-1 alpha-3)
+  ER: 257, // Eritrea (ISO 3166-1 alpha-2)
+  EE: 263, // Estonia (ISO 3166-1 alpha-2)
+  EST: 263, // Estonia (ISO 3166-1 alpha-3)
+  SZ: 269, // Eswatini, Kingdom of // (formerly Swaziland) (ISO 3166-1 alpha-2)
+  ET: 271, // Ethiopia (ISO 3166-1 alpha-2)
+  ETH: 271, // Ethiopia (ISO 3166-1 alpha-3)
+  FJ: 277, // Fiji (ISO 3166-1 alpha-2)
+  FJI: 277, // Fiji (ISO 3166-1 alpha-3)
+  FI: 281, // Finland (ISO 3166-1 alpha-2)
+  FIN: 281, // Finland (ISO 3166-1 alpha-3)
+  FR: 283, // France (ISO 3166-1 alpha-2)
+  FRA: 283, // France (ISO 3166-1 alpha-3)
+  GA: 293, // Gabon (ISO 3166-1 alpha-2)
+  GAB: 293, // Gabon (ISO 3166-1 alpha-3)
+  GM: 307, // Gambia (ISO 3166-1 alpha-2)
+  GE: 311, // Georgia (ISO 3166-1 alpha-2)
+  GEO: 311, // Georgia (ISO 3166-1 alpha-3)
+  DE: 313, // Germany (ISO 3166-1 alpha-2)
+  DEU: 313, // Germany (ISO 3166-1 alpha-3)
+  GH: 317, // Ghana (ISO 3166-1 alpha-2)
+  GR: 331, // Greece (ISO 3166-1 alpha-2)
+  GRC: 331, // Greece (ISO 3166-1 alpha-3)
+  GD: 337, // Grenada (ISO 3166-1 alpha-2)
+  GRD: 337, // Grenada (ISO 3166-1 alpha-3)
+  GT: 347, // Guatemala (ISO 3166-1 alpha-2)
+  GTM: 347, // Guatemala (ISO 3166-1 alpha-3)
+  GN: 349, // Guinea (ISO 3166-1 alpha-2)
+  GIN: 349, // Guinea (ISO 3166-1 alpha-3)
+  GW: 353, // Guinea-Bissau (ISO 3166-1 alpha-2)
+  GY: 359, // Guyana (ISO 3166-1 alpha-2)
+  HT: 367, // Haiti (ISO 3166-1 alpha-2)
+  HN: 373, // Honduras (ISO 3166-1 alpha-2)
+  HND: 373, // Honduras (ISO 3166-1 alpha-3)
+  // HK: 10000, // Hong Kong (ISO 3166-1 alpha-2)
+  // HKG: 10000, // Hong Kong (ISO 3166-1 alpha-3)
+  HU: 379, // Hungary (ISO 3166-1 alpha-2)
+  HUN: 379, // Hungary (ISO 3166-1 alpha-3)
+  IS: 383, // Iceland (ISO 3166-1 alpha-2)
+  ISL: 383, // Iceland (ISO 3166-1 alpha-3)
+  IN: 389, // India (ISO 3166-1 alpha-2)
+  IND: 389, // India (ISO 3166-1 alpha-3)
+  ID: 397, // Indonesia (ISO 3166-1 alpha-2)
+  IDN: 397, // Indonesia (ISO 3166-1 alpha-3)
+  IR: 401, // "Iran, Islamic Republic of" (ISO 3166-1 alpha-2)
+  IRN: 401, // Iran (Islamic Republic of) (ISO 3166-1 alpha-3)
+  IQ: 409, // Iraq (ISO 3166-1 alpha-2)
+  IE: 419, // Ireland (ISO 3166-1 alpha-2)
+  IRL: 419, // Ireland (ISO 3166-1 alpha-3)
+  IL: 421, // Israel (ISO 3166-1 alpha-2)
+  ISR: 421, // Israel (ISO 3166-1 alpha-3)
+  IT: 431, // Italy (ISO 3166-1 alpha-2)
+  ITA: 431, // Italy (ISO 3166-1 alpha-3)
+  JM: 433, // Jamaica (ISO 3166-1 alpha-2)
+  JAM: 433, // Jamaica (ISO 3166-1 alpha-3)
+  JP: 439, // Japan (ISO 3166-1 alpha-2)
+  JPN: 439, // Japan (ISO 3166-1 alpha-3)
+  JO: 443, // Jordan (ISO 3166-1 alpha-2)
+  KZ: 449, // Kazakhstan (ISO 3166-1 alpha-2)
+  KAZ: 449, // Kazakhstan (ISO 3166-1 alpha-3)
+  KE: 457, // Kenya (ISO 3166-1 alpha-2)
+  KEN: 457, // Kenya (ISO 3166-1 alpha-3)
+  KI: 461, // Kiribati (ISO 3166-1 alpha-2)
+  KP: 463, // "Korea, Democratic People's Republic of" (ISO 3166-1 alpha-2)
+  KR: 467, // "Korea, Republic of" (ISO 3166-1 alpha-2)
+  KOR: 467, // Korea (Republic of) (ISO 3166-1 alpha-3)
+  KW: 479, // Kuwait (ISO 3166-1 alpha-2)
+  KWT: 479, // Kuwait (ISO 3166-1 alpha-3)
+  KG: 487, // Kyrgyzstan (ISO 3166-1 alpha-2)
+  KGZ: 487, // Kyrgyzstan (ISO 3166-1 alpha-3)
+  LA: 491, // Lao People's Democratic Republic (ISO 3166-1 alpha-2)
+  LV: 499, // Latvia (ISO 3166-1 alpha-2)
+  LVA: 499, // Latvia (ISO 3166-1 alpha-3)
+  LB: 503, // Lebanon (ISO 3166-1 alpha-2)
+  LBN: 503, // Lebanon (ISO 3166-1 alpha-3)
+  LS: 509, // Lesotho (ISO 3166-1 alpha-2)
+  LSO: 509, // Lesotho (ISO 3166-1 alpha-3)
+  LR: 521, // Liberia (ISO 3166-1 alpha-2)
+  LY: 523, // Libya // (formerly Libyan Arab Jamahiriya) (ISO 3166-1 alpha-2)
+  LBY: 523, // Libya (ISO 3166-1 alpha-3)
+  LI: 541, // Liechtenstein (ISO 3166-1 alpha-2)
+  LIE: 541, // Liechtenstein (ISO 3166-1 alpha-3)
+  LT: 547, // Lithuania (ISO 3166-1 alpha-2)
+  LTU: 547, // Lithuania (ISO 3166-1 alpha-3)
+  LU: 557, // Luxembourg (ISO 3166-1 alpha-2)
+  LUX: 557, // Luxembourg (ISO 3166-1 alpha-3)
+  MK: 563, // North Macedonia // (formerly "Macedonia, the former Yugoslav Republic of") (ISO 3166-1 alpha-2)
+  MG: 569, // Madagascar (ISO 3166-1 alpha-2)
+  MW: 571, // Malawi (ISO 3166-1 alpha-2)
+  MWI: 571, // Malawi (ISO 3166-1 alpha-3)
+  MY: 577, // Malaysia (ISO 3166-1 alpha-2)
+  MYS: 577, // Malaysia (ISO 3166-1 alpha-3)
+  MV: 587, // Maldives (ISO 3166-1 alpha-2)
+  ML: 593, // Mali (ISO 3166-1 alpha-2)
+  MLI: 593, // Mali (ISO 3166-1 alpha-3)
+  MT: 599, // Malta (ISO 3166-1 alpha-2)
+  MLT: 599, // Malta (ISO 3166-1 alpha-3)
+  MH: 601, // Marshall Islands (ISO 3166-1 alpha-2)
+  MR: 607, // Mauritania (ISO 3166-1 alpha-2)
+  MRT: 607, // Mauritania (ISO 3166-1 alpha-3)
+  MU: 613, // Mauritius (ISO 3166-1 alpha-2)
+  MX: 617, // Mexico (ISO 3166-1 alpha-2)
+  MEX: 617, // Mexico (ISO 3166-1 alpha-3)
+  FM: 619, // "Micronesia, Federated States of" (ISO 3166-1 alpha-2)
+  MD: 631, // "Moldova, Republic of", (ISO 3166-1 alpha-2)
+  MDA: 631, // "Moldova, Republic of" (ISO 3166-1 alpha-3)
+  MC: 641, // Monaco (ISO 3166-1 alpha-2)
+  MCO: 641, // Monaco (ISO 3166-1 alpha-3)
+  MN: 643, // Mongolia (ISO 3166-1 alpha-2)
+  ME: 647, // Montenegro (ISO 3166-1 alpha-2)
+  MNE: 647, // Montenegro (ISO 3166-1 alpha-3)
+  MA: 653, // Morocco (ISO 3166-1 alpha-2)
+  MAR: 653, // Morocco (ISO 3166-1 alpha-3)
+  MZ: 659, // Mozambique (ISO 3166-1 alpha-2)
+  MM: 661, // Myanmar (ISO 3166-1 alpha-2)
+  NA: 673, // Namibia (ISO 3166-1 alpha-2)
+  NAM: 673, // Namibia (ISO 3166-1 alpha-3)
+  NR: 677, // Nauru (ISO 3166-1 alpha-2)
+  NP: 683, // Nepal (ISO 3166-1 alpha-2)
+  NPL: 683, // Nepal (ISO 3166-1 alpha-3)
+  NL: 691, // Netherlands (ISO 3166-1 alpha-2)
+  NLD: 691, // Netherlands (ISO 3166-1 alpha-3)
+  NZ: 701, // New Zealand (ISO 3166-1 alpha-2)
+  NZL: 701, // New Zealand (ISO 3166-1 alpha-3)
+  NI: 709, // Nicaragua (ISO 3166-1 alpha-2)
+  NIC: 709, // Nicaragua (ISO 3166-1 alpha-3)
+  NE: 719, // Niger (ISO 3166-1 alpha-2)
+  NER: 719, // Niger (ISO 3166-1 alpha-3)
+  NG: 727, // Nigeria (ISO 3166-1 alpha-2)
+  NGA: 727, // Nigeria (ISO 3166-1 alpha-3)
+  NO: 733, // Norway (ISO 3166-1 alpha-2)
+  NOR: 733, // Norway (ISO 3166-1 alpha-3)
+  OM: 739, // Oman (ISO 3166-1 alpha-2)
+  OMN: 739, // Oman (ISO 3166-1 alpha-3)
+  PK: 743, // Pakistan (ISO 3166-1 alpha-2)
+  PAK: 743, // Pakistan (ISO 3166-1 alpha-3)
+  PW: 751, // Palau (ISO 3166-1 alpha-2)
+  PA: 757, // Panama (ISO 3166-1 alpha-2)
+  PAN: 757, // Panama (ISO 3166-1 alpha-3)
+  PG: 761, // Papua New Guinea (ISO 3166-1 alpha-2)
+  PY: 769, // Paraguay (ISO 3166-1 alpha-2)
+  PRY: 769, // Paraguay (ISO 3166-1 alpha-3)
+  PE: 773, // Peru (ISO 3166-1 alpha-2)
+  PER: 773, // Peru (ISO 3166-1 alpha-3)
+  PH: 787, // Philippines (ISO 3166-1 alpha-2)
+  PHL: 787, // Philippines (ISO 3166-1 alpha-3)
+  PL: 797, // Poland (ISO 3166-1 alpha-2)
+  POL: 797, // Poland (ISO 3166-1 alpha-3)
+  PT: 809, // Portugal (ISO 3166-1 alpha-2)
+  PRT: 809, // Portugal (ISO 3166-1 alpha-3)
+  // PR: 10000, // Puerto Rico (ISO 3166-1 alpha-2)
+  // PRI: 10000, // Puerto Rico (ISO 3166-1 alpha-3)
+  QA: 811, // Qatar (ISO 3166-1 alpha-2)
+  QAT: 811, // Qatar (ISO 3166-1 alpha-3)
+  RO: 821, // Romania (ISO 3166-1 alpha-2)
+  ROU: 821, // Romania (ISO 3166-1 alpha-3)
+  RU: 823, // Russian Federation (ISO 3166-1 alpha-2)
+  RUS: 823, // Russian Federation (ISO 3166-1 alpha-3)
+  RW: 827, // Rwanda (ISO 3166-1 alpha-2)
+  KN: 829, // Saint Kitts and Nevis (ISO 3166-1 alpha-2)
+  KNA: 829, // Saint Kitts and Nevis (ISO 3166-1 alpha-3)
+  LC: 839, // Saint Lucia (ISO 3166-1 alpha-2)
+  LCA: 839, // Saint Lucia (ISO 3166-1 alpha-3)
+  VC: 853, // Saint Vincent and the Grenadines (ISO 3166-1 alpha-2)
+  VCT: 853, // Saint Vincent and the Grenadines (ISO 3166-1 alpha-3)
+  WS: 857, // Samoa (ISO 3166-1 alpha-2)
+  WSM: 857, // Samoa (ISO 3166-1 alpha-3)
+  SM: 859, // San Marino (ISO 3166-1 alpha-2)
+  ST: 863, // Sao Tome and Principe (ISO 3166-1 alpha-2)
+  SA: 877, // Saudi Arabia (ISO 3166-1 alpha-2)
+  SAU: 877, // Saudi Arabia (ISO 3166-1 alpha-3)
+  SN: 881, // Senegal (ISO 3166-1 alpha-2)
+  RS: 883, // Serbia (ISO 3166-1 alpha-2)
+  SRB: 883, // Serbia (ISO 3166-1 alpha-3)
+  SC: 887, // Seychelles (ISO 3166-1 alpha-2)
+  SL: 907, // Sierra Leone (ISO 3166-1 alpha-2)
+  SG: 911, // Singapore (ISO 3166-1 alpha-2)
+  SGP: 911, // Singapore (ISO 3166-1 alpha-3)
+  SK: 919, // Slovakia (ISO 3166-1 alpha-2)
+  SVK: 919, // Slovakia (ISO 3166-1 alpha-3)
+  SI: 929, // Slovenia (ISO 3166-1 alpha-2)
+  SVN: 929, // Slovenia (ISO 3166-1 alpha-3)
+  SB: 937, // Solomon Islands (ISO 3166-1 alpha-2)
+  SO: 941, // Somalia (ISO 3166-1 alpha-2)
+  SOM: 941, // Somalia (ISO 3166-1 alpha-3)
+  ZA: 947, // South Africa (ISO 3166-1 alpha-2)
+  ZAF: 947, // South Africa (ISO 3166-1 alpha-3)
   // TODO: South Sudan?
-  ES: 953, // Spain
-  LK: 967, // Sri Lanka,
-  SD: 971, // Sudan,
-  SR: 977, // Suriname,
-  SE: 983, // Sweden,
-  CH: 991, // Switzerland,
-  SY: 997, // Syrian Arab Republic,
-  // TW: 10000, // "Taiwan, Province of China",
-  TJ: 1009, // Tajikistan,
-  TZ: 1013, // "Tanzania, United Republic of",
-  TH: 1019, // Thailand,
-  TL: 1021, // Timor-Leste,
-  TG: 1031, // Togo,
-  TO: 1033, // Tonga,
-  TT: 1039, // Trinidad and Tobago,
-  TN: 1049, // Tunisia,
-  TR: 1051, // Türkiye,
-  TM: 1061, // Turkmenistan,
-  TV: 1063, // Tuvalu,
-  UG: 1069, // Uganda,
-  UA: 1087, // Ukraine,
-  AE: 1091, // United Arab Emirates,
-  GB: 1093, // United Kingdom,
-  AF: 1097, // Afghanistan
-  UY: 1103, // Uruguay,
-  UZ: 1109, // Uzbekistan,
-  VU: 1117, // Vanuatu,
-  VE: 1123, // "Venezuela, Bolivarian Republic of",
-  VN: 1129, // Viet Nam,
-  YE: 1151, // Yemen,
-  ZM: 1153, // Zambia,
-  ZW: 1163, // Zimbabwe
+  ES: 953, // Spain (ISO 3166-1 alpha-2)
+  ESP: 953, // Spain (ISO 3166-1 alpha-3)
+  LK: 967, // Sri Lanka, (ISO 3166-1 alpha-2)
+  LKA: 967, // Sri Lanka (ISO 3166-1 alpha-3)
+  SD: 971, // Sudan, (ISO 3166-1 alpha-2)
+  SDN: 971, // Sudan (ISO 3166-1 alpha-3)
+  SR: 977, // Suriname, (ISO 3166-1 alpha-2)
+  SE: 983, // Sweden, (ISO 3166-1 alpha-2)
+  SWE: 983, // Sweden (ISO 3166-1 alpha-3)
+  CH: 991, // Switzerland, (ISO 3166-1 alpha-2)
+  CHE: 991, // Switzerland (ISO 3166-1 alpha-3)
+  SY: 997, // Syrian Arab Republic, (ISO 3166-1 alpha-2)
+  SYR: 997, // Syrian Arab Republic (ISO 3166-1 alpha-3)
+  // TW: 10000, // "Taiwan, Province of China", (ISO 3166-1 alpha-2)
+  // TWN: 10000, // "Taiwan, Province of China" (ISO 3166-1 alpha-3)
+  TJ: 1009, // Tajikistan, (ISO 3166-1 alpha-2)
+  TJK: 1009, // Tajikistan (ISO 3166-1 alpha-3)
+  TZ: 1013, // "Tanzania, United Republic of", (ISO 3166-1 alpha-2)
+  TZA: 1013, // Tanzania, United Republic of (ISO 3166-1 alpha-3)
+  TH: 1019, // Thailand, (ISO 3166-1 alpha-2)
+  THA: 1019, // Thailand (ISO 3166-1 alpha-3)
+  TL: 1021, // Timor-Leste, (ISO 3166-1 alpha-2)
+  TG: 1031, // Togo, (ISO 3166-1 alpha-2)
+  TGO: 1031, // Togo (ISO 3166-1 alpha-3)
+  TO: 1033, // Tonga, (ISO 3166-1 alpha-2)
+  TT: 1039, // Trinidad and Tobago, (ISO 3166-1 alpha-2)
+  TTO: 1039, // Trinidad and Tobago (ISO 3166-1 alpha-3)
+  TN: 1049, // Tunisia, (ISO 3166-1 alpha-2)
+  TUN: 1049, // Tunisia (ISO 3166-1 alpha-3)
+  TR: 1051, // Türkiye, (ISO 3166-1 alpha-2)
+  TUR: 1051, // Türkiye (ISO 3166-1 alpha-3)
+  TM: 1061, // Turkmenistan, (ISO 3166-1 alpha-2)
+  TKM: 1061, // Turkmenistan (ISO 3166-1 alpha-3)
+  TV: 1063, // Tuvalu, (ISO 3166-1 alpha-2)
+  TUV: 1063, // Tuvalu (ISO 3166-1 alpha-3)
+  UG: 1069, // Uganda, (ISO 3166-1 alpha-2)
+  UGA: 1069, // Uganda (ISO 3166-1 alpha-3)
+  UA: 1087, // Ukraine (ISO 3166-1 alpha-2)
+  UKR: 1087, // Ukraine (ISO 3166-1 alpha-3)
+  AE: 1091, // United Arab Emirates (ISO 3166-1 alpha-2)
+  ARE: 1091, // United Arab Emirates (ISO 3166-1 alpha-3)
+  GB: 1093, // United Kingdom (ISO 3166-1 alpha-2)
+  GBR: 1093, // United Kingdom (ISO 3166-1 alpha-3)
+  AF: 1097, // Afghanistan (ISO 3166-1 alpha-2)
+  AFG: 1097, // Afghanistan (ISO 3166-1 alpha-3)
+  UY: 1103, // Uruguay (ISO 3166-1 alpha-2)
+  UZ: 1109, // Uzbekistan (ISO 3166-1 alpha-2)
+  UZB: 1109, // Uzbekistan (ISO 3166-1 alpha-3)
+  VU: 1117, // Vanuatu (ISO 3166-1 alpha-2)
+  VUT: 1117, // Vanuatu (ISO 3166-1 alpha-3)
+  VE: 1123, // "Venezuela, Bolivarian Republic of" (ISO 3166-1 alpha-2)
+  VEN: 1123, // "Venezuela, Bolivarian Republic of" (ISO 3166-1 alpha-3)
+  VN: 1129, // Viet Nam (ISO 3166-1 alpha-2)
+  VNM: 1129, // Viet Nam (ISO 3166-1 alpha-3)
+  YE: 1151, // Yemen (ISO 3166-1 alpha-2)
+  ZM: 1153, // Zambia (ISO 3166-1 alpha-2)
+  ZMB: 1153, // Zambia (ISO 3166-1 alpha-3)
+  ZW: 1163, // Zimbabwe (ISO 3166-1 alpha-2)
+  ZWE: 1163, // Zimbabwe (ISO 3166-1 alpha-3)
+
+  // ABW: n, // Aruba (ISO 3166-1 alpha-3)
+  // BMU: n, // Bermuda (ISO 3166-1 alpha-3)
+  // CYM: n, // Cayman Islands (ISO 3166-1 alpha-3)
+  // COK: n, // Cook Islands (ISO 3166-1 alpha-3)
+  // FRO: n, // Faroe Islands (ISO 3166-1 alpha-3)
+  // GIB: n, // Gibraltar (ISO 3166-1 alpha-3)
+  // GGY: n, // Guernsey (ISO 3166-1 alpha-3)
+  // IMN: n, // Isle of Man (ISO 3166-1 alpha-3)
+  // JEY: n, // Jersey (ISO 3166-1 alpha-3)
+  // MSR: n, // Montserrat (ISO 3166-1 alpha-3)
+  // NFK: n, // Norfolk Island (ISO 3166-1 alpha-3)
+  // PSE: n, // Palestine, State of (ISO 3166-1 alpha-3)
+  // TCA: n, // Turks and Caicos Islands (ISO 3166-1 alpha-3)
+  // VGB: n, // Virgin Islands (British) (ISO 3166-1 alpha-3)
+  // ALA: n, // Åland Islands (ISO 3166-1 alpha-3)
 };

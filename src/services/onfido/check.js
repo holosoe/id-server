@@ -1,6 +1,7 @@
 import axios from "axios";
 import { DailyVerificationCount } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { desiredOnfidoReports } from "../../constants/onfido.js";
 
 async function createCheck(req, res) {
   // NOTE:
@@ -43,14 +44,8 @@ async function createCheck(req, res) {
 
     const reqBody = {
       applicant_id,
-      report_names: [
-        "document",
-        // 'document_video'
-        "facial_similarity_photo",
-        "facial_similarity_video",
-        "identity_enhanced",
-      ],
-      applicant_provides_data: true,
+      report_names: desiredOnfidoReports,
+      // applicant_provides_data: true,
     };
     const config = {
       headers: {
@@ -72,7 +67,7 @@ async function createCheck(req, res) {
       id: check.id,
     });
   } catch (err) {
-    logWithTimestamp(`POST onfido/check: Error creating session`);
+    logWithTimestamp(`POST onfido/check: Error creating check`);
     console.log(err.message);
     console.log(err?.response?.data);
     return res.status(500).json({ error: "An unknown error occurred" });

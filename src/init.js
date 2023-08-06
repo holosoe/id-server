@@ -287,6 +287,10 @@ async function initializeMongoDb() {
       type: String,
       required: false,
     },
+    check_id: {
+      type: String,
+      required: false,
+    },
     uuidConstituents: {
       firstName: {
         populated: Boolean,

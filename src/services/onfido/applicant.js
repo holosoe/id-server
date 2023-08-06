@@ -49,20 +49,41 @@ async function createApplicant(req, res) {
         Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
       },
     };
-    const resp = await axios.post(
+    const applicantResp = await axios.post(
       "https://api.us.onfido.com/v3.6/applicants",
       reqBody,
       config
     );
-    const applicant = resp?.data;
+    const applicant = applicantResp?.data;
+
     logWithTimestamp(
       `POST onfido/applicant: Created applicant with applicant ID ${applicant.id}`
     );
+
+    // Create an SDK token for the applicant
+    const reqBody2 = `applicant_id=${applicant.id}&referrer=${
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3002/*"
+        : "https://app.holonym.id/*"
+    }`;
+    const config2 = {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+      },
+    };
+    const sdkTokenResp = await axios.post(
+      "https://api.us.onfido.com/v3.6/sdk_token",
+      reqBody2,
+      config2
+    );
+
     return res.status(200).json({
-      id: applicant.id,
+      applicant_id: applicant.id,
+      sdk_token: sdkTokenResp.data.token,
     });
   } catch (err) {
-    logWithTimestamp(`POST onfido/applicant: Error creating session`);
+    logWithTimestamp("POST onfido/applicant: Error creating applicant");
     console.log(err.message);
     console.log(err?.response?.data);
     return res.status(500).json({ error: "An unknown error occurred" });
