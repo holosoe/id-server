@@ -1,5 +1,5 @@
 import axios from "axios";
-import { DailyVerificationCount } from "../../init.js";
+import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 
@@ -12,8 +12,14 @@ async function createCheck(req, res) {
   // Perhaps we should associate sigDigest with applicant_id to accomplish this.
   try {
     const applicant_id = req.body.applicant_id;
+    const sigDigest = req.body.sigDigest;
     if (!applicant_id) {
       return res.status(400).json({ error: "Missing applicant ID" });
+    }
+
+    if (!sigDigest) {
+      logWithTimestamp(`POST onfido/check: Missing sigDigest`);
+      return res.status(400).json({ error: "Missing sigDigest" });
     }
 
     // Increment checkCount in today's verification count doc. If doc doesn't exist,
@@ -60,6 +66,22 @@ async function createCheck(req, res) {
     );
     const check = resp?.data;
     logWithTimestamp(`POST onfido/check: Created check with check ID ${check.id}`);
+
+    // Upsert IDVSessions doc with sigDigest and session ID
+    await IDVSessions.findOneAndUpdate(
+      { sigDigest },
+      {
+        sigDigest,
+        $push: {
+          "onfido.checks": {
+            check_id: check.id,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { upsert: true, returnOriginal: false }
+    ).exec();
+
     return res.status(200).json({
       // TODO: CT: I'm not quite sure whether form_uri is the URL we are looking for. Is
       // it the URL for the verification flow? Or is it just a form where user enters input?

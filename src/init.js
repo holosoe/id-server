@@ -182,6 +182,56 @@ async function initializeMongoDb() {
     "UserVerifications",
     userVerificationsSchema
   );
+  // By keeping track of a user's sessions, we can let them start verification
+  // and finish issuance in separate browsing sessions, which is useful for
+  // handling the delay between when a user submits their documents to the
+  // IDV provider and when the provider finishes verifying the documents,
+  // which can be up to 20 minutes for iDenfy, for example.
+  const idvSessionsSchema = new Schema({
+    sigDigest: String,
+    // For "verification status" display in frontend, make it conditional on:
+    // - Whether the user has govId creds
+    // - Status of the *latest* IDV session
+    // if (hasGovIdCreds) displayCreds
+    // else if (hasIdvSession && successfulSessionExists) display "check email" or link to "finish verification"
+    // else if (hasIdvSession) for each idv provider: if user has idv session with provider:
+    //                         display status of most recent verification
+    // else display nothing
+    veriff: {
+      type: {
+        sessions: [
+          {
+            sessionId: String,
+            createdAt: Date,
+          },
+        ],
+      },
+      required: false,
+    },
+    idenfy: {
+      type: {
+        sessions: [
+          {
+            scanRef: String,
+            createdAt: Date,
+          },
+        ],
+      },
+      required: false,
+    },
+    onfido: {
+      type: {
+        checks: [
+          {
+            check_id: String,
+            createdAt: Date,
+          },
+        ],
+      },
+      required: false,
+    },
+  });
+  const IDVSessions = mongoose.model("IDVSessions", idvSessionsSchema);
   const userCredentialsSchema = new Schema({
     proofDigest: String,
     sigDigest: String,
@@ -323,6 +373,7 @@ async function initializeMongoDb() {
   await initializeDailyVerificationDeletions(DailyVerificationDeletions);
   return {
     UserVerifications,
+    IDVSessions,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
@@ -334,6 +385,7 @@ async function initializeMongoDb() {
 validateEnv();
 
 let UserVerifications,
+  IDVSessions,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
@@ -342,6 +394,7 @@ let UserVerifications,
 initializeMongoDb().then((result) => {
   if (result) {
     UserVerifications = result.UserVerifications;
+    IDVSessions = result.IDVSessions;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
@@ -360,6 +413,7 @@ initialize().then((provider) => {
 export {
   mongoose,
   UserVerifications,
+  IDVSessions,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,

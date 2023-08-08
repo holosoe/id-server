@@ -430,6 +430,15 @@ async function getCredentials(req, res) {
 
     await redactVeriffSession(req.query.sessionId);
 
+    // TODO: MAYBE: Update IDVSessions. Set the status to "credentials-issued" and add the UUID.
+    // This will help us ensure that we never display a "completed - click here to retrieve your
+    // credentials" message to the user if their verification is complete but their creds haven't
+    // been signed by Holonym (and returned) yet. It's not necessary to set status to
+    // "credentials-issued" since the frontend can check for the presence of gov ID creds; however,
+    // if there's a bug between the end of this function and credential storage logic in the
+    // frontend, then the user might see "completed - click, etc." even after their creds have
+    // been issued.
+
     logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
 
     return res.status(200).json(response);

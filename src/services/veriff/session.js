@@ -1,9 +1,16 @@
 import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
-import { DailyVerificationCount } from "../../init.js";
+import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 
 async function createSession(req, res) {
+  const sigDigest = req.body.sigDigest;
+
+  if (!sigDigest) {
+    logWithTimestamp(`POST veriff/session: Missing sigDigest`);
+    return res.status(400).json({ error: "Missing sigDigest" });
+  }
+
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,
   // create it, and set Veriff sessionCount to 1.
   // findOneAndUpdate is used so that the operation is atomic.
@@ -65,6 +72,22 @@ async function createSession(req, res) {
     );
     const verification = resp?.data?.verification;
     logWithTimestamp(`POST veriff/session: Created session ${verification?.id}`);
+
+    // Upsert IDVSessions doc with sigDigest and session ID
+    await IDVSessions.findOneAndUpdate(
+      { sigDigest },
+      {
+        sigDigest,
+        $push: {
+          "veriff.sessions": {
+            sessionId: verification?.id,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { upsert: true, returnOriginal: false }
+    ).exec();
+
     return res.status(200).json({ url: verification?.url, id: verification?.id });
   } catch (err) {
     logWithTimestamp(`POST veriff/session: Error creating session`);

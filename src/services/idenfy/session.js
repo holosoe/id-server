@@ -1,13 +1,11 @@
 import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
-import { DailyVerificationCount } from "../../init.js";
+import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 import { hash } from "../../utils/utils.js";
 
 async function createSession(req, res) {
   try {
-    console.log("req.body: ", req.body);
-    console.log("req.query: ", req.query);
     const sigDigest = req.body.sigDigest; // holoAuthSigDigest
 
     if (!sigDigest) {
@@ -62,6 +60,22 @@ async function createSession(req, res) {
     logWithTimestamp(
       `POST idenfy/session: Created session with authToken ${session.authToken}`
     );
+
+    // Upsert IDVSessions doc with sigDigest and session ID
+    await IDVSessions.findOneAndUpdate(
+      { sigDigest },
+      {
+        sigDigest,
+        $push: {
+          "idenfy.sessions": {
+            scanRef: session.scanRef,
+            createdAt: new Date(),
+          },
+        },
+      },
+      { upsert: true, returnOriginal: false }
+    ).exec();
+
     return res.status(200).json({
       url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${session.authToken}`,
       scanRef: session.scanRef,
