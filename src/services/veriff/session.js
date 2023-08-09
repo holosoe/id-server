@@ -3,11 +3,6 @@ import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
 
-import axios from "axios";
-import { v4 as uuidV4 } from "uuid";
-import { DailyVerificationCount } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
-
 async function v1CreateSession(req, res) {
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,
   // create it, and set Veriff sessionCount to 1.
