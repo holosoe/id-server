@@ -36,13 +36,12 @@ async function getVeriffSessionStatus(sessions) {
   const decisionsWithTimestamps = [];
   for (const session of sessions.veriff.sessions) {
     const decision = await getVeriffSessionDecision(session.sessionId);
-    // console.log("decision", decision);
     decisionsWithTimestamps.push({
       decision,
       createdAt: session.createdAt,
     });
     if (decision?.verification?.status === "approved") {
-      return decision?.verification?.status;
+      return { status: decision?.verification?.status, sessionId: session.sessionId };
     }
   }
 
@@ -51,7 +50,10 @@ async function getVeriffSessionStatus(sessions) {
     prev.createdAt > current.createdAt ? prev : current
   ).decision;
 
-  return latestDecision?.verification?.status;
+  return {
+    status: latestDecision?.verification?.status,
+    sessionId: latestDecision?.verification?.id,
+  };
 }
 
 async function getIdenfySession(scanRef) {
@@ -85,13 +87,12 @@ async function getIdenfySessionStatus(sessions) {
   const sessionsWithTimestamps = [];
   for (const sessionMetadata of sessions.idenfy.sessions) {
     const session = await getIdenfySession(sessionMetadata.scanRef);
-    console.log("idenfy session", session);
     sessionsWithTimestamps.push({
       session,
       createdAt: sessionMetadata.createdAt,
     });
     if (decision?.status === "APPROVED") {
-      return decision?.status;
+      return { status: decision?.status, scanRef: sessionMetadata.scanRef };
     }
   }
 
@@ -100,7 +101,9 @@ async function getIdenfySessionStatus(sessions) {
     prev.createdAt > current.createdAt ? prev : current
   ).session;
 
-  return latestSession?.status;
+  // console.log("idenfy: latestSession", latestSession);
+
+  return { status: latestSession?.status, scanRef: latestSession?.scanRef };
 }
 
 async function getOnfidoCheck(check_id) {
@@ -128,13 +131,12 @@ async function getOnfidoSessionStatus(sessions) {
   const sessionsWithTimestamps = [];
   for (const sessionMetadata of sessions.onfido.checks) {
     const check = await getOnfidoCheck(sessionMetadata.check_id);
-    console.log("onfido check", check);
     sessionsWithTimestamps.push({
       check,
       createdAt: sessionMetadata.createdAt,
     });
     if (check?.status === "complete") {
-      return check?.status;
+      return { status: check?.status, check_id: sessionMetadata.check_id };
     }
   }
 
@@ -143,7 +145,9 @@ async function getOnfidoSessionStatus(sessions) {
     prev.createdAt > current.createdAt ? prev : current
   ).check;
 
-  return latestCheck?.status;
+  // console.log("onfido: latestCheck", latestCheck);
+
+  return { status: latestCheck?.status, check_id: latestCheck?.check_id };
 }
 
 /**
@@ -166,7 +170,7 @@ async function getSessionStatus(req, res) {
       onfido: await getOnfidoSessionStatus(sessions),
     };
 
-    console.log("sessionStatuses", sessionStatuses);
+    // console.log("sessionStatuses", sessionStatuses);
 
     return res.status(200).json(sessionStatuses);
   } catch (err) {
