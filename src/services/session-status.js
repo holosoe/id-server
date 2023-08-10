@@ -66,7 +66,9 @@ async function getIdenfySession(scanRef) {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.IDENFY_API_KEY}`,
+          Authorization: `Basic ${Buffer.from(
+            `${process.env.IDENFY_API_KEY}:${process.env.IDENFY_API_KEY_SECRET}`
+          ).toString("base64")}`,
         },
       }
     );
@@ -91,8 +93,8 @@ async function getIdenfySessionStatus(sessions) {
       session,
       createdAt: sessionMetadata.createdAt,
     });
-    if (decision?.status === "APPROVED") {
-      return { status: decision?.status, scanRef: sessionMetadata.scanRef };
+    if (session?.status === "APPROVED") {
+      return { status: session?.status, scanRef: sessionMetadata.scanRef };
     }
   }
 
