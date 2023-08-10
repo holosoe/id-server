@@ -27,18 +27,18 @@ function validateSession(statusData, verificationData, scanRef) {
       log: `idenfy/credentials: Failed to retrieve iDenfy session ${scanRef}. Exiting.`,
     };
   }
-  if (statusData.autoDocument !== "DOC_VALIDATED") {
-    return {
-      error: `Verification failed. Failed to auto validate document.`,
-      log: `idenfy/credentials: Verification failed. autoDocument: ${statusData.autoDocument}. Exiting.`,
-    };
-  }
-  if (statusData.autoFace !== "FACE_MATCH") {
-    return {
-      error: `Verification failed. Failed to auto match face.`,
-      log: `idenfy/credentials: Verification failed. autoFace: ${statusData.autoFace}. Exiting.`,
-    };
-  }
+  // if (statusData.autoDocument !== "DOC_VALIDATED") {
+  //   return {
+  //     error: `Verification failed. Failed to auto validate document.`,
+  //     log: `idenfy/credentials: Verification failed. autoDocument: ${statusData.autoDocument}. Exiting.`,
+  //   };
+  // }
+  // if (statusData.autoFace !== "FACE_MATCH") {
+  //   return {
+  //     error: `Verification failed. Failed to auto match face.`,
+  //     log: `idenfy/credentials: Verification failed. autoFace: ${statusData.autoFace}. Exiting.`,
+  //   };
+  // }
   if (statusData.manualDocument !== "DOC_VALIDATED") {
     return {
       error: `Verification failed. Failed to manually validate document.`,
