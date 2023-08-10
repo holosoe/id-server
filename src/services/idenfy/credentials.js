@@ -54,7 +54,7 @@ function validateSession(statusData, verificationData, scanRef) {
   if (statusData.status !== "APPROVED") {
     return {
       error: `Verification failed. Status is ${statusData.status}. Expected 'APPROVED'.`,
-      log: `idenfy/credentials: Verification failed. manualFace: ${statusData.manualFace}. Exiting.`,
+      log: `idenfy/credentials: Verification failed. Status is ${statusData.status}. Expected 'APPROVED'.`,
     };
   }
   // NOTE: We are allowing address fields (other than country) to be empty for now
