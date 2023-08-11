@@ -81,7 +81,9 @@ function validateSession(statusData, verificationData, scanRef) {
 
 function extractCreds(verificationData) {
   // ["docFirstName", "docLastName", "docDob", "docNationality"];
-  const countryCode = countryCodeToPrime[verificationData.docNationality];
+  const country =
+    verificationData.docNationality ?? verificationData.docIssuingCountry;
+  const countryCode = countryCodeToPrime[country];
   const birthdate = verificationData.docDob ?? "";
   const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = verificationData.docFirstName ?? "";
