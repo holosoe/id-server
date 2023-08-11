@@ -21,7 +21,7 @@ const idenfyApiKey = process.env.IDENFY_API_KEY;
 const idenfyApiKeySecret = process.env.IDENFY_API_KEY_SECRET;
 
 function validateSession(statusData, verificationData, scanRef) {
-  if (!statusData) {
+  if (!statusData || !verificationData) {
     return {
       error: "Failed to retrieve iDenfy session.",
       log: `idenfy/credentials: Failed to retrieve iDenfy session ${scanRef}. Exiting.`,
@@ -41,19 +41,19 @@ function validateSession(statusData, verificationData, scanRef) {
   // }
   if (statusData.manualDocument !== "DOC_VALIDATED") {
     return {
-      error: `Verification failed. Failed to manually validate document.`,
+      error: `Verification failed. Failed to manually validate document. manualDocument is '${statusData.manualDocument}'. Expected 'DOC_VALIDATED'. scanRef: ${scanRef}`,
       log: `idenfy/credentials: Verification failed. manualDocument: ${statusData.manualDocument}. Exiting.`,
     };
   }
   if (statusData.manualFace !== "FACE_MATCH") {
     return {
-      error: `Verification failed. Failed to manually match face.`,
+      error: `Verification failed. Failed to manually match face. manualFace is '${statusData.manualFace}'. Expected 'FACE_MATCH'. scanRef: ${scanRef}`,
       log: `idenfy/credentials: Verification failed. manualFace: ${statusData.manualFace}. Exiting.`,
     };
   }
   if (statusData.status !== "APPROVED") {
     return {
-      error: `Verification failed. Status is ${statusData.status}. Expected 'APPROVED'.`,
+      error: `Verification failed. Status is ${statusData.status}. Expected 'APPROVED'. scanRef: ${scanRef}`,
       log: `idenfy/credentials: Verification failed. Status is ${statusData.status}. Expected 'APPROVED'.`,
     };
   }
@@ -62,7 +62,7 @@ function validateSession(statusData, verificationData, scanRef) {
   for (const field of necessaryFields) {
     if (!(field in verificationData)) {
       return {
-        error: `Verification data missing necessary field: ${field}.`,
+        error: `Verification data missing necessary field: ${field}. scanRef: ${scanRef}`,
         log: `idenfy/credentials: Verification data missing necessary field: ${field}. Exiting.`,
       };
     }
@@ -279,7 +279,6 @@ async function getIdenfySessionStatus(scanRef) {
       `Error getting iDenfy session status with scanRef ${scanRef}`,
       err.message
     );
-    return {};
   }
 }
 
@@ -305,7 +304,6 @@ async function getIdenfySessionVerificationData(scanRef) {
       `Error getting iDenfy session data with scanRef ${scanRef}`,
       err.message
     );
-    return {};
   }
 }
 
