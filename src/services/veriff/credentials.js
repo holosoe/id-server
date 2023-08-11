@@ -103,6 +103,13 @@ function validateSession(session, sessionId) {
       log: `veriff/credentials: Verification missing necessary field: country. Exiting.`,
     };
   }
+  const countryCode = countryCodeToPrime[session?.verification?.document?.country];
+  if (!countryCode) {
+    return {
+      error: `Unsupported country: ${session?.verification?.document?.country}.`,
+      log: `veriff/credentials: Unsupported country: ${session?.verification?.document?.country}. Exiting.`,
+    };
+  }
   return { success: true };
 }
 
