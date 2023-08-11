@@ -165,8 +165,6 @@ async function getOnfidoSessionStatus(sessions) {
  */
 async function getSessionStatus(req, res) {
   try {
-    const startTime = new Date().getTime();
-
     const sigDigest = req.query.sigDigest;
     const provider = req.query.provider; // not required
 
