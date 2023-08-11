@@ -67,13 +67,19 @@ function validateSession(statusData, verificationData, scanRef) {
       };
     }
   }
+  const countryCode = countryCodeToPrime[verificationData.docNationality];
+  if (!countryCode) {
+    return {
+      error: `Unsupported country: ${verificationData.docNationality}. scanRef: ${scanRef}`,
+      log: `idenfy/credentials: Unsupported country: ${verificationData.docNationality}. Exiting.`,
+    };
+  }
   return { success: true };
 }
 
 function extractCreds(verificationData) {
   // ["docFirstName", "docLastName", "docDob", "docNationality"];
   const countryCode = countryCodeToPrime[verificationData.docNationality];
-  assert.ok(countryCode, "Unsupported country");
   const birthdate = verificationData.docDob ?? "";
   const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = verificationData.docFirstName ?? "";
