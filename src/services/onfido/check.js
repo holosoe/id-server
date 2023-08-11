@@ -154,9 +154,6 @@ async function v2CreateCheck(req, res) {
     ).exec();
 
     return res.status(200).json({
-      // TODO: CT: I'm not quite sure whether form_uri is the URL we are looking for. Is
-      // it the URL for the verification flow? Or is it just a form where user enters input?
-      url: check.form_uri,
       id: check.id,
     });
   } catch (err) {
