@@ -67,11 +67,13 @@ function validateSession(statusData, verificationData, scanRef) {
       };
     }
   }
-  const countryCode = countryCodeToPrime[verificationData.docNationality];
+  const country =
+    verificationData.docNationality ?? verificationData.docIssuingCountry;
+  const countryCode = countryCodeToPrime[country];
   if (!countryCode) {
     return {
-      error: `Unsupported country: ${verificationData.docNationality}. scanRef: ${scanRef}`,
-      log: `idenfy/credentials: Unsupported country: ${verificationData.docNationality}. Exiting.`,
+      error: `Unsupported country: ${country}. scanRef: ${scanRef}`,
+      log: `idenfy/credentials: Unsupported country: ${country}. Exiting.`,
     };
   }
   return { success: true };
