@@ -21,7 +21,11 @@ async function getVeriffSessionDecision(sessionId) {
     );
     return resp.data;
   } catch (err) {
-    console.error(err);
+    console.error(
+      "Error getting veriff session decision:",
+      err.message,
+      err.response?.data
+    );
   }
 }
 
@@ -74,7 +78,11 @@ async function getIdenfySession(scanRef) {
     );
     return resp.data;
   } catch (err) {
-    console.error(err);
+    console.error(
+      "Error getting idenfy session status:",
+      err.message,
+      err.response?.data
+    );
   }
 }
 
@@ -118,7 +126,7 @@ async function getOnfidoCheck(check_id) {
     });
     return resp.data;
   } catch (err) {
-    console.error(err);
+    console.error("Error getting onfido check:", err.message, err.response?.data);
   }
 }
 
@@ -157,7 +165,10 @@ async function getOnfidoSessionStatus(sessions) {
  */
 async function getSessionStatus(req, res) {
   try {
+    const startTime = new Date().getTime();
+
     const sigDigest = req.query.sigDigest;
+    const provider = req.query.provider; // not required
 
     if (!sigDigest) {
       logWithTimestamp(`session-status: Missing sigDigest`);
@@ -165,6 +176,24 @@ async function getSessionStatus(req, res) {
     }
 
     const sessions = await IDVSessions.findOne({ sigDigest }).exec();
+
+    // If provider is specified, only return the status for that provider. This
+    // helps avoid unnecessary API calls.
+    if (provider) {
+      if (provider === "veriff") {
+        return res
+          .status(200)
+          .json({ veriff: await getVeriffSessionStatus(sessions) });
+      } else if (provider === "idenfy") {
+        return res
+          .status(200)
+          .json({ idenfy: await getIdenfySessionStatus(sessions) });
+      } else if (provider === "onfido") {
+        return res
+          .status(200)
+          .json({ onfido: await getOnfidoSessionStatus(sessions) });
+      }
+    }
 
     const sessionStatuses = {
       veriff: await getVeriffSessionStatus(sessions),
