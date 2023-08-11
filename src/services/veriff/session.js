@@ -37,9 +37,9 @@ async function v1CreateSession(req, res) {
     verification: {
       // TODO: Is callback necessary if we handle "FINISHED" event in frontend?
       callback: `${frontendUrl}/mint`,
-      document: {
-        type: "DRIVERS_LICENSE",
-      },
+      // document: {
+      //   type: "DRIVERS_LICENSE",
+      // },
       vendorData: uuidV4(),
       timestamp: new Date().toISOString(),
     },
@@ -115,9 +115,9 @@ async function v2CreateSession(req, res) {
     verification: {
       // TODO: Is callback necessary if we handle "FINISHED" event in frontend?
       callback: `${frontendUrl}/mint`,
-      document: {
-        type: "DRIVERS_LICENSE",
-      },
+      // document: {
+      //   type: "DRIVERS_LICENSE",
+      // },
       vendorData: uuidV4(),
       timestamp: new Date().toISOString(),
     },
