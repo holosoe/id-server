@@ -142,8 +142,8 @@ const primes = [
   821, 823, 827, 829, 839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929,
   937, 941, 947, 953, 967, 971, 977, 983, 991, 997, 1009, 1013, 1019, 1021, 1031, 1033,
   1039, 1049, 1051, 1061, 1063, 1069, 1087, 1091, 1093, 1097, 1103, 1109, 1117, 1123,
-  1129, 1151, 1153, 1163,
-]; // 1171, 1181, 1187,
+  1129, 1151, 1153, 1163, 1171, 1181,
+]; // 1187,
 
 export const countryCodeToPrime = {
   US: 2, // United States (ISO 3166-1 alpha-2)
@@ -278,8 +278,6 @@ export const countryCodeToPrime = {
   HT: 367, // Haiti (ISO 3166-1 alpha-2)
   HN: 373, // Honduras (ISO 3166-1 alpha-2)
   HND: 373, // Honduras (ISO 3166-1 alpha-3)
-  // HK: 10000, // Hong Kong (ISO 3166-1 alpha-2)
-  // HKG: 10000, // Hong Kong (ISO 3166-1 alpha-3)
   HU: 379, // Hungary (ISO 3166-1 alpha-2)
   HUN: 379, // Hungary (ISO 3166-1 alpha-3)
   IS: 383, // Iceland (ISO 3166-1 alpha-2)
@@ -445,8 +443,6 @@ export const countryCodeToPrime = {
   CHE: 991, // Switzerland (ISO 3166-1 alpha-3)
   SY: 997, // Syrian Arab Republic, (ISO 3166-1 alpha-2)
   SYR: 997, // Syrian Arab Republic (ISO 3166-1 alpha-3)
-  // TW: 10000, // "Taiwan, Province of China", (ISO 3166-1 alpha-2)
-  // TWN: 10000, // "Taiwan, Province of China" (ISO 3166-1 alpha-3)
   TJ: 1009, // Tajikistan, (ISO 3166-1 alpha-2)
   TJK: 1009, // Tajikistan (ISO 3166-1 alpha-3)
   TZ: 1013, // "Tanzania, United Republic of", (ISO 3166-1 alpha-2)
@@ -491,6 +487,10 @@ export const countryCodeToPrime = {
   ZMB: 1153, // Zambia (ISO 3166-1 alpha-3)
   ZW: 1163, // Zimbabwe (ISO 3166-1 alpha-2)
   ZWE: 1163, // Zimbabwe (ISO 3166-1 alpha-3)
+  HK: 1171, // Hong Kong (ISO 3166-1 alpha-2)
+  HKG: 1171, // Hong Kong (ISO 3166-1 alpha-3)
+  TW: 1181, // "Taiwan, Province of China", (ISO 3166-1 alpha-2)
+  TWN: 1181, // "Taiwan, Province of China" (ISO 3166-1 alpha-3)
 
   // ABW: n, // Aruba (ISO 3166-1 alpha-3)
   // BMU: n, // Bermuda (ISO 3166-1 alpha-3)
