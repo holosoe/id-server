@@ -9,6 +9,7 @@ import credentials from "./routes/credentials.js";
 import proofMetadata from "./routes/proof-metadata.js";
 import admin from "./routes/admin.js";
 import sessionStatus from "./routes/session-status.js";
+import ipInfo from "./routes/ip-info.js";
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/idenfy", idenfy);
 app.use("/onfido", onfido);
 app.use("/admin", admin);
 app.use("/session-status", sessionStatus);
+app.use("/ip-info", ipInfo);
 
 app.get("/", (req, res) => {
   console.log(`${new Date().toISOString()} GET /`);
