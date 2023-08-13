@@ -8,9 +8,11 @@ async function getCountry(req, res) {
     console.log("req.socket.remoteAddress", req.socket.remoteAddress);
 
     const resp = await axios.get(
-      `https://ipapi.co/${userIp}/country?key=${process.env.IPAPI_SECRET_KEY}`
+      `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
     );
     const country = resp?.data?.country_name;
+
+    console.log("resp.data", resp.data);
 
     return res.status(200).json({
       country,
