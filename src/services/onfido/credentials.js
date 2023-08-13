@@ -65,10 +65,12 @@ function validateReports(reports) {
       };
     }
     if (report.name === "document") {
-      assert.ok(
-        countryCodeToPrime[report.properties.issuing_country],
-        `Unsupported country ${report.properties.issuing_country}`
-      );
+      if (!countryCodeToPrime[report.properties.issuing_country]) {
+        return {
+          error: `Verification failed. Unsupported country ${report.properties.issuing_country}`,
+          log: `onfido/credentials: Unsupported country ${report.properties.issuing_country}. Exiting.`,
+        };
+      }
     }
     // We don't need to check report.result because results are aggregated into check.result
     // (which we validate before this function is called)
