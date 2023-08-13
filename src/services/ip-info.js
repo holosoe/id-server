@@ -4,6 +4,9 @@ async function getCountry(req, res) {
   try {
     const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
+    console.log('req.headers["x-forwarded-for"]', req.headers["x-forwarded-for"]);
+    console.log("req.socket.remoteAddress", req.socket.remoteAddress);
+
     const resp = await axios.get(
       `https://ipapi.co/${userIp}/country?key=${process.env.IPAPI_SECRET_KEY}`
     );
