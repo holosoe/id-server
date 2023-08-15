@@ -40,6 +40,7 @@ async function getVeriffSessionStatus(sessions) {
   const decisionsWithTimestamps = [];
   for (const session of sessions.veriff.sessions) {
     const decision = await getVeriffSessionDecision(session.sessionId);
+    if (!decision) continue;
     decisionsWithTimestamps.push({
       decision,
       createdAt: session.createdAt,
@@ -50,13 +51,19 @@ async function getVeriffSessionStatus(sessions) {
   }
 
   // Find the decision with the most recent createdAt timestamp
-  const latestDecision = decisionsWithTimestamps.reduce((prev, current) =>
-    prev.createdAt > current.createdAt ? prev : current
-  ).decision;
+  const latestDecision =
+    decisionsWithTimestamps.length > 0
+      ? decisionsWithTimestamps.reduce((prev, current) =>
+          prev.createdAt > current.createdAt ? prev : current
+        ).decision
+      : null;
 
   return {
     status: latestDecision?.verification?.status,
     sessionId: latestDecision?.verification?.id,
+    // failureReason should be populated with a reason for verification failure
+    // iff the verification failed. If verification is in progress, it should be null.
+    failureReason: latestDecision?.verification?.reason,
   };
 }
 
@@ -97,6 +104,7 @@ async function getIdenfySessionStatus(sessions) {
   const sessionsWithTimestamps = [];
   for (const sessionMetadata of sessions.idenfy.sessions) {
     const session = await getIdenfySession(sessionMetadata.scanRef);
+    if (!session) continue;
     sessionsWithTimestamps.push({
       session,
       createdAt: sessionMetadata.createdAt,
@@ -107,13 +115,36 @@ async function getIdenfySessionStatus(sessions) {
   }
 
   // Find the decision with the most recent createdAt timestamp
-  const latestSession = sessionsWithTimestamps.reduce((prev, current) =>
-    prev.createdAt > current.createdAt ? prev : current
-  ).session;
+  const latestSession =
+    sessionsWithTimestamps.length > 0
+      ? sessionsWithTimestamps.reduce((prev, current) =>
+          prev.createdAt > current.createdAt ? prev : current
+        ).session
+      : null;
 
-  // console.log("idenfy: latestSession", latestSession);
+  let failureReason = undefined;
+  if (
+    (latestSession?.fraudTags ?? []).length > 0 ||
+    (latestSession?.mismatchTags ?? []).length > 0 ||
+    (latestSession?.manualDocument &&
+      latestSession.manualDocument !== "DOC_VALIDATED") ||
+    (latestSession?.manualFace && latestSession.manualFace !== "DOC_VALIDATED")
+  ) {
+    failureReason = {
+      fraudTags: latestSession?.fraudTags,
+      mismatchTags: latestSession?.mismatchTags,
+      manualDocument: latestSession?.manualDocument,
+      manualFace: latestSession?.manualFace,
+    };
+  }
 
-  return { status: latestSession?.status, scanRef: latestSession?.scanRef };
+  return {
+    status: latestSession?.status,
+    scanRef: latestSession?.scanRef,
+    // failureReason should be populated with a reason for verification failure
+    // iff the verification failed. If verification is in progress, it should be null.
+    failureReason,
+  };
 }
 
 async function getOnfidoCheck(check_id) {
@@ -146,34 +177,95 @@ async function getOnfidoCheck(check_id) {
   }
 }
 
+async function getOnfidoReports(report_ids) {
+  try {
+    const reports = [];
+    for (const report_id of report_ids) {
+      const resp = await axios.get(
+        `https://api.us.onfido.com/v3.6/reports/${report_id}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+          },
+        }
+      );
+      reports.push(resp.data);
+    }
+    return reports;
+  } catch (err) {
+    console.error(`onfido/credentials: Error getting check with ID ${check_id}`, err);
+    return [];
+  }
+}
+
+function getOnfidoVerificationFailureReasons(reports) {
+  const failureReasons = [];
+  for (const report of reports) {
+    if (report.status !== "complete") {
+      failureReasons.push(`Report status is '${report.status}'. Expected 'complete'.`);
+    }
+    for (const majorKey of Object.keys(report.breakdown ?? {})) {
+      if (report.breakdown[majorKey]?.result !== "clear") {
+        for (const minorkey of Object.keys(
+          report.breakdown[majorKey]?.breakdown ?? {}
+        )) {
+          const minorResult = report.breakdown[majorKey].breakdown[minorkey].result;
+          if (minorResult !== null && minorResult !== "clear") {
+            failureReasons.push(
+              `Result of ${minorkey} in ${majorKey} breakdown is '${minorResult}'. Expected 'clear'.`
+            );
+          }
+        }
+      }
+    }
+  }
+  return failureReasons;
+}
+
 async function getOnfidoSessionStatus(sessions) {
   if (!sessions?.onfido?.checks || sessions.onfido.checks.length === 0) {
     return;
   }
 
-  // Get each check. If one is "complete", return "complete".
+  // Get each check. If one is "complete" (and result is "clear"), return "complete".
   // Otherwise, return the status of the latest check.
 
   const sessionsWithTimestamps = [];
   for (const sessionMetadata of sessions.onfido.checks) {
     const check = await getOnfidoCheck(sessionMetadata.check_id);
+    if (!check) continue;
     sessionsWithTimestamps.push({
       check,
       createdAt: sessionMetadata.createdAt,
     });
-    if (check?.status === "complete") {
+    if (check?.status === "complete" && check?.result === "clear") {
       return { status: check?.status, check_id: sessionMetadata.check_id };
     }
   }
 
   // Find the decision with the most recent createdAt timestamp
-  const latestCheck = sessionsWithTimestamps.reduce((prev, current) =>
-    prev.createdAt > current.createdAt ? prev : current
-  ).check;
+  const latestCheck =
+    sessionsWithTimestamps.length > 0
+      ? sessionsWithTimestamps.reduce((prev, current) =>
+          prev.createdAt > current.createdAt ? prev : current
+        ).check
+      : null;
 
-  // console.log("onfido: latestCheck", latestCheck);
+  let failureReason = undefined;
 
-  return { status: latestCheck?.status, check_id: latestCheck?.check_id };
+  if (latestCheck?.status === "complete" && latestCheck?.result === "consider") {
+    const reports = await getOnfidoReports(latestCheck?.report_ids);
+    failureReason = getOnfidoVerificationFailureReasons(reports);
+  }
+
+  return {
+    status: latestCheck?.status,
+    check_id: latestCheck?.check_id,
+    // failureReason should be populated with a reason for verification failure
+    // iff the verification failed. If verification is in progress, it should be null.
+    failureReason,
+  };
 }
 
 /**
