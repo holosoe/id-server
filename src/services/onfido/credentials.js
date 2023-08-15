@@ -288,7 +288,11 @@ async function getOnfidoCheck(check_id) {
     });
     return resp.data;
   } catch (err) {
-    console.error(`onfido/credentials: Error getting check with ID ${check_id}`, err);
+    console.error(
+      `onfido/credentials: Error getting check with ID ${check_id}`,
+      err.message,
+      err.response?.data
+    );
     return {};
   }
 }

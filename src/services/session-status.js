@@ -127,6 +127,22 @@ async function getOnfidoCheck(check_id) {
     return resp.data;
   } catch (err) {
     console.error("Error getting onfido check:", err.message, err.response?.data);
+    // Onfido deletes checks after 30 days. So, if we get a 410, delete the check
+    // from IDVSessions.
+    if (err.response?.status === 410) {
+      // We don't await here because the result of this operation isn't necessary
+      // for subsequent operations
+      IDVSessions.findOneAndUpdate(
+        { "onfido.checks.check_id": check_id },
+        {
+          $pull: {
+            "onfido.checks": {
+              check_id,
+            },
+          },
+        }
+      ).exec();
+    }
   }
 }
 
