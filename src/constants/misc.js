@@ -8,4 +8,5 @@ export const relayerURL =
     ? process.env.ON_LINUX === "true"
       ? "http://172.17.0.1:6969"
       : "http://host.docker.internal:6969"
-    : "https://relayer.holonym.id";
+    : // : "https://relayer.holonym.id";
+      "https://relayer.holonym-internal.net";
