@@ -240,7 +240,11 @@ async function getOnfidoSessionStatus(sessions) {
       createdAt: sessionMetadata.createdAt,
     });
     if (check?.status === "complete" && check?.result === "clear") {
-      return { status: check?.status, check_id: sessionMetadata.check_id };
+      return {
+        status: check?.status,
+        result: check.result,
+        check_id: sessionMetadata.check_id,
+      };
     }
   }
 
@@ -261,6 +265,7 @@ async function getOnfidoSessionStatus(sessions) {
 
   return {
     status: latestCheck?.status,
+    result: latestCheck?.result,
     check_id: latestCheck?.check_id,
     // failureReason should be populated with a reason for verification failure
     // iff the verification failed. If verification is in progress, it should be null.
