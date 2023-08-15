@@ -52,18 +52,10 @@ function validateReports(reports) {
       )}. Exiting.`,
     };
   }
+
+  let verificationFailed = false;
+  const failureReasons = [];
   for (const report of reports) {
-    // TODO: Add detailed checks here. Check report.sub_result, report.breakdown, and
-    // ensure expected properties are in report.properties. Also change this function so
-    // that it collects all the errors and returns them in an array (for both logs and
-    // end user), instead of just returning the first error it finds.
-    // See: https://documentation.onfido.com/#report-object
-    if (report.status !== "complete") {
-      return {
-        error: `Verification failed. Report status is '${report.status}'. Expected 'complete'.`,
-        log: `onfido/credentials: Verification failed. Report status: ${report.status}. Exiting.`,
-      };
-    }
     if (report.name === "document") {
       if (!countryCodeToPrime[report.properties.issuing_country]) {
         return {
@@ -72,8 +64,32 @@ function validateReports(reports) {
         };
       }
     }
-    // We don't need to check report.result because results are aggregated into check.result
-    // (which we validate before this function is called)
+    if (report.status !== "complete") {
+      verificationFailed = true;
+      failureReasons.push(`Report status is '${report.status}'. Expected 'complete'.`);
+    }
+    for (const majorKey of Object.keys(report.breakdown ?? {})) {
+      if (report.breakdown[majorKey]?.result !== "clear") {
+        for (const minorkey of Object.keys(
+          report.breakdown[majorKey]?.breakdown ?? {}
+        )) {
+          const minorResult = report.breakdown[majorKey].breakdown[minorkey].result;
+          if (minorResult !== null && minorResult !== "clear") {
+            verificationFailed = true;
+            failureReasons.push(
+              `Result of ${minorkey} in ${majorKey} breakdown is '${minorResult}'. Expected 'clear'.`
+            );
+          }
+        }
+      }
+    }
+  }
+  if (verificationFailed) {
+    return {
+      error: `Verification failed.`,
+      reasons: failureReasons,
+      log: `onfido/credentials: Verification failed.`,
+    };
   }
   return { success: true };
 }
@@ -357,8 +373,12 @@ async function getCredentials(req, res) {
     const reports = await getOnfidoReports(check.report_ids);
     const validationResult = validateReports(reports);
     if (validationResult.error) {
-      logWithTimestamp(validationResult.log);
-      return res.status(400).json({ error: validationResult.error });
+      logWithTimestamp(
+        `${validationResult.log}. Reasons: ${validationResult.reasons}`
+      );
+      return res
+        .status(400)
+        .json({ error: validationResult.error, reasons: validationResult.reasons });
     }
 
     const documentReport = reports.find((report) => report.name == "document");
