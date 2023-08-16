@@ -1,24 +1,21 @@
-import axios from "axios";
-import { strict as assert } from "node:assert";
-import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import {
-  sign,
   createLeaf,
   getDateAsInt,
   logWithTimestamp,
   hash,
-  generateSecret,
 } from "../../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import {
+  getIdenfySessionStatus,
+  getIdenfySessionVerificationData,
+  deleteIdenfySession,
+} from "../../utils/idenfy.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
-
-const idenfyApiKey = process.env.IDENFY_API_KEY;
-const idenfyApiKeySecret = process.env.IDENFY_API_KEY_SECRET;
 
 function validateSession(statusData, verificationData, scanRef) {
   if (!statusData || !verificationData) {
@@ -265,79 +262,6 @@ async function saveUserToDb(uuid, scanRef) {
     };
   }
   return { success: true };
-}
-
-async function getIdenfySessionStatus(scanRef) {
-  try {
-    const resp = await axios.post(
-      "https://ivs.idenfy.com/api/v2/status",
-      {
-        scanRef,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${Buffer.from(
-            `${idenfyApiKey}:${idenfyApiKeySecret}`
-          ).toString("base64")}`,
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.error(
-      `Error getting iDenfy session status with scanRef ${scanRef}`,
-      err.message
-    );
-  }
-}
-
-async function getIdenfySessionVerificationData(scanRef) {
-  try {
-    const resp = await axios.post(
-      "https://ivs.idenfy.com/api/v2/data",
-      {
-        scanRef,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${Buffer.from(
-            `${idenfyApiKey}:${idenfyApiKeySecret}`
-          ).toString("base64")}`,
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.error(
-      `Error getting iDenfy session data with scanRef ${scanRef}`,
-      err.message
-    );
-  }
-}
-
-async function deleteIdenfySession(scanRef) {
-  try {
-    const resp = await axios.post(
-      "https://ivs.idenfy.com/api/v2/delete",
-      {
-        scanRef,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${Buffer.from(
-            `${idenfyApiKey}:${idenfyApiKeySecret}`
-          ).toString("base64")}`,
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.log("idenfy/credentials: encountered error deleting session:", err);
-    return {};
-  }
 }
 
 /**

@@ -6,15 +6,6 @@ import { poseidon } from "circomlibjs-old";
 import sgMail from "@sendgrid/mail";
 
 /**
- * Sign data with the server's private key
- */
-export async function sign(data) {
-  const wallet = new ethers.Wallet(process.env.PRIVATE_KEY);
-  const signature = await wallet.signMessage(data);
-  return signature;
-}
-
-/**
  * @param {string} date Must be of form yyyy-mm-dd
  * @returns {number} Date as seconds since 1900
  */
@@ -97,8 +88,4 @@ export async function sendEmail(to, subject, text, html) {
 export function hash(data) {
   // returns Buffer
   return createHash("sha256").update(data).digest();
-}
-
-export function generateSecret(numBytes = 16) {
-  return "0x" + randomBytes(numBytes).toString("hex");
 }

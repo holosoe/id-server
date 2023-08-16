@@ -1,5 +1,3 @@
-import axios from "axios";
-import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
@@ -7,6 +5,11 @@ import { UserVerifications, VerificationCollisionMetadata } from "../../init.js"
 import { issue } from "holonym-wasm-issuer";
 import { getDateAsInt, logWithTimestamp, hash } from "../../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import {
+  getOnfidoCheck,
+  getOnfidoReports,
+  deleteOnfidoApplicant,
+} from "../../utils/onfido.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
@@ -34,7 +37,7 @@ function validateCheck(check) {
 }
 
 function validateReports(reports) {
-  if (reports.length == 0) {
+  if (!reports || reports.length == 0) {
     return {
       error: "Verification failed. No reports found",
       log: "onfido/credentials: No reports found. Exiting.",
@@ -276,68 +279,6 @@ async function saveUserToDb(uuid, check_id) {
     };
   }
   return { success: true };
-}
-
-async function getOnfidoCheck(check_id) {
-  try {
-    const resp = await axios.get(`https://api.us.onfido.com/v3.6/checks/${check_id}`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
-      },
-    });
-    return resp.data;
-  } catch (err) {
-    console.error(
-      `onfido/credentials: Error getting check with ID ${check_id}`,
-      err.message,
-      err.response?.data
-    );
-    return {};
-  }
-}
-
-async function getOnfidoReports(report_ids) {
-  try {
-    const reports = [];
-    for (const report_id of report_ids) {
-      const resp = await axios.get(
-        `https://api.us.onfido.com/v3.6/reports/${report_id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
-          },
-        }
-      );
-      reports.push(resp.data);
-    }
-    return reports;
-  } catch (err) {
-    console.error(`onfido/credentials: Error getting check with ID ${check_id}`, err);
-    return [];
-  }
-}
-
-async function deleteOnfidoApplicant(applicant_id) {
-  try {
-    const resp = await axios.delete(
-      `https://api.us.onfido.com/v3.6/applicants/${applicant_id}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.log(
-      "An error occurred while attempting to delete Onfido applicant:",
-      err.message
-    );
-    return {};
-  }
 }
 
 /**

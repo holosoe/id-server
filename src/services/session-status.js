@@ -1,33 +1,8 @@
-import { createHmac } from "crypto";
 import axios from "axios";
 import { IDVSessions } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
-
-async function getVeriffSessionDecision(sessionId) {
-  try {
-    const hmacSignature = createHmac("sha256", process.env.VERIFF_SECRET_API_KEY)
-      .update(Buffer.from(sessionId, "utf8"))
-      .digest("hex")
-      .toLowerCase();
-    const resp = await axios.get(
-      `https://api.veriff.me/v1/sessions/${sessionId}/decision`,
-      {
-        headers: {
-          "X-AUTH-CLIENT": process.env.VERIFF_PUBLIC_API_KEY,
-          "X-HMAC-SIGNATURE": hmacSignature,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.error(
-      "Error getting veriff session decision:",
-      err.message,
-      err.response?.data
-    );
-  }
-}
+import { getVeriffSessionDecision } from "../utils/veriff.js";
+import { getIdenfySessionStatus as getIdenfySession } from "../utils/idenfy.js";
 
 async function getVeriffSessionStatus(sessions) {
   if (!sessions?.veriff?.sessions || sessions.veriff.sessions.length === 0) {
@@ -65,32 +40,6 @@ async function getVeriffSessionStatus(sessions) {
     // iff the verification failed. If verification is in progress, it should be null.
     failureReason: latestDecision?.verification?.reason,
   };
-}
-
-async function getIdenfySession(scanRef) {
-  try {
-    const resp = await axios.post(
-      `https://ivs.idenfy.com/api/v2/status`,
-      {
-        scanRef,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${Buffer.from(
-            `${process.env.IDENFY_API_KEY}:${process.env.IDENFY_API_KEY_SECRET}`
-          ).toString("base64")}`,
-        },
-      }
-    );
-    return resp.data;
-  } catch (err) {
-    console.error(
-      "Error getting idenfy session status:",
-      err.message,
-      err.response?.data
-    );
-  }
 }
 
 async function getIdenfySessionStatus(sessions) {

@@ -1,43 +1,13 @@
-import axios from "axios";
 import { strict as assert } from "node:assert";
-import { createHmac } from "crypto";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import {
-  sign,
-  createLeaf,
-  getDateAsInt,
-  logWithTimestamp,
-  hash,
-  generateSecret,
-} from "../../utils/utils.js";
+import { getDateAsInt, logWithTimestamp, hash } from "../../utils/utils.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
-
-const veriffPublicKey = process.env.VERIFF_PUBLIC_API_KEY;
-const veriffSecretKey = process.env.VERIFF_SECRET_API_KEY;
-
-/**
- * Serialize the credentials into the 6 field elements they will be as the preimage to the leaf
- * @param {Object} creds Object containing a full string representation of every credential.
- * @returns 6 string representations of the preimage's 6 field elements, in order
- */
-function serializeCreds(creds) {
-  let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-
-  return [
-    creds.issuer,
-    creds.secret,
-    "0x" + countryBuffer.toString("hex"),
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
-    getDateAsInt(creds.rawCreds.completedAt).toString(),
-    creds.scope.toString(),
-  ];
-}
 
 function validateSession(session, sessionId) {
   if (!session) {
@@ -247,29 +217,6 @@ function extractCreds(session) {
   };
 }
 
-/**
- * With the server's blockchain account, sign the given credentials.
- * @param creds Object containing a full string representation of every credential.
- * @returns Object containing one smallCreds signature for every
- *          credential and one bigCreds signature.
- */
-async function generateSignature(creds) {
-  const serverAddress = process.env.ADDRESS;
-  let countryBuffer = Buffer.alloc(2);
-  countryBuffer.writeUInt16BE(creds.rawCreds.countryCode);
-
-  const leafAsBigInt = await createLeaf(
-    Buffer.from(serverAddress.replace("0x", ""), "hex"),
-    Buffer.from(creds.secret.replace("0x", ""), "hex"),
-    countryBuffer,
-    creds.derivedCreds.nameDobCitySubdivisionZipStreetHash.value,
-    getDateAsInt(creds.rawCreds.completedAt),
-    creds.scope
-  );
-  const leaf = ethers.utils.arrayify(ethers.BigNumber.from(leafAsBigInt));
-  return await sign(leaf);
-}
-
 async function saveCollisionMetadata(uuid, sessionId, session) {
   try {
     const collisionMetadataDoc = new VerificationCollisionMetadata({
@@ -319,50 +266,6 @@ async function saveUserToDb(uuid, sessionId) {
     };
   }
   return { success: true };
-}
-
-async function getVeriffSessionDecision(sessionId) {
-  try {
-    const hmacSignature = createHmac("sha256", veriffSecretKey)
-      .update(Buffer.from(sessionId, "utf8"))
-      .digest("hex")
-      .toLowerCase();
-    const resp = await axios.get(
-      `https://api.veriff.me/v1/sessions/${sessionId}/decision`,
-      {
-        headers: {
-          "X-AUTH-CLIENT": veriffPublicKey,
-          "X-HMAC-SIGNATURE": hmacSignature,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    // console.log(resp.data);
-    return resp.data;
-  } catch (err) {
-    console.error(`Error getting session with ID ${sessionId}`, err.message);
-    return {};
-  }
-}
-
-async function redactVeriffSession(sessionId) {
-  try {
-    const hmacSignature = createHmac("sha256", veriffSecretKey)
-      .update(Buffer.from(sessionId, "utf8"))
-      .digest("hex")
-      .toLowerCase();
-    const resp = await axios.delete(`https://api.veriff.me/v1/sessions/${sessionId}`, {
-      headers: {
-        "X-AUTH-CLIENT": veriffPublicKey,
-        "X-HMAC-SIGNATURE": hmacSignature,
-        "Content-Type": "application/json",
-      },
-    });
-    return resp.data;
-  } catch (err) {
-    console.log(err.message);
-    return {};
-  }
 }
 
 /**
@@ -435,7 +338,7 @@ async function getCredentials(req, res) {
     );
     response.metadata = creds;
 
-    await redactVeriffSession(req.query.sessionId);
+    await deleteVeriffSession(req.query.sessionId);
 
     // TODO: MAYBE: Update IDVSessions. Set the status to "credentials-issued" and add the UUID.
     // This will help us ensure that we never display a "completed - click here to retrieve your
