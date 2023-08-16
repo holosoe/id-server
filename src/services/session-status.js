@@ -3,6 +3,7 @@ import { IDVSessions } from "../init.js";
 import { logWithTimestamp } from "../utils/utils.js";
 import { getVeriffSessionDecision } from "../utils/veriff.js";
 import { getIdenfySessionStatus as getIdenfySession } from "../utils/idenfy.js";
+import { getOnfidoReports } from "../utils/onfido.js";
 
 async function getVeriffSessionStatus(sessions) {
   if (!sessions?.veriff?.sessions || sessions.veriff.sessions.length === 0) {
@@ -126,28 +127,6 @@ async function getOnfidoCheck(check_id) {
   }
 }
 
-async function getOnfidoReports(report_ids) {
-  try {
-    const reports = [];
-    for (const report_id of report_ids) {
-      const resp = await axios.get(
-        `https://api.us.onfido.com/v3.6/reports/${report_id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
-          },
-        }
-      );
-      reports.push(resp.data);
-    }
-    return reports;
-  } catch (err) {
-    console.error(`onfido/credentials: Error getting check with ID ${check_id}`, err);
-    return [];
-  }
-}
-
 function getOnfidoVerificationFailureReasons(reports) {
   const failureReasons = [];
   for (const report of reports) {
@@ -208,7 +187,7 @@ async function getOnfidoSessionStatus(sessions) {
   let failureReason = undefined;
 
   if (latestCheck?.status === "complete" && latestCheck?.result === "consider") {
-    const reports = await getOnfidoReports(latestCheck?.report_ids);
+    const reports = (await getOnfidoReports(latestCheck?.report_ids)) ?? [];
     failureReason = getOnfidoVerificationFailureReasons(reports);
   }
 
