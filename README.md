@@ -38,18 +38,13 @@ You also need a .env.docker.dev file.
 
 #### Set environment variables
 
-All environment variables are already correctly set in the .env.example file for local development.
-
-You must change the following variables.
-
-        VOUCHED_PUBLIC_KEY
-        VOUCHED_PRIVATE_KEY
-        VOUCHED_SANDBOX_PUBLIC_KEY
-        VOUCHED_SANDBOX_PRIVATE_KEY
+Go through .env.docker.dev and update the environment variables. Some environment variables are already correctly set in the .env.example file for local development.
 
 ### 4. Database setup
 
-Run the MongoDB Docker container.
+This server uses MongoDB. You can run MongoDB in various ways, as long as you are able to access it using a connection string. Once you set up the database, set the `MONGO_DB_CONNECTION_STR` environment variable.
+
+You can run the MongoDB Docker container.
 
         docker run -d --network host --name id-server-mongo -e MONGO_INITDB_ROOT_USERNAME=admin -e MONGO_INITDB_ROOT_PASSWORD=password mongo
 
@@ -59,7 +54,7 @@ Alternatively, you can setup a MongoDB cluster using MongoDB Atlas. To connect t
 
 Ensure that the MongoDB database is running and that environment variables are set.
 
-Open a terminal window, navigate to the directory of this repo, and run:
+Open a terminal window, navigate to the root directory of this repo, and run:
 
         npm run start:dev
 
