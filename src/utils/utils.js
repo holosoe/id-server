@@ -67,22 +67,22 @@ export async function createLeaf(
 }
 
 export async function sendEmail(to, subject, text, html) {
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  const msg = {
-    to, // "test@example.com"
-    from: "idservices@holonym.id",
-    subject,
-    text,
-    html,
-  };
-  try {
-    await sgMail.send(msg);
-  } catch (error) {
-    console.error(error);
-    if (error.response) {
-      console.error(error.response.body);
-    }
-  }
+  // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  // const msg = {
+  //   to, // "test@example.com"
+  //   from: "idservices@holonym.id",
+  //   subject,
+  //   text,
+  //   html,
+  // };
+  // try {
+  //   await sgMail.send(msg);
+  // } catch (error) {
+  //   console.error(error);
+  //   if (error.response) {
+  //     console.error(error.response.body);
+  //   }
+  // }
 }
 
 export function hash(data) {

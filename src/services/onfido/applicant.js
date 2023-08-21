@@ -19,7 +19,7 @@ async function createApplicant(req, res) {
       for (const email of ADMIN_EMAILS) {
         const subject = "Onfido applicant count for the day exceeded 5000!!";
         const message = `Onfido applicant count for the day is ${applicantCountToday}.`;
-        await sendEmail(email, subject, message);
+        // await sendEmail(email, subject, message);
       }
     }
     if (applicantCountToday > 5000) {

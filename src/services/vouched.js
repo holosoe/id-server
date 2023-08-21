@@ -55,7 +55,7 @@ async function getJobCount(req, res) {
       for (const email of ADMIN_EMAILS) {
         const subject = "Vouched job count for the day exceeded 5000!!";
         const message = `Vouched job count for the day is ${jobCount}.`;
-        await sendEmail(email, subject, message);
+        // await sendEmail(email, subject, message);
       }
     }
 

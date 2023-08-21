@@ -19,7 +19,7 @@ async function v1CreateSession(req, res) {
     for (const email of ADMIN_EMAILS) {
       const subject = "Veriff session count for the day exceeded 5000!!";
       const message = `Veriff session count for the day is ${sessionCountToday}.`;
-      await sendEmail(email, subject, message);
+      // await sendEmail(email, subject, message);
     }
   }
   if (sessionCountToday > 5000) {
@@ -97,7 +97,7 @@ async function v2CreateSession(req, res) {
     for (const email of ADMIN_EMAILS) {
       const subject = "Veriff session count for the day exceeded 5000!!";
       const message = `Veriff session count for the day is ${sessionCountToday}.`;
-      await sendEmail(email, subject, message);
+      // await sendEmail(email, subject, message);
     }
   }
   if (sessionCountToday > 5000) {

@@ -31,7 +31,7 @@ async function v1CreateCheck(req, res) {
       for (const email of ADMIN_EMAILS) {
         const subject = "Onfido applicant count for the day exceeded 5000!!";
         const message = `Onfido applicant count for the day is ${checkCountToday}.`;
-        await sendEmail(email, subject, message);
+        // await sendEmail(email, subject, message);
       }
     }
     if (checkCountToday > 5000) {
@@ -108,7 +108,7 @@ async function v2CreateCheck(req, res) {
       for (const email of ADMIN_EMAILS) {
         const subject = "Onfido applicant count for the day exceeded 5000!!";
         const message = `Onfido applicant count for the day is ${checkCountToday}.`;
-        await sendEmail(email, subject, message);
+        // await sendEmail(email, subject, message);
       }
     }
     if (checkCountToday > 5000) {

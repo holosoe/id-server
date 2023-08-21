@@ -68,10 +68,6 @@ function validateEnv() {
       process.env.ADMIN_EMAILS,
       "ADMIN_EMAILS environment variable is not set"
     );
-    assert.ok(
-      process.env.SENDGRID_API_KEY,
-      "SENDGRID_API_KEY environment variable is not set"
-    );
   }
 }
 
