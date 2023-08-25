@@ -19,7 +19,7 @@ async function validatePostCredentialsArgs(
   const root = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 
   try {
-    const rootIsRecent = (await axios.get(`${relayerURL}/v2/rootIsRecent/${root}`))
+    const rootIsRecent = (await axios.get(`${relayerURL}/v3/rootIsRecent/${root}`))
       .data?.isRecent;
     if (!rootIsRecent) {
       return { error: "Root is not recent" };
