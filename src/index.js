@@ -34,7 +34,6 @@ app.use("/session-status", sessionStatus);
 app.use("/ip-info", ipInfo);
 
 app.get("/", (req, res) => {
-  console.log(`${new Date().toISOString()} GET /`);
   const routes = [
     "GET /registerVouched/vouchedCredentials",
     "GET /veriff/credentials",
@@ -47,7 +46,6 @@ app.get("/", (req, res) => {
 });
 
 app.get("/aws-health", (req, res) => {
-  // console.log(`${new Date().toISOString()} GET /aws-health`);
   return res.status(200).json({ healthy: true });
 });
 

@@ -1,7 +1,11 @@
 import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { sendEmail } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
+
+const v1EndpointLogger = logger.child({ msgPrefix: "[POST /veriff/session] " });
+const v2EndpointLogger = logger.child({ msgPrefix: "[POST /veriff/v2/session] " });
 
 async function v1CreateSession(req, res) {
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,
@@ -23,6 +27,10 @@ async function v1CreateSession(req, res) {
     }
   }
   if (sessionCountToday > 5000) {
+    v1EndpointLogger.error(
+      { sessionCountToday },
+      "Veriff session count for the day exceeded 5000"
+    );
     return res.status(503).json({
       error: "We cannot service more verifications today. Please try again tomorrow.",
     });
@@ -64,12 +72,10 @@ async function v1CreateSession(req, res) {
       config
     );
     const verification = resp?.data?.verification;
-    logWithTimestamp(`POST veriff/session: Created session ${verification?.id}`);
+    v1EndpointLogger.info({ sessionId: verification?.id }, "Created Veriff session");
     return res.status(200).json({ url: verification?.url, id: verification?.id });
   } catch (err) {
-    logWithTimestamp(`POST veriff/session: Error creating session`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v1EndpointLogger.error({ error: err }, "Error creating Veriff session");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -78,7 +84,6 @@ async function v2CreateSession(req, res) {
   const sigDigest = req.body.sigDigest;
 
   if (!sigDigest) {
-    logWithTimestamp(`POST veriff/session: Missing sigDigest`);
     return res.status(400).json({ error: "Missing sigDigest" });
   }
 
@@ -101,6 +106,10 @@ async function v2CreateSession(req, res) {
     }
   }
   if (sessionCountToday > 5000) {
+    v2EndpointLogger.error(
+      { sessionCountToday },
+      "Veriff session count for the day exceeded 5000"
+    );
     return res.status(503).json({
       error: "We cannot service more verifications today. Please try again tomorrow.",
     });
@@ -142,7 +151,7 @@ async function v2CreateSession(req, res) {
       config
     );
     const verification = resp?.data?.verification;
-    logWithTimestamp(`POST veriff/session: Created session ${verification?.id}`);
+    v2EndpointLogger.info({ sessionId: verification?.id }, "Created Veriff session");
 
     // Upsert IDVSessions doc with sigDigest and session ID
     await IDVSessions.findOneAndUpdate(
@@ -161,9 +170,7 @@ async function v2CreateSession(req, res) {
 
     return res.status(200).json({ url: verification?.url, id: verification?.id });
   } catch (err) {
-    logWithTimestamp(`POST veriff/session: Error creating session`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v2EndpointLogger.error({ error: err }, "Error creating Veriff session");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

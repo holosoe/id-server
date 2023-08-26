@@ -1,7 +1,6 @@
-import { logWithTimestamp } from "../../utils/utils.js";
-
 async function decisionWebhook(req, res) {
   try {
+    // TODO: CT: See https://developers.veriff.com/#handling-security
     console.log("veriff/decision-webhook: req.body", req.body);
     return res.status(200).json({ message: "OK" });
   } catch (err) {

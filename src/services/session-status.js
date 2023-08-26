@@ -1,9 +1,11 @@
 import axios from "axios";
 import { IDVSessions } from "../init.js";
-import { logWithTimestamp } from "../utils/utils.js";
+import logger from "../utils/logger.js";
 import { getVeriffSessionDecision } from "../utils/veriff.js";
 import { getIdenfySessionStatus as getIdenfySession } from "../utils/idenfy.js";
 import { getOnfidoReports } from "../utils/onfido.js";
+
+const endpointLogger = logger.child({ msgPrefix: "[GET /session-status] " });
 
 async function getVeriffSessionStatus(sessions) {
   if (!sessions?.veriff?.sessions || sessions.veriff.sessions.length === 0) {
@@ -107,7 +109,10 @@ async function getOnfidoCheck(check_id) {
     });
     return resp.data;
   } catch (err) {
-    console.error("Error getting onfido check:", err.message, err.response?.data);
+    endpointLogger.error(
+      { error: err, check_id },
+      "An error occurred while getting onfido check"
+    );
     // Onfido deletes checks after 30 days. So, if we get a 410, delete the check
     // from IDVSessions.
     if (err.response?.status === 410) {
@@ -210,7 +215,6 @@ async function getSessionStatus(req, res) {
     const provider = req.query.provider; // not required
 
     if (!sigDigest) {
-      logWithTimestamp(`session-status: Missing sigDigest`);
       return res.status(400).json({ error: "Missing sigDigest" });
     }
 
@@ -244,7 +248,10 @@ async function getSessionStatus(req, res) {
 
     return res.status(200).json(sessionStatuses);
   } catch (err) {
-    console.error(err);
+    endpointLogger.error(
+      { error: err },
+      "An unknown error occurred while retrieving session status"
+    );
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

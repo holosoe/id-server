@@ -6,7 +6,8 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import * as AWS from "@aws-sdk/client-s3";
 import { initialize } from "zokrates-js";
-import { logWithTimestamp, hash } from "./utils/utils.js";
+import { hash } from "./utils/utils.js";
+import logger from "./utils/logger.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -124,7 +125,7 @@ async function initializeMongoDb() {
         Key: process.env.MONGO_CERT_FILE_NAME,
       };
       await new Promise((resolve, reject) => {
-        logWithTimestamp("Downloading certificate for MongoDB connection...");
+        logger.info("Downloading certificate for MongoDB connection...");
         s3.getObject(params, async (getObjectErr, data) => {
           if (getObjectErr) reject(getObjectErr);
           const bodyStream = data.Body;
@@ -133,12 +134,14 @@ async function initializeMongoDb() {
             `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
             bodyAsString,
             (writeFileErr) => {
-              console.log("entered writeFile cb");
               if (writeFileErr) {
-                console.log("writeFileErr...", writeFileErr);
-                resolve();
+                logger.error(
+                  { error: writeFileErr },
+                  "Encountered error while trying to write cert file for MongoDB connection."
+                );
+                return resolve();
               }
-              logWithTimestamp(
+              logger.info(
                 "Successfully downloaded certificate for MongoDB connection"
               );
               resolve();
@@ -147,7 +150,10 @@ async function initializeMongoDb() {
         });
       });
     } catch (err) {
-      console.log("Unable to download certificate for MongoDB connection.", err);
+      logger.error(
+        { error: err },
+        "Unable to download certificate for MongoDB connection."
+      );
       return;
     }
   }
@@ -162,9 +168,9 @@ async function initializeMongoDb() {
       process.env.MONGO_DB_CONNECTION_STR,
       process.env.ENVIRONMENT == "dev" ? {} : mongoConfig
     );
-    console.log("Connected to MongoDB database.");
+    logger.info("Connected to MongoDB database.");
   } catch (err) {
-    console.log("Unable to connect to MongoDB database.", err);
+    logger.error({ error: err }, "Unable to connect to MongoDB database.");
     return;
   }
   const userVerificationsSchema = new Schema({
@@ -389,6 +395,7 @@ let UserVerifications,
   VerificationCollisionMetadata;
 initializeMongoDb().then((result) => {
   if (result) {
+    logger.info("Initialized MongoDB connection");
     UserVerifications = result.UserVerifications;
     IDVSessions = result.IDVSessions;
     UserCredentials = result.UserCredentials;
@@ -397,12 +404,13 @@ initializeMongoDb().then((result) => {
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
   } else {
-    console.log("MongoDB initialization failed");
+    logger.error("MongoDB initialization failed");
   }
 });
 
 let zokProvider;
 initialize().then((provider) => {
+  logger.info("Initialized zokProvider");
   zokProvider = provider;
 });
 

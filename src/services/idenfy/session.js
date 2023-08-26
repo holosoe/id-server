@@ -1,8 +1,16 @@
 import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { sendEmail } from "../../utils/utils.js";
 import { hash } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
+
+const v1EndpointLogger = logger.child({
+  msgPrefix: "[POST /idenfy/session] ",
+});
+const v2EndpointLogger = logger.child({
+  msgPrefix: "[POST /idenfy/v2/session] ",
+});
 
 async function v1CreateSession(req, res) {
   try {
@@ -31,6 +39,10 @@ async function v1CreateSession(req, res) {
       }
     }
     if (sessionCountToday > 5000) {
+      v1EndpointLogger.error(
+        { sessionCountToday },
+        "iDenfy session count for the day exceeded 5000"
+      );
       return res.status(503).json({
         error:
           "We cannot service more verifications today. Please try again tomorrow.",
@@ -57,17 +69,13 @@ async function v1CreateSession(req, res) {
       config
     );
     const session = resp?.data;
-    logWithTimestamp(
-      `POST idenfy/session: Created session with authToken ${session.authToken}`
-    );
+    v1EndpointLogger.info({ authToken: session.authToken }, "Created session");
     return res.status(200).json({
       url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${session.authToken}`,
       scanRef: session.scanRef,
     });
   } catch (err) {
-    logWithTimestamp(`POST idenfy/session: Error creating session`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v1EndpointLogger.error({ error: err }, "Error creating session");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -99,6 +107,10 @@ async function v2CreateSession(req, res) {
       }
     }
     if (sessionCountToday > 5000) {
+      v2EndpointLogger.error(
+        { sessionCountToday },
+        "iDenfy session count for the day exceeded 5000"
+      );
       return res.status(503).json({
         error:
           "We cannot service more verifications today. Please try again tomorrow.",
@@ -125,9 +137,7 @@ async function v2CreateSession(req, res) {
       config
     );
     const session = resp?.data;
-    logWithTimestamp(
-      `POST idenfy/session: Created session with authToken ${session.authToken}`
-    );
+    v2EndpointLogger.info({ authToken: session.authToken }, "Created session");
 
     // Upsert IDVSessions doc with sigDigest and session ID
     await IDVSessions.findOneAndUpdate(
@@ -149,9 +159,7 @@ async function v2CreateSession(req, res) {
       scanRef: session.scanRef,
     });
   } catch (err) {
-    logWithTimestamp(`POST idenfy/session: Error creating session`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v2EndpointLogger.error({ error: err }, "Error creating session");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

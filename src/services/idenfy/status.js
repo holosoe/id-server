@@ -1,5 +1,9 @@
 import axios from "axios";
-import { logWithTimestamp } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
+
+const endpointLogger = logger.child({
+  msgPrefix: "[GET /idenfy/verification-status] ",
+});
 
 async function verificationStatus(req, res) {
   try {
@@ -28,8 +32,10 @@ async function verificationStatus(req, res) {
       status: resp.data.status,
     });
   } catch (err) {
-    logWithTimestamp(`POST idenfy/status: Error creating session`);
-    console.log(err);
+    endpointLogger.error(
+      { error: err, scanRef: req.query.scanRef },
+      "An error occurred while retrieving verification status"
+    );
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

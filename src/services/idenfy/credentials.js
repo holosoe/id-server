@@ -3,12 +3,8 @@ const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import {
-  createLeaf,
-  getDateAsInt,
-  logWithTimestamp,
-  hash,
-} from "../../utils/utils.js";
+import { createLeaf, getDateAsInt, hash } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import {
   getIdenfySessionStatus,
@@ -16,6 +12,8 @@ import {
   deleteIdenfySession,
 } from "../../utils/idenfy.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
+
+const endpointLogger = logger.child({ msgPrefix: "[GET /idenfy/credentials] " });
 
 function validateSession(statusData, verificationData, scanRef) {
   if (!statusData || !verificationData) {
@@ -252,9 +250,9 @@ async function saveUserToDb(uuid, scanRef) {
   try {
     await userVerificationsDoc.save();
   } catch (err) {
-    console.log(err);
-    logWithTimestamp(
-      "idenfy/credentials: Could not save userVerificationsDoc. Exiting"
+    endpointLogger.error(
+      { error: err },
+      "An error occurred while saving user to database"
     );
     return {
       error:
@@ -273,7 +271,6 @@ async function getCredentials(req, res) {
   try {
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      logWithTimestamp("idenfy/credentials: Generating signature");
 
       const response = issue(
         process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -287,7 +284,6 @@ async function getCredentials(req, res) {
 
     const scanRef = req.query?.scanRef;
     if (!scanRef) {
-      logWithTimestamp("idenfy/credentials: No scanRef specified. Exiting.");
       return res.status(400).json({ error: "No scanRef specified" });
     }
     const statusData = await getIdenfySessionStatus(scanRef);
@@ -295,7 +291,7 @@ async function getCredentials(req, res) {
 
     const validationResult = validateSession(statusData, verificationData, scanRef);
     if (validationResult.error) {
-      logWithTimestamp(validationResult.log);
+      endpointLogger.error(validationResult.log);
       return res.status(400).json({ error: validationResult.error });
     }
 
@@ -314,22 +310,17 @@ async function getCredentials(req, res) {
     if (user) {
       await saveCollisionMetadata(uuid, scanRef, verificationData);
 
-      logWithTimestamp(
-        `idenfy/credentials: User has already registered. Exiting. UUID == ${uuid}`
-      );
+      endpointLogger.error({ uuid }, "User has already registered.");
       return res
         .status(400)
         .json({ error: `User has already registered. UUID: ${uuid}` });
     }
 
     // Store UUID for Sybil resistance
-    logWithTimestamp(`idenfy/credentials: Inserting user into database`);
     const dbResponse = await saveUserToDb(uuid, scanRef);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(verificationData);
-
-    logWithTimestamp("idenfy/credentials: Generating signature");
 
     const response = issue(
       process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -340,7 +331,7 @@ async function getCredentials(req, res) {
 
     await deleteIdenfySession(scanRef);
 
-    logWithTimestamp(`idenfy/credentials: Returning user whose UUID is ${uuid}`);
+    endpointLogger.info({ uuid, scanRef }, "Returning user.");
 
     return res.status(200).json(response);
   } catch (err) {

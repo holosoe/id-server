@@ -1,5 +1,8 @@
 import { mongoose, UserCredentials, UserProofMetadata } from "../init.js";
-import { logWithTimestamp } from "../utils/utils.js";
+import logger from "../utils/logger.js";
+
+const postEndpointLogger = logger.child({ msgPrefix: "[POST /proof-metadata] " });
+const getEndpointLogger = logger.child({ msgPrefix: "[GET /proof-metadata] " });
 
 /**
  * Get user's encrypted proof metadata and symmetric key from document store.
@@ -8,11 +11,11 @@ async function getProofMetadata(req, res) {
   const sigDigest = req?.query?.sigDigest;
 
   if (!sigDigest) {
-    logWithTimestamp("GET /proof-metadata: No sigDigest specified. Exiting.");
+    getEndpointLogger.error("No sigDigest specified.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
   if (typeof sigDigest != "string") {
-    logWithTimestamp("GET /proof-metadata: sigDigest isn't a string. Exiting.");
+    getEndpointLogger.error("sigDigest isn't a string.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
@@ -20,13 +23,15 @@ async function getProofMetadata(req, res) {
     const userProofMetadata = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
-    logWithTimestamp(
-      `GET /proof-metadata: Found user in database with sigDigest ${sigDigest}.`
-    );
+    getEndpointLogger.info({ sigDigest }, "Found user in database with sigDigest");
     return res.status(200).json(userProofMetadata);
   } catch (err) {
-    console.log(err);
-    console.log("GET /proof-metadata: Could not find user proof metadata. Exiting");
+    getEndpointLogger.error(
+      {
+        error: err,
+      },
+      "An error occurred while retrieving user proof metadata."
+    );
     return res.status(400).json({
       error:
         "An error occurred while trying to get proof metadata object from database.",
@@ -45,13 +50,11 @@ async function postProofMetadata(req, res) {
 
   // Require that args are present
   if (!sigDigest) {
-    logWithTimestamp("POST /proof-metadata: No sigDigest specified. Exiting.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
 
   // Require that args are correct types
   if (typeof sigDigest != "string") {
-    logWithTimestamp("POST /proof-metadata: sigDigest isn't a string. Exiting.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
@@ -62,9 +65,9 @@ async function postProofMetadata(req, res) {
       sigDigest: sigDigest,
     }).exec();
   } catch (err) {
-    console.log(err);
-    console.log(
-      "POST /proof-metadata: An error occurred while retrieving user credentials. Exiting"
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while retrieving user credentials."
     );
     return res.status(400).json({
       error: "An error occurred while retrieving user credentials.",
@@ -84,9 +87,9 @@ async function postProofMetadata(req, res) {
     }).exec();
     userProofMetadataDoc;
   } catch (err) {
-    console.log(err);
-    console.log(
-      "POST /proof-metadata: An error occurred while retrieving user proof metadata. Exiting"
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while retrieving user proof metadata."
     );
     return res.status(400).json({
       error: "An error occurred while retrieving user proof metadata.",
@@ -105,13 +108,13 @@ async function postProofMetadata(req, res) {
     });
   }
   try {
-    logWithTimestamp(
-      `POST /proof-metadata: Saving user proof metadata to database with sigDigest ${sigDigest}.`
-    );
+    postEndpointLogger.info({ sigDigest }, "Saving user proof metadata to database");
     await userProofMetadataDoc.save();
   } catch (err) {
-    console.log(err);
-    console.log("POST /proof-metadata: Could not save userProofMetadataDoc. Exiting");
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while saving user proof metadata to database"
+    );
     return res.status(400).json({
       error: "An error occurred while trying to save object to database.",
     });

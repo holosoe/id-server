@@ -1,6 +1,11 @@
 import axios from "axios";
 import { DailyVerificationCount } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { sendEmail } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
+
+const endpointLogger = logger.child({
+  msgPrefix: "[POST /onfido/applicant] ",
+});
 
 async function createApplicant(req, res) {
   try {
@@ -23,8 +28,9 @@ async function createApplicant(req, res) {
       }
     }
     if (applicantCountToday > 5000) {
-      logWithTimestamp(
-        `POST onfido/applicant: Applicant count for the day exceeded 5000`
+      endpointLogger.error(
+        { applicantCountToday },
+        "Onfido applicant count for the day exceeded 5000"
       );
       return res.status(503).json({
         error:
@@ -56,9 +62,7 @@ async function createApplicant(req, res) {
     );
     const applicant = applicantResp?.data;
 
-    logWithTimestamp(
-      `POST onfido/applicant: Created applicant with applicant ID ${applicant.id}`
-    );
+    endpointLogger.info({ applicantId: applicant.id }, "Created applicant");
 
     // Create an SDK token for the applicant
     const reqBody2 = `applicant_id=${applicant.id}&referrer=${
@@ -83,9 +87,7 @@ async function createApplicant(req, res) {
       sdk_token: sdkTokenResp.data.token,
     });
   } catch (err) {
-    logWithTimestamp("POST onfido/applicant: Error creating applicant");
-    console.log(err.message);
-    console.log(err?.response?.data);
+    endpointLogger.error({ error: err }, "Error creating applicant");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

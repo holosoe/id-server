@@ -4,10 +4,13 @@ const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { getDateAsInt, logWithTimestamp, hash } from "../../utils/utils.js";
+import { getDateAsInt, hash } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
+
+const endpointLogger = logger.child({ msgPrefix: "[GET /veriff/credentials] " });
 
 function validateSession(session, sessionId) {
   if (!session) {
@@ -256,9 +259,9 @@ async function saveUserToDb(uuid, sessionId) {
   try {
     await userVerificationsDoc.save();
   } catch (err) {
-    console.log(err);
-    logWithTimestamp(
-      "veriff/credentials: Could not save userVerificationsDoc. Exiting"
+    endpointLogger.error(
+      { error: err },
+      "An error occurred while saving userVerificationsDoc to database"
     );
     return {
       error:
@@ -277,7 +280,6 @@ async function getCredentials(req, res) {
   try {
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      logWithTimestamp("veriff/credentials: Generating signature");
 
       const response = issue(
         process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -290,14 +292,13 @@ async function getCredentials(req, res) {
     }
 
     if (!req?.query?.sessionId) {
-      logWithTimestamp("veriff/credentials: No sessionId specified. Exiting.");
       return res.status(400).json({ error: "No sessionId specified" });
     }
     const session = await getVeriffSessionDecision(req.query.sessionId);
 
     const validationResult = validateSession(session, req.query.sessionId);
     if (validationResult.error) {
-      logWithTimestamp(validationResult.log);
+      endpointLogger.error(validationResult.log);
       return res.status(400).json({ error: validationResult.error });
     }
 
@@ -314,22 +315,17 @@ async function getCredentials(req, res) {
     if (user) {
       await saveCollisionMetadata(uuid, req.query.sessionId, session);
 
-      logWithTimestamp(
-        `veriff/credentials: User has already registered. Exiting. UUID == ${uuid}`
-      );
+      endpointLogger.error({ uuid }, "User has already registered.");
       return res
         .status(400)
         .json({ error: `User has already registered. UUID: ${uuid}` });
     }
 
     // Store UUID for Sybil resistance
-    logWithTimestamp(`veriff/credentials: Inserting user into database`);
     const dbResponse = await saveUserToDb(uuid, req.query.sessionId);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(session);
-
-    logWithTimestamp("veriff/credentials: Generating signature");
 
     const response = issue(
       process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -349,7 +345,7 @@ async function getCredentials(req, res) {
     // frontend, then the user might see "completed - click, etc." even after their creds have
     // been issued.
 
-    logWithTimestamp(`veriff/credentials: Returning user whose UUID is ${uuid}`);
+    endpointLogger.info({ uuid, sessionId: req.query.sessionId }, "Returning user.");
 
     return res.status(200).json(response);
   } catch (err) {

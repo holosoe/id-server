@@ -3,9 +3,12 @@ import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { mongoose, UserCredentials, zokProvider } from "../init.js";
-import { logWithTimestamp } from "../utils/utils.js";
+import logger from "../utils/logger.js";
 import contractAddresses from "../constants/contractAddresses.js";
 import { holonymIssuers, relayerURL } from "../constants/misc.js";
+
+const postEndpointLogger = logger.child({ msgPrefix: "[POST /credentials] " });
+const getEndpointLogger = logger.child({ msgPrefix: "[GET /credentials] " });
 
 async function validatePostCredentialsArgs(
   sigDigest,
@@ -26,11 +29,20 @@ async function validatePostCredentialsArgs(
     }
   } catch (err) {
     if (err.response) {
-      console.error(err.response.data);
+      postEndpointLogger.error(
+        { error: err.response.data },
+        "An error occurred calling relayer"
+      );
     } else if (err.request) {
-      console.error(err.request.data);
+      postEndpointLogger.error(
+        { error: err.request.data },
+        "An error occurred calling relayer"
+      );
     } else {
-      console.error(err.message);
+      postEndpointLogger.error(
+        { error: err.message },
+        "An error occurred calling relayer"
+      );
     }
     return { error: "An error occurred while checking whether the root is recent" };
   }
@@ -41,14 +53,15 @@ async function validatePostCredentialsArgs(
       "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowledgeOfLeafPreimage.verifying.key"
     );
     const verificationKey = verifKeyResp.data;
-    // console.log(proof);
     const isVerified = zokProvider.verify(verificationKey, proof);
     if (!isVerified) {
-      console.log("isVerified", isVerified);
       return { error: "Proof is invalid" };
     }
   } catch (err) {
-    console.log(err);
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while verifying KOLP proof"
+    );
     return { error: "An error occurred while verifying proof" };
   }
 
@@ -92,9 +105,9 @@ async function storeOrUpdateUserCredentials(
       }).exec();
     }
   } catch (err) {
-    console.log(err);
-    logWithTimestamp(
-      "POST /credentials: An error occurred while retrieving credenials. Exiting"
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while retrieving credentials"
     );
     return { error: "An error occurred while retrieving credentials." };
   }
@@ -114,16 +127,17 @@ async function storeOrUpdateUserCredentials(
     });
   }
   try {
-    logWithTimestamp(
-      `POST /credentials: Saving user to database with proofDigest ${proofDigest} and sigDigest ${sigDigest}.`
-    );
     await userCredentialsDoc.save();
   } catch (err) {
-    console.log(err);
+    postEndpointLogger.error(
+      { error: err },
+      "An error occurred while saving user credentials to database"
+    );
     return { error: "An error occurred while trying to save object to database." };
   }
-  logWithTimestamp(
-    `POST /credentials: Saved credentials for user with sigDigest ${sigDigest}. Exiting.`
+  postEndpointLogger.info(
+    { proofDigest, sigDigest },
+    "Saved user credentials to database"
   );
   return { success: true };
 }
@@ -135,11 +149,11 @@ async function getCredentials(req, res) {
   const sigDigest = req?.query?.sigDigest;
 
   if (!sigDigest) {
-    logWithTimestamp("GET /credentials: No sigDigest specified. Exiting.");
+    getEndpointLogger.error("No sigDigest specified.");
     return res.status(400).json({ error: "No sigDigest specified" });
   }
   if (typeof sigDigest != "string") {
-    logWithTimestamp("GET /credentials: sigDigest isn't a string. Exiting.");
+    getEndpointLogger.error("sigDigest isn't a string.");
     return res.status(400).json({ error: "sigDigest isn't a string" });
   }
 
@@ -147,13 +161,13 @@ async function getCredentials(req, res) {
     const userCreds = await UserCredentials.findOne({
       sigDigest: sigDigest,
     }).exec();
-    logWithTimestamp(
-      `GET /credentials: Found user in database with sigDigest ${sigDigest}.`
-    );
+    getEndpointLogger.info({ sigDigest }, "Found user in database with sigDigest");
     return res.status(200).json(userCreds);
   } catch (err) {
-    console.log(err);
-    console.log("GET /credentials: Could not find user credentials. Exiting");
+    getEndpointLogger.error(
+      { error: err, sigDigest },
+      "An error occurred while retrieving credentials from database"
+    );
     return res.status(400).json({
       error: "An error occurred while trying to get credentials object from database.",
     });
@@ -183,7 +197,10 @@ async function postCredentials(req, res) {
     encryptedSymmetricKey
   );
   if (validationResult.error) {
-    logWithTimestamp(`POST /credentials: ${validationResult.error}. Exiting.`);
+    postEndpointLogger.error(
+      { error: validationResult.error },
+      "Invalid request body"
+    );
     return res.status(400).json({ error: validationResult.error });
   }
 
@@ -202,7 +219,10 @@ async function postCredentials(req, res) {
     encryptedCredentialsAES
   );
   if (storeOrUpdateResult.error) {
-    logWithTimestamp(`POST /credentials: ${storeOrUpdateResult.error}. Exiting.`);
+    postEndpointLogger.error(
+      { error: storeOrUpdateResult.error, sigDigest },
+      "An error occurred while storing or updating user credentials"
+    );
     return res.status(500).json({ error: storeOrUpdateResult.error });
   }
 

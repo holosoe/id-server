@@ -3,36 +3,42 @@ import {
   DailyVerificationCount,
   DailyVerificationDeletions,
 } from "../../init.js";
-import { logWithTimestamp } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
+
+const getEndpointLogger = logger.child({
+  msgPrefix: "[GET /admin/user-verifications] ",
+});
+const deleteEndpointLogger = logger.child({
+  msgPrefix: "[DELETE /admin/user-verifications] ",
+});
 
 async function getUserVerification(req, res) {
   try {
     const apiKey = req.headers["x-api-key"];
 
     if (apiKey !== process.env.ADMIN_API_KEY) {
-      logWithTimestamp(`GET admin/user-verifications: Invalid API key. Exiting.`);
       return res.status(401).json({ error: "Invalid API key." });
     }
 
     const uuid = req.query.uuid;
 
     if (!uuid) {
-      logWithTimestamp(`GET admin/user-verifications: No UUID provided. Exiting.`);
       return res.status(400).json({ error: "No UUID provided." });
     }
 
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
     if (user) {
-      logWithTimestamp(`GET admin/user-verifications: Found user with UUID ${uuid}.`);
+      getEndpointLogger.info({ uuid }, "Found user in database with UUID");
       return res.status(200).json(user);
     } else {
-      logWithTimestamp(
-        `GET admin/user-verifications: No user with UUID ${uuid} found.`
-      );
+      getEndpointLogger.info({ uuid }, "No user with UUID found");
       return res.status(404).json({ error: "No user with that UUID found." });
     }
   } catch (err) {
-    logWithTimestamp(`GET admin/user-verifications: Error: ${err.message}.`);
+    getEndpointLogger.error(
+      { error: err },
+      "An error occurred while retrieving user verification"
+    );
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -42,14 +48,12 @@ async function deleteUserVerification(req, res) {
     const apiKey = req.headers["x-api-key"];
 
     if (apiKey !== process.env.ADMIN_API_KEY) {
-      logWithTimestamp(`DELETE admin/user-verifications: Invalid API key. Exiting.`);
       return res.status(401).json({ error: "Invalid API key." });
     }
 
     const uuid = req.query.uuid;
 
     if (!uuid) {
-      logWithTimestamp(`DELETE admin/user-verifications: No UUID provided. Exiting.`);
       return res.status(400).json({ error: "No UUID provided." });
     }
 
@@ -66,9 +70,7 @@ async function deleteUserVerification(req, res) {
     }).exec();
     const deletionCountToday = deletionCountDoc?.deletionCount ?? 0;
     if (deletionCountToday >= sessionCountToday * 0.02 + 10) {
-      logWithTimestamp(
-        "DELETE admin/user-verifications: Deletion limit reached for today. Exiting."
-      );
+      deleteEndpointLogger.info("Deletion limit reached for today. Exiting.");
       return res
         .status(429)
         .json({ error: "Deletion limit reached for today. Try again tomorrow." });
@@ -76,9 +78,7 @@ async function deleteUserVerification(req, res) {
 
     const result = await UserVerifications.deleteOne({ "govId.uuid": uuid }).exec();
     if (result.acknowledged && result.deletedCount >= 1) {
-      logWithTimestamp(
-        `DELETE admin/user-verifications: Deleted user with UUID ${uuid}.`
-      );
+      deleteEndpointLogger.info({ uuid }, "Deleted user with UUID");
 
       // Increment the deletion count for today
       await DailyVerificationDeletions.updateOne(
@@ -89,13 +89,11 @@ async function deleteUserVerification(req, res) {
 
       return res.status(200).json({ message: "User deleted" });
     } else {
-      logWithTimestamp(
-        `DELETE admin/user-verifications: No user with UUID ${uuid} found.`
-      );
+      deleteEndpointLogger.info({ uuid }, "No user with UUID found");
       return res.status(404).json({ error: "No user with that UUID found." });
     }
   } catch (err) {
-    logWithTimestamp(`DELETE admin/user-verifications: Error: ${err.message}.`);
+    deleteEndpointLogger.error({ error: err }, "An error occurred");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

@@ -3,7 +3,8 @@ const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { getDateAsInt, logWithTimestamp, hash } from "../../utils/utils.js";
+import { getDateAsInt, hash } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import {
   getOnfidoCheck,
@@ -12,6 +13,8 @@ import {
 } from "../../utils/onfido.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
+
+const endpointLogger = logger.child({ msgPrefix: "[GET /onfido/credentials] " });
 
 function validateCheck(check) {
   if (!check?.report_ids || check.report_ids.length == 0) {
@@ -269,9 +272,9 @@ async function saveUserToDb(uuid, check_id) {
   try {
     await userVerificationsDoc.save();
   } catch (err) {
-    console.log(err);
-    logWithTimestamp(
-      "onfido/credentials: Could not save userVerificationsDoc. Exiting"
+    endpointLogger.error(
+      { error: err },
+      "An error occurred while saving user verification to database"
     );
     return {
       error:
@@ -290,7 +293,6 @@ async function getCredentials(req, res) {
   try {
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      logWithTimestamp("onfido/credentials: Generating signature");
 
       const response = issue(
         process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -304,23 +306,20 @@ async function getCredentials(req, res) {
 
     const check_id = req.query.check_id;
     if (!check_id) {
-      logWithTimestamp("onfido/credentials: No check_id specified. Exiting.");
       return res.status(400).json({ error: "No check_id specified" });
     }
 
     const check = await getOnfidoCheck(check_id);
     const validationResultCheck = validateCheck(check);
     if (validationResultCheck.error) {
-      logWithTimestamp(validationResultCheck.log);
+      endpointLogger.error(validationResultCheck.log);
       return res.status(400).json({ error: validationResultCheck.error });
     }
 
     const reports = await getOnfidoReports(check.report_ids);
     const validationResult = validateReports(reports);
     if (validationResult.error) {
-      logWithTimestamp(
-        `${validationResult.log}. Reasons: ${validationResult.reasons}`
-      );
+      endpointLogger.error(validationResult.log);
       return res
         .status(400)
         .json({ error: validationResult.error, reasons: validationResult.reasons });
@@ -342,22 +341,17 @@ async function getCredentials(req, res) {
     if (user) {
       await saveCollisionMetadata(uuid, check_id, documentReport);
 
-      logWithTimestamp(
-        `onfido/credentials: User has already registered. Exiting. UUID == ${uuid}`
-      );
+      endpointLogger.error({ uuid }, "User has already registered");
       return res
         .status(400)
         .json({ error: `User has already registered. UUID: ${uuid}` });
     }
 
     // Store UUID for Sybil resistance
-    logWithTimestamp(`onfido/credentials: Inserting user into database`);
     const dbResponse = await saveUserToDb(uuid, check_id);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(documentReport);
-
-    logWithTimestamp("onfido/credentials: Generating signature");
 
     const response = issue(
       process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -368,7 +362,7 @@ async function getCredentials(req, res) {
 
     await deleteOnfidoApplicant(check.applicant_id);
 
-    logWithTimestamp(`onfido/credentials: Returning user whose UUID is ${uuid}`);
+    endpointLogger.info({ uuid, check_id }, "Returning user.");
 
     return res.status(200).json(response);
   } catch (err) {

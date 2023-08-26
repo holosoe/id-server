@@ -1,5 +1,3 @@
-import { logWithTimestamp } from "../../utils/utils.js";
-
 async function webhook(req, res) {
   try {
     console.log("idenfy/webhook: req.body:", req.body);

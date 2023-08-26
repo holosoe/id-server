@@ -1,7 +1,15 @@
 import axios from "axios";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
-import { logWithTimestamp, sendEmail } from "../../utils/utils.js";
+import { sendEmail } from "../../utils/utils.js";
+import logger from "../../utils/logger.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
+
+const v1EndpointLogger = logger.child({
+  msgPrefix: "[POST /onfido/check] ",
+});
+const v2EndpointLogger = logger.child({
+  msgPrefix: "[POST /onfido/v2/check] ",
+});
 
 async function v1CreateCheck(req, res) {
   // NOTE:
@@ -35,7 +43,10 @@ async function v1CreateCheck(req, res) {
       }
     }
     if (checkCountToday > 5000) {
-      logWithTimestamp(`POST onfido/check: Check count for the day exceeded 5000`);
+      v1EndpointLogger.error(
+        { checkCountToday },
+        "Onfido check count for the day exceeded 5000"
+      );
       return res.status(503).json({
         error:
           "We cannot service more verifications today. Please try again tomorrow.",
@@ -59,7 +70,7 @@ async function v1CreateCheck(req, res) {
       config
     );
     const check = resp?.data;
-    logWithTimestamp(`POST onfido/check: Created check with check ID ${check.id}`);
+    v1EndpointLogger.info({ check_id: check.id }, "Created check with check ID");
     return res.status(200).json({
       // TODO: CT: I'm not quite sure whether form_uri is the URL we are looking for. Is
       // it the URL for the verification flow? Or is it just a form where user enters input?
@@ -67,9 +78,7 @@ async function v1CreateCheck(req, res) {
       id: check.id,
     });
   } catch (err) {
-    logWithTimestamp(`POST onfido/check: Error creating check`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v1EndpointLogger.error({ err }, "Error creating check");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -89,7 +98,6 @@ async function v2CreateCheck(req, res) {
     }
 
     if (!sigDigest) {
-      logWithTimestamp(`POST onfido/check: Missing sigDigest`);
       return res.status(400).json({ error: "Missing sigDigest" });
     }
 
@@ -112,7 +120,10 @@ async function v2CreateCheck(req, res) {
       }
     }
     if (checkCountToday > 5000) {
-      logWithTimestamp(`POST onfido/check: Check count for the day exceeded 5000`);
+      v2EndpointLogger.error(
+        { checkCountToday },
+        "Onfido check count for the day exceeded 5000"
+      );
       return res.status(503).json({
         error:
           "We cannot service more verifications today. Please try again tomorrow.",
@@ -136,7 +147,7 @@ async function v2CreateCheck(req, res) {
       config
     );
     const check = resp?.data;
-    logWithTimestamp(`POST onfido/check: Created check with check ID ${check.id}`);
+    v2EndpointLogger.info({ check_id: check.id }, "Created check");
 
     // Upsert IDVSessions doc with sigDigest and session ID
     await IDVSessions.findOneAndUpdate(
@@ -157,9 +168,10 @@ async function v2CreateCheck(req, res) {
       id: check.id,
     });
   } catch (err) {
-    logWithTimestamp(`POST onfido/check: Error creating check`);
-    console.log(err.message);
-    console.log(err?.response?.data);
+    v2EndpointLogger.error(
+      { error: err, applicant_id: req.body.applicant_id },
+      "Error creating check"
+    );
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
