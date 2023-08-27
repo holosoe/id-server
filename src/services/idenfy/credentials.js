@@ -19,37 +19,57 @@ function validateSession(statusData, verificationData, scanRef) {
   if (!statusData || !verificationData) {
     return {
       error: "Failed to retrieve iDenfy session.",
-      log: `idenfy/credentials: Failed to retrieve iDenfy session ${scanRef}. Exiting.`,
+      log: {
+        msg: "Failed to retrieve iDenfy session.",
+        data: {
+          scanRef,
+        },
+      },
     };
   }
   // if (statusData.autoDocument !== "DOC_VALIDATED") {
   //   return {
   //     error: `Verification failed. Failed to auto validate document.`,
-  //     log: `idenfy/credentials: Verification failed. autoDocument: ${statusData.autoDocument}. Exiting.`,
+  //     log: `Verification failed. autoDocument: ${statusData.autoDocument}. Exiting.`,
   //   };
   // }
   // if (statusData.autoFace !== "FACE_MATCH") {
   //   return {
   //     error: `Verification failed. Failed to auto match face.`,
-  //     log: `idenfy/credentials: Verification failed. autoFace: ${statusData.autoFace}. Exiting.`,
+  //     log: `Verification failed. autoFace: ${statusData.autoFace}. Exiting.`,
   //   };
   // }
   if (statusData.manualDocument !== "DOC_VALIDATED") {
     return {
       error: `Verification failed. Failed to manually validate document. manualDocument is '${statusData.manualDocument}'. Expected 'DOC_VALIDATED'. scanRef: ${scanRef}`,
-      log: `idenfy/credentials: Verification failed. manualDocument: ${statusData.manualDocument}. Exiting.`,
+      log: {
+        msg: "Verification failed. manualDocument !== 'DOC_VALIDATED'",
+        data: {
+          manualDocument: statusData.manualDocument,
+        },
+      },
     };
   }
   if (statusData.manualFace !== "FACE_MATCH") {
     return {
       error: `Verification failed. Failed to manually match face. manualFace is '${statusData.manualFace}'. Expected 'FACE_MATCH'. scanRef: ${scanRef}`,
-      log: `idenfy/credentials: Verification failed. manualFace: ${statusData.manualFace}. Exiting.`,
+      log: {
+        msg: "Verification failed. manualFace !== 'FACE_MATCH'",
+        data: {
+          manualFace: statusData.manualFace,
+        },
+      },
     };
   }
   if (statusData.status !== "APPROVED") {
     return {
       error: `Verification failed. Status is ${statusData.status}. Expected 'APPROVED'. scanRef: ${scanRef}`,
-      log: `idenfy/credentials: Verification failed. Status is ${statusData.status}. Expected 'APPROVED'.`,
+      log: {
+        msg: "Verification failed. status !== 'APPROVED'",
+        data: {
+          status: statusData.status,
+        },
+      },
     };
   }
   // NOTE: We are allowing address fields (other than country) to be empty for now
@@ -58,7 +78,9 @@ function validateSession(statusData, verificationData, scanRef) {
     if (!(field in verificationData)) {
       return {
         error: `Verification data missing necessary field: ${field}. scanRef: ${scanRef}`,
-        log: `idenfy/credentials: Verification data missing necessary field: ${field}. Exiting.`,
+        log: {
+          msg: `Verification data missing necessary field: ${field}`,
+        },
       };
     }
   }
@@ -68,7 +90,10 @@ function validateSession(statusData, verificationData, scanRef) {
   if (!countryCode) {
     return {
       error: `Unsupported country: ${country}. scanRef: ${scanRef}`,
-      log: `idenfy/credentials: Unsupported country: ${country}. Exiting.`,
+      log: {
+        msg: "Unsupported country",
+        data: { country },
+      },
     };
   }
   return { success: true };
@@ -291,7 +316,7 @@ async function getCredentials(req, res) {
 
     const validationResult = validateSession(statusData, verificationData, scanRef);
     if (validationResult.error) {
-      endpointLogger.error(validationResult.log);
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       return res.status(400).json({ error: validationResult.error });
     }
 
