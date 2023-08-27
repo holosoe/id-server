@@ -1,7 +1,9 @@
 import pino from "pino";
 
 const pinoOptions = {
-  base: undefined,
+  base: {
+    src: "id-server",
+  },
 };
 
 if (process.env.NODE_ENV === "development") {
