@@ -20,19 +20,34 @@ function validateCheck(check) {
   if (!check?.report_ids || check.report_ids.length == 0) {
     return {
       error: "No report_ids found in check",
-      log: "onfido/credentials: No report_ids found. Exiting.",
+      log: {
+        msg: "No report_ids found in check",
+        data: {
+          check_id: check.id,
+        },
+      },
     };
   }
   if (check.status !== "complete") {
     return {
       error: `Check failed. Status is '${check.status}'. Expected 'complete'.`,
-      log: `onfido/credentials: Check failed. Status: ${check.status}. Exiting.`,
+      log: {
+        msg: "Check failed. status !== 'complete'",
+        data: {
+          status: check.status,
+        },
+      },
     };
   }
   if (check.result !== "clear") {
     return {
       error: `Check failed. Result is '${check.result}'. Expected 'clear'.`,
-      log: `onfido/credentials: Check failed. Result: ${check.result}. Exiting.`,
+      log: {
+        msg: "Check failed. result !== 'clear'",
+        data: {
+          result: check.result,
+        },
+      },
     };
   }
 
@@ -43,7 +58,9 @@ function validateReports(reports) {
   if (!reports || reports.length == 0) {
     return {
       error: "Verification failed. No reports found",
-      log: "onfido/credentials: No reports found. Exiting.",
+      log: {
+        msg: "No reports found",
+      },
     };
   }
   const reportNames = reports.map((report) => report.name);
@@ -53,9 +70,12 @@ function validateReports(reports) {
   if (missingReports.length > 0) {
     return {
       error: `Verification failed. Missing reports: ${missingReports.join(", ")}`,
-      log: `onfido/credentials: Missing reports: ${missingReports.join(
-        ", "
-      )}. Exiting.`,
+      log: {
+        msg: "Missing reports",
+        data: {
+          missingReports: missingReports,
+        },
+      },
     };
   }
 
@@ -66,7 +86,12 @@ function validateReports(reports) {
       if (!countryCodeToPrime[report.properties.issuing_country]) {
         return {
           error: `Verification failed. Unsupported country ${report.properties.issuing_country}`,
-          log: `onfido/credentials: Unsupported country ${report.properties.issuing_country}. Exiting.`,
+          log: {
+            msg: "Unsupported country",
+            data: {
+              country: report.properties.issuing_country,
+            },
+          },
         };
       }
     }
@@ -94,7 +119,12 @@ function validateReports(reports) {
     return {
       error: `Verification failed.`,
       reasons: failureReasons,
-      log: `onfido/credentials: Verification failed.`,
+      log: {
+        msg: "Verification failed",
+        data: {
+          reasons: failureReasons,
+        },
+      },
     };
   }
   return { success: true };
@@ -312,14 +342,17 @@ async function getCredentials(req, res) {
     const check = await getOnfidoCheck(check_id);
     const validationResultCheck = validateCheck(check);
     if (validationResultCheck.error) {
-      endpointLogger.error(validationResultCheck.log);
+      endpointLogger.error(
+        validationResultCheck.log.data,
+        validationResultCheck.log.msg
+      );
       return res.status(400).json({ error: validationResultCheck.error });
     }
 
     const reports = await getOnfidoReports(check.report_ids);
     const validationResult = validateReports(reports);
     if (validationResult.error) {
-      endpointLogger.error(validationResult.log);
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       return res
         .status(400)
         .json({ error: validationResult.error, reasons: validationResult.reasons });
