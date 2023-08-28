@@ -362,7 +362,7 @@ async function getCredentials(req, res) {
 
     await deleteIdenfySession(scanRef);
 
-    endpointLogger.info({ uuid, scanRef }, "Returning user.");
+    endpointLogger.info({ uuid, scanRef }, "Issuing credentials");
 
     return res.status(200).json(response);
   } catch (err) {

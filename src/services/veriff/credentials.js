@@ -382,7 +382,10 @@ async function getCredentials(req, res) {
     // frontend, then the user might see "completed - click, etc." even after their creds have
     // been issued.
 
-    endpointLogger.info({ uuid, sessionId: req.query.sessionId }, "Returning user.");
+    endpointLogger.info(
+      { uuid, sessionId: req.query.sessionId },
+      "Issuing credentials"
+    );
 
     return res.status(200).json(response);
   } catch (err) {

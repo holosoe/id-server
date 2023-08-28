@@ -401,7 +401,7 @@ async function getCredentials(req, res) {
 
     await deleteOnfidoApplicant(check.applicant_id);
 
-    endpointLogger.info({ uuid, check_id }, "Returning user.");
+    endpointLogger.info({ uuid, check_id }, "Issuing credentials");
 
     return res.status(200).json(response);
   } catch (err) {
