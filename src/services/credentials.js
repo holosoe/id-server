@@ -135,10 +135,6 @@ async function storeOrUpdateUserCredentials(
     );
     return { error: "An error occurred while trying to save object to database." };
   }
-  postEndpointLogger.info(
-    { proofDigest, sigDigest },
-    "Saved user credentials to database"
-  );
   return { success: true };
 }
 
