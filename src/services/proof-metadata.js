@@ -23,7 +23,6 @@ async function getProofMetadata(req, res) {
     const userProofMetadata = await UserProofMetadata.findOne({
       sigDigest: sigDigest,
     }).exec();
-    getEndpointLogger.info({ sigDigest }, "Found user in database with sigDigest");
     return res.status(200).json(userProofMetadata);
   } catch (err) {
     getEndpointLogger.error(

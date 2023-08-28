@@ -161,7 +161,6 @@ async function getCredentials(req, res) {
     const userCreds = await UserCredentials.findOne({
       sigDigest: sigDigest,
     }).exec();
-    getEndpointLogger.info({ sigDigest }, "Found user in database with sigDigest");
     return res.status(200).json(userCreds);
   } catch (err) {
     getEndpointLogger.error(
