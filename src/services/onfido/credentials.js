@@ -4,7 +4,7 @@ import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { getDateAsInt, hash } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import {
   getOnfidoCheck,
@@ -14,7 +14,13 @@ import {
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
-const endpointLogger = logger.child({ msgPrefix: "[GET /onfido/credentials] " });
+const endpointLogger = logger.child({
+  msgPrefix: "[GET /onfido/credentials] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "onfido",
+  },
+});
 
 function validateCheck(check) {
   if (!check?.report_ids || check.report_ids.length == 0) {

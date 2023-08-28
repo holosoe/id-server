@@ -1,8 +1,12 @@
 import axios from "axios";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /idenfy/verification-status] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "idenfy",
+  },
 });
 
 async function verificationStatus(req, res) {

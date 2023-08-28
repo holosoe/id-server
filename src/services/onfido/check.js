@@ -1,14 +1,22 @@
 import axios from "axios";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { sendEmail } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 
 const v1EndpointLogger = logger.child({
   msgPrefix: "[POST /onfido/check] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "onfido",
+  },
 });
 const v2EndpointLogger = logger.child({
   msgPrefix: "[POST /onfido/v2/check] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "onfido",
+  },
 });
 
 async function v1CreateCheck(req, res) {

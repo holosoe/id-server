@@ -2,10 +2,22 @@ import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { sendEmail } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 
-const v1EndpointLogger = logger.child({ msgPrefix: "[POST /veriff/session] " });
-const v2EndpointLogger = logger.child({ msgPrefix: "[POST /veriff/v2/session] " });
+const v1EndpointLogger = logger.child({
+  msgPrefix: "[POST /veriff/session] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "veriff",
+  },
+});
+const v2EndpointLogger = logger.child({
+  msgPrefix: "[POST /veriff/v2/session] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "veriff",
+  },
+});
 
 async function v1CreateSession(req, res) {
   // Increment sessionCount in today's verification count doc. If doc doesn't exist,

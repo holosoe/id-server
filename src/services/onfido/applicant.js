@@ -1,10 +1,14 @@
 import axios from "axios";
 import { DailyVerificationCount } from "../../init.js";
 import { sendEmail } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[POST /onfido/applicant] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "onfido",
+  },
 });
 
 async function createApplicant(req, res) {

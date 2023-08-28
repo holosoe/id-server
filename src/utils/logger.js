@@ -36,4 +36,5 @@ if (process.env.NODE_ENV === "development") {
 
 const logger = pino(pinoOptions);
 
+export { pinoOptions, logger };
 export default logger;

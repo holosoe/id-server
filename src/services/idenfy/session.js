@@ -3,13 +3,21 @@ import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { sendEmail } from "../../utils/utils.js";
 import { hash } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 
 const v1EndpointLogger = logger.child({
   msgPrefix: "[POST /idenfy/session] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "idenfy",
+  },
 });
 const v2EndpointLogger = logger.child({
   msgPrefix: "[POST /idenfy/v2/session] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "idenfy",
+  },
 });
 
 async function v1CreateSession(req, res) {

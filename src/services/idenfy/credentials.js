@@ -4,7 +4,7 @@ import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { createLeaf, getDateAsInt, hash } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import {
   getIdenfySessionStatus,
@@ -13,7 +13,13 @@ import {
 } from "../../utils/idenfy.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
-const endpointLogger = logger.child({ msgPrefix: "[GET /idenfy/credentials] " });
+const endpointLogger = logger.child({
+  msgPrefix: "[GET /idenfy/credentials] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "idenfy",
+  },
+});
 
 function validateSession(statusData, verificationData, scanRef) {
   if (!statusData || !verificationData) {

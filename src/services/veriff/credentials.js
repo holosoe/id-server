@@ -5,12 +5,18 @@ import { poseidon } from "circomlibjs-old";
 import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { getDateAsInt, hash } from "../../utils/utils.js";
-import logger from "../../utils/logger.js";
+import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
-const endpointLogger = logger.child({ msgPrefix: "[GET /veriff/credentials] " });
+const endpointLogger = logger.child({
+  msgPrefix: "[GET /veriff/credentials] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "veriff",
+  },
+});
 
 function validateSession(session, sessionId) {
   if (!session) {
