@@ -42,7 +42,7 @@ export async function getOnfidoReports(report_ids) {
     return reports;
   } catch (err) {
     console.error(
-      `Error getting check with ID ${check_id}`,
+      `Error getting reports. report_ids: ${report_ids}`,
       err.message,
       err.response?.data
     );
