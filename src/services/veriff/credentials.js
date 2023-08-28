@@ -16,25 +16,45 @@ function validateSession(session, sessionId) {
   if (!session) {
     return {
       error: "Failed to retrieve Verrif session.",
-      log: `veriff/credentials: Failed to retrieve Verrif session ${sessionId}. Exiting.`,
+      log: {
+        msg: "Failed to retrieve Verrif session.",
+        data: {
+          sessionId,
+        },
+      },
     };
   }
   if (session.status !== "success") {
     return {
       error: `Verification failed. Status is '${session.status}'. Expected 'success'.`,
-      log: `veriff/credentials: Verification failed. Status: ${session.status}. Exiting.`,
+      log: {
+        msg: "Verification failed. status !== 'success'",
+        data: {
+          status: session.status,
+        },
+      },
     };
   }
   if (session.verification?.code !== 9001) {
     return {
       error: `Verification failed. Verification code is ${session.verification?.code}. Expected 9001.`,
-      log: `veriff/credentials: Verification failed. Verification code: ${session.verification?.code}. Exiting.`,
+      log: {
+        msg: "Verification failed. Verification code !== 9001",
+        data: {
+          code: session.verification?.code,
+        },
+      },
     };
   }
   if (session.verification.status !== "approved") {
     return {
       error: `Verification failed. Verification status is ${session.verification.status}. Expected 'approved'.`,
-      log: `veriff/credentials: Verification status is ${session.verification.status}. Exiting.`,
+      log: {
+        msg: "Verification failed. Verification status !== 'approved'",
+        data: {
+          status: session.verification.status,
+        },
+      },
     };
   }
   const necessaryPersonFields = ["firstName", "lastName", "dateOfBirth"];
@@ -43,7 +63,9 @@ function validateSession(session, sessionId) {
     if (!(field in person)) {
       return {
         error: `Verification missing necessary field: ${field}.`,
-        log: `veriff/credentials: Verification missing necessary field: ${field}. Exiting.`,
+        log: {
+          msg: `Verification missing necessary field: ${field}.`,
+        },
       };
     }
   }
@@ -54,33 +76,42 @@ function validateSession(session, sessionId) {
   // if (!address) {
   //   return {
   //     error: "Verification missing necessary field: address.",
-  //     log: `veriff/credentials: Verification missing necessary field: address. Exiting.`,
+  //     log: `Verification missing necessary field: address. Exiting.`,
   //   };
   // }
   // if (!("postcode" in address)) {
   //   return {
   //     error: "Verification missing necessary field: postcode.",
-  //     log: `veriff/credentials: Verification missing necessary field: postcode. Exiting.`,
+  //     log: `Verification missing necessary field: postcode. Exiting.`,
   //   };
   // }
   const doc = session.verification.document;
   if (!doc) {
     return {
       error: "Verification missing necessary field: document.",
-      log: `veriff/credentials: Verification missing necessary field: document. Exiting.`,
+      log: {
+        msg: "Verification missing necessary field: document.",
+      },
     };
   }
   if (!("country" in doc)) {
     return {
       error: "Verification missing necessary field: country.",
-      log: `veriff/credentials: Verification missing necessary field: country. Exiting.`,
+      log: {
+        msg: "Verification missing necessary field: country.",
+      },
     };
   }
   const countryCode = countryCodeToPrime[session?.verification?.document?.country];
   if (!countryCode) {
     return {
       error: `Unsupported country: ${session?.verification?.document?.country}.`,
-      log: `veriff/credentials: Unsupported country: ${session?.verification?.document?.country}. Exiting.`,
+      log: {
+        msg: `Unsupported country`,
+        data: {
+          country: session?.verification?.document?.country,
+        },
+      },
     };
   }
   return { success: true };
@@ -298,7 +329,7 @@ async function getCredentials(req, res) {
 
     const validationResult = validateSession(session, req.query.sessionId);
     if (validationResult.error) {
-      endpointLogger.error(validationResult.log);
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       return res.status(400).json({ error: validationResult.error });
     }
 
