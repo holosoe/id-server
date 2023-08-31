@@ -234,6 +234,34 @@ async function initializeMongoDb() {
     },
   });
   const IDVSessions = mongoose.model("IDVSessions", idvSessionsSchema);
+
+  // Note that IDVSessions is distinct from Session.
+  const sessionSchema = new Schema({
+    sigDigest: String,
+    idvProvider: String,
+    txHash: {
+      type: String,
+      required: false,
+    },
+    chainId: {
+      type: Number,
+      required: false,
+    },
+    sessionId: {
+      type: String,
+      required: false,
+    },
+    scanRef: {
+      type: String,
+      required: false,
+    },
+    check_id: {
+      type: String,
+      required: false,
+    },
+  });
+  const Session = mongoose.model("Session", sessionSchema);
+
   const userCredentialsSchema = new Schema({
     proofDigest: String,
     sigDigest: String,
@@ -376,6 +404,7 @@ async function initializeMongoDb() {
   return {
     UserVerifications,
     IDVSessions,
+    Session,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
@@ -388,6 +417,7 @@ validateEnv();
 
 let UserVerifications,
   IDVSessions,
+  Session,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
@@ -398,6 +428,7 @@ initializeMongoDb().then((result) => {
     logger.info("Initialized MongoDB connection");
     UserVerifications = result.UserVerifications;
     IDVSessions = result.IDVSessions;
+    Session = result.Session;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
@@ -418,6 +449,7 @@ export {
   mongoose,
   UserVerifications,
   IDVSessions,
+  Session,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
