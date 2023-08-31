@@ -1,4 +1,31 @@
 import axios from "axios";
+import { hash } from "./utils.js";
+
+export async function createIdenfyToken(sigDigest) {
+  try {
+    const reqBody = {
+      clientId: hash(Buffer.from(sigDigest)).toString("hex"),
+      // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
+      // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${Buffer.from(
+          `${process.env.IDENFY_API_KEY}:${process.env.IDENFY_API_KEY_SECRET}`
+        ).toString("base64")}`,
+      },
+    };
+    const resp = await axios.post(
+      "https://ivs.idenfy.com/api/v2/token",
+      reqBody,
+      config
+    );
+    return resp?.data;
+  } catch (err) {
+    console.error(`Error creating idenfy token:`, err.message, err.response?.data);
+  }
+}
 
 /**
  * @param {string} scanRef
