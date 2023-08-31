@@ -1,4 +1,59 @@
 import axios from "axios";
+import { desiredOnfidoReports } from "../constants/onfido.js";
+
+export async function createOnfidoApplicant() {
+  try {
+    const reqBody = {
+      // From Onfido docs:
+      // "For Document reports, first_name and last_name must be provided but can be
+      // dummy values if you don't know an applicant's name."
+      first_name: "Alice",
+      last_name: "Smith",
+      // NOTE: `location` is required for facial similarity reports.
+      // NOTE: `consent` is required for US applicants. From Onfido docs: "If the location of
+      // the applicant is the US, you must also provide consent information confirming that
+      // the end user has viewed and accepted Onfido’s privacy notices and terms of service."
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+      },
+    };
+    const resp = await axios.post(
+      "https://api.us.onfido.com/v3.6/applicants",
+      reqBody,
+      config
+    );
+    return resp.data;
+  } catch (err) {
+    console.error("Error creating Onfido applicant", err.message, err.response?.data);
+  }
+}
+
+export async function createOnfidoCheck(applicant_id) {
+  try {
+    const reqBody = {
+      applicant_id,
+      report_names: desiredOnfidoReports,
+      // applicant_provides_data: true,
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+      },
+    };
+    const resp = await axios.post(
+      "https://api.us.onfido.com/v3.6/checks",
+      reqBody,
+      config
+    );
+    return resp.data;
+  } catch (err) {
+    console.error("Error creating Onfido check", err.message, err.response?.data);
+  }
+}
 
 /**
  * @param {string} check_id
