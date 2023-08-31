@@ -81,9 +81,9 @@ async function postSession(req, res) {
 async function createIdvSession(req, res) {
   try {
     const _id = req.params._id;
-    const chainId = req.body.chainId;
+    const chainId = Number(req.body.chainId);
     const txHash = req.body.txHash;
-    if (!chainId || supportedChainIds.indexOf(Number(chainId)) === -1) {
+    if (!chainId || supportedChainIds.indexOf(chainId) === -1) {
       return res.status(400).json({
         error: `Missing chainId. chainId must be one of ${supportedChainIds.join(
           ", "
@@ -106,7 +106,7 @@ async function createIdvSession(req, res) {
         .json({ error: "Session is already associated with a transaction" });
     }
 
-    const validationResult = await validateTxForIDVSessionCreation(txHash);
+    const validationResult = await validateTxForIDVSessionCreation(chainId, txHash);
     if (validationResult.error) {
       return res
         .status(validationResult.status)
@@ -116,7 +116,7 @@ async function createIdvSession(req, res) {
     // Note: We do not immediately call session.save() after adding txHash to
     // the session because we want the session to be saved only if the rest of
     // this function executes successfully.
-    session.chainId = Number(chainId);
+    session.chainId = chainId;
     session.txHash = txHash;
 
     if (session.idvProvider === "veriff") {

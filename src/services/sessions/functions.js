@@ -15,11 +15,11 @@ const fantomProvider = new ethers.providers.JsonRpcProvider(
  * - Ensure amount is > desired amount.
  * - Ensure tx is confirmed.
  */
-async function validateTxForIDVSessionCreation(txHash) {
+async function validateTxForIDVSessionCreation(chainId, txHash) {
   let tx;
-  if (chainId === "10") {
+  if (chainId === 10) {
     tx = await optimismProvider.getTransaction(txHash);
-  } else if (chainId === "250") {
+  } else if (chainId === 250) {
     tx = await fantomProvider.getTransaction(txHash);
   }
 
@@ -40,10 +40,10 @@ async function validateTxForIDVSessionCreation(txHash) {
   }
 
   let expectedAmount;
-  if (chainId === "10") {
+  if (chainId === 10) {
     // 0.003 ETH is about $5 at the time of this writing
     expectedAmount = ethers.utils.parseEther("0.003");
-  } else if (chainId === "250") {
+  } else if (chainId === 250) {
     // 43 FTM is about $5 at the time of this writing
     expectedAmount = ethers.utils.parseEther("43");
   }
