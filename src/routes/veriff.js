@@ -6,8 +6,8 @@ import { decisionWebhook } from "../services/veriff/webhooks.js";
 const router = express.Router();
 
 router.get("/credentials", getCredentials);
-router.post("/session", v1CreateSession);
-router.post("/v2/session", v2CreateSession);
+// router.post("/session", v1CreateSession);
+// router.post("/v2/session", v2CreateSession);
 router.get("/decision-webhook", decisionWebhook);
 
 export default router;

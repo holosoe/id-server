@@ -5,9 +5,9 @@ import { getCredentials } from "../services/onfido/credentials.js";
 
 const router = express.Router();
 
-router.post("/applicant", createApplicant);
-router.post("/check", v1CreateCheck);
-router.post("/v2/check", v2CreateCheck);
+// router.post("/applicant", createApplicant);
+// router.post("/check", v1CreateCheck);
+// router.post("/v2/check", v2CreateCheck);
 router.get("/credentials", getCredentials);
 
 export default router;

@@ -7,8 +7,8 @@ import { verificationStatus } from "../services/idenfy/status.js";
 const router = express.Router();
 
 router.get("/credentials", getCredentials);
-router.post("/session", v1CreateSession);
-router.post("/v2/session", v2CreateSession);
+// router.post("/session", v1CreateSession);
+// router.post("/v2/session", v2CreateSession);
 router.get("/webhook", webhook);
 router.get("/verification-status", verificationStatus);
 
