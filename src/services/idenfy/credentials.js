@@ -1,11 +1,16 @@
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
+import {
+  Session,
+  UserVerifications,
+  VerificationCollisionMetadata,
+} from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { createLeaf, getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import { sessionStatusEnum } from "../../constants/misc.js";
 import {
   getIdenfySessionStatus,
   getIdenfySessionVerificationData,
@@ -22,17 +27,6 @@ const endpointLogger = logger.child({
 });
 
 function validateSession(statusData, verificationData, scanRef) {
-  if (!statusData || !verificationData) {
-    return {
-      error: "Failed to retrieve iDenfy session.",
-      log: {
-        msg: "Failed to retrieve iDenfy session.",
-        data: {
-          scanRef,
-        },
-      },
-    };
-  }
   // if (statusData.autoDocument !== "DOC_VALIDATED") {
   //   return {
   //     error: `Verification failed. Failed to auto validate document.`,
@@ -293,6 +287,12 @@ async function saveUserToDb(uuid, scanRef) {
   return { success: true };
 }
 
+async function updateSessionStatus(scanRef, status) {
+  const metaSession = await Session.findOne({ scanRef }).exec();
+  metaSession.status = status;
+  await metaSession.save();
+}
+
 /**
  * ENDPOINT
  *
@@ -320,9 +320,15 @@ async function getCredentials(req, res) {
     const statusData = await getIdenfySessionStatus(scanRef);
     const verificationData = await getIdenfySessionVerificationData(scanRef);
 
+    if (!statusData || !verificationData) {
+      endpointLogger.error({ scanRef }, "Failed to retrieve iDenfy session.");
+      return res.status(400).json({ error: "Failed to retrieve iDenfy session." });
+    }
+
     const validationResult = validateSession(statusData, verificationData, scanRef);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(scanRef, sessionStatusEnum.VERIFICATION_FAILED);
       return res.status(400).json({ error: validationResult.error });
     }
 
@@ -363,6 +369,8 @@ async function getCredentials(req, res) {
     await deleteIdenfySession(scanRef);
 
     endpointLogger.info({ uuid, scanRef }, "Issuing credentials");
+
+    await updateSessionStatus(scanRef, sessionStatusEnum.ISSUED);
 
     return res.status(200).json(response);
   } catch (err) {

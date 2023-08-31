@@ -2,7 +2,7 @@ import { Session } from "../../init.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
 import { createOnfidoApplicant, createOnfidoCheck } from "../../utils/onfido.js";
-import { supportedChainIds } from "../../constants/misc.js";
+import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import { validateTxForIDVSessionCreation } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
@@ -64,6 +64,7 @@ async function postSession(req, res) {
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
+      status: sessionStatusEnum.NEEDS_PAYMENT,
     });
     await session.save();
 
@@ -116,6 +117,7 @@ async function createIdvSession(req, res) {
     // Note: We do not immediately call session.save() after adding txHash to
     // the session because we want the session to be saved only if the rest of
     // this function executes successfully.
+    session.status = sessionStatusEnum.IN_PROGRESS;
     session.chainId = chainId;
     session.txHash = txHash;
 

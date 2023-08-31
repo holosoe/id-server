@@ -1,11 +1,16 @@
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
+import {
+  Session,
+  UserVerifications,
+  VerificationCollisionMetadata,
+} from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import { sessionStatusEnum } from "../../constants/misc.js";
 import {
   getOnfidoCheck,
   getOnfidoReports,
@@ -61,14 +66,6 @@ function validateCheck(check) {
 }
 
 function validateReports(reports) {
-  if (!reports || reports.length == 0) {
-    return {
-      error: "Verification failed. No reports found",
-      log: {
-        msg: "No reports found",
-      },
-    };
-  }
   const reportNames = reports.map((report) => report.name);
   const missingReports = desiredOnfidoReports.filter(
     (report) => !reportNames.includes(report)
@@ -320,6 +317,12 @@ async function saveUserToDb(uuid, check_id) {
   return { success: true };
 }
 
+async function updateSessionStatus(check_id, status) {
+  const metaSession = await Session.findOne({ check_id }).exec();
+  metaSession.status = status;
+  await metaSession.save();
+}
+
 /**
  * ENDPOINT
  *
@@ -356,9 +359,14 @@ async function getCredentials(req, res) {
     }
 
     const reports = await getOnfidoReports(check.report_ids);
+    if (!reports || reports.length == 0) {
+      endpointLogger.error("No reports found");
+      return res.status(400).json({ error: "No reports found" });
+    }
     const validationResult = validateReports(reports);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
       return res
         .status(400)
         .json({ error: validationResult.error, reasons: validationResult.reasons });
@@ -402,6 +410,8 @@ async function getCredentials(req, res) {
     await deleteOnfidoApplicant(check.applicant_id);
 
     endpointLogger.info({ uuid, check_id }, "Issuing credentials");
+
+    await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
 
     return res.status(200).json(response);
   } catch (err) {

@@ -22,3 +22,10 @@ export const supportedChainIds = [
   10, // Optimism
   250, // Fantom
 ];
+
+export const sessionStatusEnum = {
+  NEEDS_PAYMENT: "NEEDS_PAYMENT",
+  IN_PROGRESS: "IN_PROGRESS",
+  ISSUED: "ISSUED",
+  VERIFICATION_FAILED: "VERIFICATION_FAILED",
+};

@@ -2,11 +2,16 @@ import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
-import { UserVerifications, VerificationCollisionMetadata } from "../../init.js";
+import {
+  Session,
+  UserVerifications,
+  VerificationCollisionMetadata,
+} from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import { sessionStatusEnum } from "../../constants/misc.js";
 import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
 // import { getPaymentStatus } from "../utils/paypal.js";
 
@@ -18,18 +23,7 @@ const endpointLogger = logger.child({
   },
 });
 
-function validateSession(session, sessionId) {
-  if (!session) {
-    return {
-      error: "Failed to retrieve Verrif session.",
-      log: {
-        msg: "Failed to retrieve Verrif session.",
-        data: {
-          sessionId,
-        },
-      },
-    };
-  }
+function validateSession(session) {
   if (session.status !== "success") {
     return {
       error: `Verification failed. Status is '${session.status}'. Expected 'success'.`,
@@ -308,6 +302,12 @@ async function saveUserToDb(uuid, sessionId) {
   return { success: true };
 }
 
+async function updateSessionStatus(sessionId, status) {
+  const metaSession = await Session.findOne({ sessionId }).exec();
+  metaSession.status = status;
+  await metaSession.save();
+}
+
 /**
  * ENDPOINT
  *
@@ -333,9 +333,21 @@ async function getCredentials(req, res) {
     }
     const session = await getVeriffSessionDecision(req.query.sessionId);
 
+    if (!session) {
+      endpointLogger.error(
+        { sessionId: req.query.sessionId },
+        "Failed to retrieve Verrif session."
+      );
+      return res.status(400).json({ error: "Failed to retrieve Verrif session." });
+    }
+
     const validationResult = validateSession(session, req.query.sessionId);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(
+        req.query.sessionId,
+        sessionStatusEnum.VERIFICATION_FAILED
+      );
       return res.status(400).json({ error: validationResult.error });
     }
 
@@ -386,6 +398,8 @@ async function getCredentials(req, res) {
       { uuid, sessionId: req.query.sessionId },
       "Issuing credentials"
     );
+
+    await updateSessionStatus(req.query.sessionId, sessionStatusEnum.ISSUED);
 
     return res.status(200).json(response);
   } catch (err) {

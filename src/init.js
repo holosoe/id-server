@@ -239,6 +239,10 @@ async function initializeMongoDb() {
   const sessionSchema = new Schema({
     sigDigest: String,
     idvProvider: String,
+    // status here is distinct from the status of the IDV session (as
+    // provided by the IDV provider). The possible values of status are:
+    // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED'
+    status: String,
     txHash: {
       type: String,
       required: false,
@@ -247,14 +251,17 @@ async function initializeMongoDb() {
       type: Number,
       required: false,
     },
+    // Veriff sessionId
     sessionId: {
       type: String,
       required: false,
     },
+    // iDenfy scanRef
     scanRef: {
       type: String,
       required: false,
     },
+    // Onfido check_id
     check_id: {
       type: String,
       required: false,
