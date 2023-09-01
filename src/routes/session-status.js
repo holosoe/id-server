@@ -1,10 +1,9 @@
 import express from "express";
-import { getSessionStatus } from "../services/session-status.js";
+import { getSessionStatus, getSessionStatusV2 } from "../services/session-status.js";
 
 const router = express.Router();
 
-// TODO: Uncomment this route. First, however, refactor it to work
-// with the new sessions collection, not with the IDVSessions collection.
-// router.get("/", getSessionStatus);
+router.get("/", getSessionStatus);
+router.get("/v2", getSessionStatusV2);
 
 export default router;

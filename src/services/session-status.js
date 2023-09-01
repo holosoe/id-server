@@ -1,11 +1,12 @@
 import axios from "axios";
-import { IDVSessions } from "../init.js";
+import { Session, IDVSessions } from "../init.js";
 import logger from "../utils/logger.js";
 import { getVeriffSessionDecision } from "../utils/veriff.js";
 import { getIdenfySessionStatus as getIdenfySession } from "../utils/idenfy.js";
 import { getOnfidoReports } from "../utils/onfido.js";
 
 const endpointLogger = logger.child({ msgPrefix: "[GET /session-status] " });
+const endpointLoggerV2 = logger.child({ msgPrefix: "[GET /session-status/v2] " });
 
 async function getVeriffSessionStatus(sessions) {
   if (!sessions?.veriff?.sessions || sessions.veriff.sessions.length === 0) {
@@ -256,4 +257,70 @@ async function getSessionStatus(req, res) {
   }
 }
 
-export { getSessionStatus };
+/**
+ * ENDPOINT
+ */
+async function getSessionStatusV2(req, res) {
+  try {
+    const sid = req.query.sid;
+
+    if (!sid) {
+      return res.status(400).json({ error: "Missing sid" });
+    }
+
+    const session = await Session.findOne({ _id: sid }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.idvProvider === "veriff") {
+      const decision = await getVeriffSessionDecision(session.sessionId);
+      if (!decision) {
+        return res.status(404).json({ error: "IDV Session not found" });
+      }
+
+      return res.status(200).json({
+        veriff: {
+          status: decision?.verification?.status,
+          sessionId: session.sessionId,
+        },
+      });
+    } else if (session.idvProvider === "idenfy") {
+      const idenfySession = await getIdenfySession(session.scanRef);
+      if (!idenfySession) {
+        return res.status(404).json({ error: "IDV Session not found" });
+      }
+
+      return res.status(200).json({
+        idenfy: {
+          status: idenfySession?.status,
+          scanRef: session.scanRef,
+        },
+      });
+    } else if (session.idvProvider === "onfido") {
+      const check = await getOnfidoCheck(session.check_id);
+      if (!check) {
+        return res.status(404).json({ error: "IDV Session not found" });
+      }
+
+      return res.status(200).json({
+        onfido: {
+          status: check?.status,
+          result: check?.result,
+          check_id: session.check_id,
+        },
+      });
+    } else {
+      return res.status(500).json({ error: "Unknown idvProvider" });
+    }
+  } catch (err) {
+    endpointLoggerV2.error(
+      { error: err },
+      "An unknown error occurred while retrieving session status"
+    );
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+export { getSessionStatus, getSessionStatusV2 };
