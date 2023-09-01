@@ -95,7 +95,7 @@ async function createIdvSession(req, res) {
       return res.status(400).json({ error: "txHash is required" });
     }
 
-    const session = await Session.findOne({ _id: _id });
+    const session = await Session.findOne({ _id: _id }).exec();
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
@@ -187,9 +187,9 @@ async function getSessions(req, res) {
 
     let sessions;
     if (id) {
-      sessions = await Session.find({ _id: id });
+      sessions = await Session.find({ _id: id }).exec();
     } else {
-      sessions = await Session.find({ sigDigest });
+      sessions = await Session.find({ sigDigest }).exec();
     }
 
     return res.status(200).json(sessions);
