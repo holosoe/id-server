@@ -6,8 +6,11 @@ import { decisionWebhook } from "../services/veriff/webhooks.js";
 const router = express.Router();
 
 router.get("/credentials", getCredentials);
-// router.post("/session", v1CreateSession);
-// router.post("/v2/session", v2CreateSession);
+
+// TODO: Remove the following 2 endpoints once pay-first frontend is live
+router.post("/session", v1CreateSession);
+router.post("/v2/session", v2CreateSession);
+
 router.get("/decision-webhook", decisionWebhook);
 
 export default router;
