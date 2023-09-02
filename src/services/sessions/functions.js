@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { Session } from "../../init.js";
 import { holonymAddresses } from "../../constants/misc.js";
 
 const optimismProvider = new ethers.providers.AlchemyProvider(
@@ -62,8 +63,13 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     };
   }
 
-  // TODO: Check the database to ensure that this tx wasn't used to pay for
-  // another session
+  const session = await Session.findOne({ txHash: txHash }).exec();
+  if (session) {
+    return {
+      status: 400,
+      error: "Transaction has already been used to pay for a session",
+    };
+  }
 
   return {};
 }
