@@ -1,8 +1,13 @@
 import { Session } from "../../init.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
-import { createOnfidoApplicant, createOnfidoCheck } from "../../utils/onfido.js";
+import {
+  createOnfidoApplicant,
+  createOnfidoSdkToken,
+  createOnfidoCheck,
+} from "../../utils/onfido.js";
 import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
+import { desiredOnfidoReports } from "../../constants/onfido.js";
 import { validateTxForIDVSessionCreation } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
@@ -158,22 +163,61 @@ async function createIdvSession(req, res) {
         return res.status(500).json({ error: "Error creating Onfido applicant" });
       }
 
-      const check = await createOnfidoCheck(applicant.id);
-      if (!check) {
-        return res.status(500).json({ error: "Error creating Onfido check" });
+      session.applicant_id = applicant.id;
+
+      const sdkTokenData = await createOnfidoSdkToken(applicant.id);
+      if (!sdkTokenData) {
+        return res.status(500).json({ error: "Error creating Onfido SDK token" });
       }
 
-      session.check_id = check.id;
       await session.save();
 
       return res.status(200).json({
-        id: check.id,
+        applicant_id: applicant.id,
+        sdk_token: sdkTokenData.token,
       });
     } else {
       return res.status(500).json({ error: "Invalid idvProvider" });
     }
   } catch (err) {
     console.log("POST /sessions/:_id/idv-session: Error encountered", err.message);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+async function createOnfidoCheckEndpoint(req, res) {
+  // NOTE:
+  // From Onfido docs:
+  // "If you're requesting multiple checks for the same individual, you
+  // should reuse the id returned in the initial applicant response object
+  // in the applicant_id field when creating a check."
+  // Perhaps we should associate sigDigest with applicant_id to accomplish this.
+  try {
+    const _id = req.params._id;
+
+    const session = await Session.findOne({ _id: _id }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (!session.applicant_id) {
+      return res.status(400).json({ error: "Session is missing applicant_id" });
+    }
+
+    const check = await createOnfidoCheck(session.applicant_id);
+
+    session.check_id = check.id;
+    await session.save();
+
+    return res.status(200).json({
+      id: check.id,
+    });
+  } catch (err) {
+    console.error(
+      { error: err, applicant_id: req.body.applicant_id },
+      "Error creating Onfido check"
+    );
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -204,4 +248,4 @@ async function getSessions(req, res) {
   }
 }
 
-export { postSession, createIdvSession, getSessions };
+export { postSession, createIdvSession, createOnfidoCheckEndpoint, getSessions };

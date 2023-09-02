@@ -31,6 +31,31 @@ export async function createOnfidoApplicant() {
   }
 }
 
+export async function createOnfidoSdkToken(applicant_id) {
+  try {
+    // Create an SDK token for the applicant
+    const body = `applicant_id=${applicant_id}&referrer=${
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3002/*"
+        : "https://app.holonym.id/*"
+    }`;
+    const config = {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+      },
+    };
+    const resp = await axios.post(
+      "https://api.us.onfido.com/v3.6/sdk_token",
+      body,
+      config
+    );
+    return resp.data;
+  } catch (err) {
+    console.error("Error creating Onfido SDK token", err.message, err.response?.data);
+  }
+}
+
 export async function createOnfidoCheck(applicant_id) {
   try {
     const reqBody = {

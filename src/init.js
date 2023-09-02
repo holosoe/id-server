@@ -261,6 +261,11 @@ async function initializeMongoDb() {
       type: String,
       required: false,
     },
+    // Onfido applicant_id
+    applicant_id: {
+      type: String,
+      required: false,
+    },
     // Onfido check_id
     check_id: {
       type: String,
