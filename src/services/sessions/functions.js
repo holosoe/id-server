@@ -62,6 +62,9 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     };
   }
 
+  // TODO: Check the database to ensure that this tx wasn't used to pay for
+  // another session
+
   return {};
 }
 

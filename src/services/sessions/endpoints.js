@@ -107,11 +107,14 @@ async function createIdvSession(req, res) {
         .json({ error: "Session is already associated with a transaction" });
     }
 
-    const validationResult = await validateTxForIDVSessionCreation(chainId, txHash);
-    if (validationResult.error) {
-      return res
-        .status(validationResult.status)
-        .json({ error: validationResult.error });
+    // TODO: Remove this check. Instead, use testnet for development.
+    if (process.env.NODE_ENV !== "development") {
+      const validationResult = await validateTxForIDVSessionCreation(chainId, txHash);
+      if (validationResult.error) {
+        return res
+          .status(validationResult.status)
+          .json({ error: validationResult.error });
+      }
     }
 
     // Note: We do not immediately call session.save() after adding txHash to
@@ -129,6 +132,8 @@ async function createIdvSession(req, res) {
 
       session.sessionId = veriffSession.verification.id;
       await session.save();
+
+      console.log("session", session);
 
       return res.status(200).json({
         url: veriffSession.verification.url,
