@@ -300,8 +300,12 @@ async function getSessionStatusV2(req, res) {
       });
     } else if (session.idvProvider === "onfido") {
       if (!session.check_id) {
-        return res.status(404).json({
-          error: "idvProvider is onfido, but there is no check_id for this session",
+        return res.status(200).json({
+          onfido: {
+            status: check?.status,
+            result: check?.result,
+            check_id: session.check_id,
+          },
         });
       }
 
