@@ -302,8 +302,6 @@ async function getSessionStatusV2(req, res) {
       if (!session.check_id) {
         return res.status(200).json({
           onfido: {
-            status: check?.status,
-            result: check?.result,
             check_id: session.check_id,
           },
         });
