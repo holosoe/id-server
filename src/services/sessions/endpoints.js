@@ -136,9 +136,8 @@ async function createIdvSession(req, res) {
       }
 
       session.sessionId = veriffSession.verification.id;
+      session.veriffUrl = veriffSession.verification.url;
       await session.save();
-
-      console.log("session", session);
 
       return res.status(200).json({
         url: veriffSession.verification.url,
@@ -151,6 +150,7 @@ async function createIdvSession(req, res) {
       }
 
       session.scanRef = tokenData.scanRef;
+      session.idenfyAuthToken = tokenData.authToken;
       await session.save();
 
       return res.status(200).json({
@@ -170,6 +170,7 @@ async function createIdvSession(req, res) {
         return res.status(500).json({ error: "Error creating Onfido SDK token" });
       }
 
+      session.onfido_sdk_token = sdkTokenData.token;
       await session.save();
 
       return res.status(200).json({

@@ -256,8 +256,16 @@ async function initializeMongoDb() {
       type: String,
       required: false,
     },
+    veriffUrl: {
+      type: String,
+      required: false,
+    },
     // iDenfy scanRef
     scanRef: {
+      type: String,
+      required: false,
+    },
+    idenfyAuthToken: {
       type: String,
       required: false,
     },
@@ -268,6 +276,10 @@ async function initializeMongoDb() {
     },
     // Onfido check_id
     check_id: {
+      type: String,
+      required: false,
+    },
+    onfido_sdk_token: {
       type: String,
       required: false,
     },
