@@ -29,7 +29,7 @@ async function getUserVerification(req, res) {
 
     // const user = await UserVerifications.findOne({ _id: id }).exec();
     const user = await UserVerifications.findOne({
-      $or: [{ _id: id }, { uuid: uuid }],
+      $or: [{ _id: id }, { "govId.uuid": uuid }],
     }).exec();
     if (user) {
       getEndpointLogger.info({ _id: id, uuid }, "Found user ");
@@ -83,7 +83,7 @@ async function deleteUserVerification(req, res) {
 
     // const result = await UserVerifications.deleteOne({ _id: id }).exec();
     const result = await UserVerifications.deleteOne({
-      $or: [{ _id: id }, { uuid: uuid }],
+      $or: [{ _id: id }, { "govId.uuid": uuid }],
     }).exec();
     if (result.acknowledged && result.deletedCount >= 1) {
       deleteEndpointLogger.info({ _id: id, uuid }, "Deleted user");
