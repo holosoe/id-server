@@ -367,7 +367,7 @@ async function getCredentials(req, res) {
       endpointLogger.error({ uuid }, "User has already registered.");
       return res
         .status(400)
-        .json({ error: `User has already registered. UUID: ${uuid}` });
+        .json({ error: `User has already registered. User ID: ${user._id}` });
     }
 
     // Store UUID for Sybil resistance

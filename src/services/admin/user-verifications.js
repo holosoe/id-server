@@ -20,19 +20,19 @@ async function getUserVerification(req, res) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
-    const uuid = req.query.uuid;
+    const id = req.query.id;
 
-    if (!uuid) {
-      return res.status(400).json({ error: "No UUID provided." });
+    if (!id) {
+      return res.status(400).json({ error: "No user ID provided." });
     }
 
-    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    const user = await UserVerifications.findOne({ _id: id }).exec();
     if (user) {
-      getEndpointLogger.info({ uuid }, "Found user in database with UUID");
+      getEndpointLogger.info({ _id: id }, "Found user in database with _id ");
       return res.status(200).json(user);
     } else {
-      getEndpointLogger.info({ uuid }, "No user with UUID found");
-      return res.status(404).json({ error: "No user with that UUID found." });
+      getEndpointLogger.info({ _id: id }, "No user with _id found");
+      return res.status(404).json({ error: "No user with that ID found." });
     }
   } catch (err) {
     getEndpointLogger.error(
@@ -51,10 +51,10 @@ async function deleteUserVerification(req, res) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
-    const uuid = req.query.uuid;
+    const id = req.query.id;
 
-    if (!uuid) {
-      return res.status(400).json({ error: "No UUID provided." });
+    if (!id) {
+      return res.status(400).json({ error: "No user ID provided." });
     }
 
     // Limit the number of deletions per day to 2% of the number of verifications per day
@@ -76,9 +76,9 @@ async function deleteUserVerification(req, res) {
         .json({ error: "Deletion limit reached for today. Try again tomorrow." });
     }
 
-    const result = await UserVerifications.deleteOne({ "govId.uuid": uuid }).exec();
+    const result = await UserVerifications.deleteOne({ _id: id }).exec();
     if (result.acknowledged && result.deletedCount >= 1) {
-      deleteEndpointLogger.info({ uuid }, "Deleted user with UUID");
+      deleteEndpointLogger.info({ _id: id }, "Deleted user with ID");
 
       // Increment the deletion count for today
       await DailyVerificationDeletions.updateOne(
@@ -89,8 +89,8 @@ async function deleteUserVerification(req, res) {
 
       return res.status(200).json({ message: "User deleted" });
     } else {
-      deleteEndpointLogger.info({ uuid }, "No user with UUID found");
-      return res.status(404).json({ error: "No user with that UUID found." });
+      deleteEndpointLogger.info({ _id: id }, "No user with ID found");
+      return res.status(404).json({ error: "No user with that ID found." });
     }
   } catch (err) {
     deleteEndpointLogger.error({ error: err }, "An error occurred");
