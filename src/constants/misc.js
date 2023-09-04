@@ -18,10 +18,14 @@ export const relayerURL =
     : // : "https://relayer.holonym.id";
       "https://relayer.holonym-internal.net";
 
-export const supportedChainIds = [
+const supportedChainIds = [
   10, // Optimism
   250, // Fantom
 ];
+if (process.env.NODE_ENV === "development") {
+  supportedChainIds.push(420); // Optimism goerli
+}
+export { supportedChainIds };
 
 export const sessionStatusEnum = {
   NEEDS_PAYMENT: "NEEDS_PAYMENT",
