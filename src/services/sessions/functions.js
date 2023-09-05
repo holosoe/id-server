@@ -129,6 +129,17 @@ async function refundTxSender(session) {
   // a fraction of a cent.
   const refundAmount = tx.value.mul(802).div(1000);
 
+  // Ensure wallet has enough funds to refund
+  const balance = await wallet.getBalance();
+  if (balance.lt(refundAmount)) {
+    return {
+      status: 500,
+      data: {
+        error: "Wallet does not have enough funds to refund. Please contact support.",
+      },
+    };
+  }
+
   const txResponse = await wallet.sendTransaction({
     to: tx.from,
     value: refundAmount,
