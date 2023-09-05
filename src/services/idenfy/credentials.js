@@ -289,6 +289,8 @@ async function saveUserToDb(uuid, scanRef) {
 
 async function updateSessionStatus(scanRef, status) {
   try {
+    // TODO: Once pay-first frontend is pushed, remove the try-catch. We want
+    // this endpoint to fail if we can't update the session.
     const metaSession = await Session.findOne({ scanRef }).exec();
     metaSession.status = status;
     await metaSession.save();
