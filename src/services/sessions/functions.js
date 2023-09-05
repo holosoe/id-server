@@ -1,7 +1,7 @@
 import axios from "axios";
 import { ethers } from "ethers";
 import { Session } from "../../init.js";
-import { holonymAddresses } from "../../constants/misc.js";
+import { idServerPaymentAddress, sessionStatusEnum } from "../../constants/misc.js";
 
 const optimismProvider = new ethers.providers.AlchemyProvider(
   "optimism",
@@ -56,12 +56,10 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     };
   }
 
-  if (holonymAddresses.indexOf(tx.to.toLowerCase()) === -1) {
+  if (idServerPaymentAddress !== tx.to.toLowerCase()) {
     return {
       status: 400,
-      error: `Invalid transaction recipient. Recipient must be one of ${holonymAddresses.join(
-        ", "
-      )}`,
+      error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
     };
   }
 
@@ -104,4 +102,50 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   return {};
 }
 
-export { validateTxForIDVSessionCreation };
+async function refundTxSender(session) {
+  let provider;
+  if (session.chainId === 10) {
+    provider = optimismProvider;
+  } else if (session.chainId === 250) {
+    provider = fantomProvider;
+  } else if (process.env.NODE_ENV === "development" && session.chainId === 420) {
+    provider = optimismGoerliProvider;
+  }
+
+  const tx = await provider.getTransaction(session.txHash);
+
+  if (!tx) {
+    return {
+      status: 404,
+      data: {
+        error: "Could not find transaction with given txHash",
+      },
+    };
+  }
+
+  const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
+
+  // Refund 80.2% of the transaction amount. This approximates the mint cost to
+  // a fraction of a cent.
+  const refundAmount = tx.value.mul(802).div(1000);
+
+  const txResponse = await wallet.sendTransaction({
+    to: tx.from,
+    value: refundAmount,
+  });
+
+  const receipt = await txResponse.wait();
+
+  session.refundTxHash = receipt.transactionHash;
+  session.status = sessionStatusEnum.REFUNDED;
+  await session.save();
+
+  return {
+    status: 200,
+    data: {
+      txReceipt: receipt,
+    },
+  };
+}
+
+export { validateTxForIDVSessionCreation, refundTxSender };

@@ -1,9 +1,4 @@
-// TODO: holonymAddresses should only include addresses owned
-// by Holonym that have been designated specifically for receiving
-// funds. The relayer address should not be in this list.
-export const holonymAddresses = [
-  "0xb1f50c6c34c72346b1229e5c80587d0d659556fd", // Relayer
-];
+export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
 
 export const holonymIssuers = [
   "0x8281316ac1d51c94f2de77575301cef615adea84", // gov-id
@@ -32,4 +27,5 @@ export const sessionStatusEnum = {
   IN_PROGRESS: "IN_PROGRESS",
   ISSUED: "ISSUED",
   VERIFICATION_FAILED: "VERIFICATION_FAILED",
+  REFUNDED: "REFUNDED",
 };

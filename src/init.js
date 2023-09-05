@@ -241,7 +241,7 @@ async function initializeMongoDb() {
     idvProvider: String,
     // status here is distinct from the status of the IDV session (as
     // provided by the IDV provider). The possible values of status are:
-    // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED'
+    // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED' | 'REFUNDED'
     status: String,
     txHash: {
       type: String,
@@ -249,6 +249,11 @@ async function initializeMongoDb() {
     },
     chainId: {
       type: Number,
+      required: false,
+    },
+    // Transaction hash of the refund transaction
+    refundTxHash: {
+      type: String,
       required: false,
     },
     // Veriff sessionId

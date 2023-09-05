@@ -8,7 +8,7 @@ import {
 } from "../../utils/onfido.js";
 import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
-import { validateTxForIDVSessionCreation } from "./functions.js";
+import { validateTxForIDVSessionCreation, refundTxSender } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 // const postSessionsLogger = logger.child({
@@ -221,6 +221,42 @@ async function createOnfidoCheckEndpoint(req, res) {
 }
 
 /**
+ * Allows a user to request a refund for a failed IDV session.
+ */
+async function refund(req, res) {
+  const _id = req.params._id;
+
+  try {
+    // TODO: IMPORTANT We need a sort of mutex here so that only one refund
+    // request per session can be processed at a time. Otherwise, if the user
+    // spams this refund endpoint, we could send multiple transactions
+    // before the first one is confirmed.
+
+    const session = await Session.findOne({ _id: _id }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
+      return res
+        .status(400)
+        .json({ error: "Only failed verifications can be refunded." });
+    }
+
+    const response = await refundTxSender(session);
+
+    return res.status(response.status).json(response.data);
+  } catch (err) {
+    console.log(
+      "POST /sessions/:_id/idv-session/refund: Error encountered",
+      err.message
+    );
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
  * Get session(s) associated with sigDigest or id.
  */
 async function getSessions(req, res) {
@@ -246,4 +282,10 @@ async function getSessions(req, res) {
   }
 }
 
-export { postSession, createIdvSession, createOnfidoCheckEndpoint, getSessions };
+export {
+  postSession,
+  createIdvSession,
+  createOnfidoCheckEndpoint,
+  refund,
+  getSessions,
+};
