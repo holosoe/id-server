@@ -291,6 +291,16 @@ async function initializeMongoDb() {
   });
   const Session = mongoose.model("Session", sessionSchema);
 
+  // TODO: Do not use MongoDB for mutex purposes. Use something like Redis instead.
+  const sessionRefundMutexSchema = new Schema({
+    // sessionId is NOT a Veriff sessionId. It is the _id of the associated Session.
+    sessionId: String,
+  });
+  const SessionRefundMutex = mongoose.model(
+    "SessionRefundMutex",
+    sessionRefundMutexSchema
+  );
+
   const userCredentialsSchema = new Schema({
     proofDigest: String,
     sigDigest: String,
@@ -434,6 +444,7 @@ async function initializeMongoDb() {
     UserVerifications,
     IDVSessions,
     Session,
+    SessionRefundMutex,
     UserCredentials,
     UserProofMetadata,
     DailyVerificationCount,
@@ -447,6 +458,7 @@ validateEnv();
 let UserVerifications,
   IDVSessions,
   Session,
+  SessionRefundMutex,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,
@@ -458,6 +470,7 @@ initializeMongoDb().then((result) => {
     UserVerifications = result.UserVerifications;
     IDVSessions = result.IDVSessions;
     Session = result.Session;
+    SessionRefundMutex = result.SessionRefundMutex;
     UserCredentials = result.UserCredentials;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
@@ -479,6 +492,7 @@ export {
   UserVerifications,
   IDVSessions,
   Session,
+  SessionRefundMutex,
   UserCredentials,
   UserProofMetadata,
   DailyVerificationCount,

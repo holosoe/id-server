@@ -1,4 +1,4 @@
-import { Session } from "../../init.js";
+import { Session, SessionRefundMutex } from "../../init.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
 import {
@@ -227,10 +227,7 @@ async function refund(req, res) {
   const _id = req.params._id;
 
   try {
-    // TODO: IMPORTANT We need a sort of mutex here so that only one refund
-    // request per session can be processed at a time. Otherwise, if the user
-    // spams this refund endpoint, we could send multiple transactions
-    // before the first one is confirmed.
+    // TODO: IMPORTANT
 
     const session = await Session.findOne({ _id: _id }).exec();
 
@@ -244,10 +241,38 @@ async function refund(req, res) {
         .json({ error: "Only failed verifications can be refunded." });
     }
 
+    // Create mutex. We use mutex here so that only one refund request
+    // per session can be processed at a time. Otherwise, if the user
+    // spams this refund endpoint, we could send multiple transactions
+    // before the first one is confirmed.
+    // TODO: Do not use MongoDB for mutex purposes. Use something like
+    // like Redis instead.
+    const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
+    if (mutex) {
+      return res.status(400).json({ error: "Refund already in progress" });
+    }
+    const newMutex = new SessionRefundMutex({ _id: _id });
+    await newMutex.save();
+
+    // Perform refund logic
     const response = await refundTxSender(session);
 
+    // Delete mutex
+    await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+
+    // Return response
     return res.status(response.status).json(response.data);
   } catch (err) {
+    // Delete mutex. We have this here in case an unknown error occurs above.
+    try {
+      await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+    } catch (err) {
+      console.log(
+        "POST /sessions/:_id/idv-session/refund: Error encountered while deleting mutex",
+        err.message
+      );
+    }
+
     console.log(
       "POST /sessions/:_id/idv-session/refund: Error encountered",
       err.message
