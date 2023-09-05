@@ -318,9 +318,13 @@ async function saveUserToDb(uuid, check_id) {
 }
 
 async function updateSessionStatus(check_id, status) {
-  const metaSession = await Session.findOne({ check_id }).exec();
-  metaSession.status = status;
-  await metaSession.save();
+  try {
+    const metaSession = await Session.findOne({ check_id }).exec();
+    metaSession.status = status;
+    await metaSession.save();
+  } catch (err) {
+    console.log("onfido/credentials: Error updating session status", err);
+  }
 }
 
 /**

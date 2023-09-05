@@ -288,9 +288,13 @@ async function saveUserToDb(uuid, scanRef) {
 }
 
 async function updateSessionStatus(scanRef, status) {
-  const metaSession = await Session.findOne({ scanRef }).exec();
-  metaSession.status = status;
-  await metaSession.save();
+  try {
+    const metaSession = await Session.findOne({ scanRef }).exec();
+    metaSession.status = status;
+    await metaSession.save();
+  } catch (err) {
+    console.log("idenfy/credentials: Error updating session status", err);
+  }
 }
 
 /**
