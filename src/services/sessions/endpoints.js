@@ -227,8 +227,6 @@ async function refund(req, res) {
   const _id = req.params._id;
 
   try {
-    // TODO: IMPORTANT
-
     const session = await Session.findOne({ _id: _id }).exec();
 
     if (!session) {
