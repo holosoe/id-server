@@ -282,6 +282,7 @@ async function getSessionStatusV2(req, res) {
 
       return res.status(200).json({
         veriff: {
+          sid: session._id,
           status: decision?.verification?.status,
           sessionId: session.sessionId,
         },
@@ -294,6 +295,7 @@ async function getSessionStatusV2(req, res) {
 
       return res.status(200).json({
         idenfy: {
+          sid: session._id,
           status: idenfySession?.status,
           scanRef: session.scanRef,
         },
@@ -314,6 +316,7 @@ async function getSessionStatusV2(req, res) {
 
       return res.status(200).json({
         onfido: {
+          sid: session._id,
           status: check?.status,
           result: check?.result,
           check_id: session.check_id,
