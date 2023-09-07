@@ -70,12 +70,17 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   let expectedAmount;
   if (chainId === 10) {
     const expectedAmountInETH = await usdToETH(expectedAmountInUSD);
-    expectedAmount = ethers.utils.parseEther(expectedAmountInETH);
+    expectedAmount = ethers.utils.parseEther(expectedAmountInETH.toString());
   } else if (chainId === 250) {
     const expectedAmountInFTM = await usdToFTM(expectedAmountInUSD);
     expectedAmount = ethers.utils.parseEther(expectedAmountInFTM.toString());
-  } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-    expectedAmount = ethers.BigNumber.from("0");
+  }
+  // else if (process.env.NODE_ENV === "development" && chainId === 420) {
+  //   expectedAmount = ethers.BigNumber.from("0");
+  // }
+  else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    const expectedAmountInETH = await usdToETH(expectedAmountInUSD);
+    expectedAmount = ethers.utils.parseEther(expectedAmountInETH.toString());
   }
 
   if (tx.value.lt(expectedAmount)) {
