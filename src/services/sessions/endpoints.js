@@ -8,7 +8,7 @@ import {
 } from "../../utils/onfido.js";
 import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
-import { validateTxForIDVSessionCreation, refundTxSender } from "./functions.js";
+import { validateTxForIDVSessionCreation, refundMintFee } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 // const postSessionsLogger = logger.child({
@@ -225,8 +225,17 @@ async function createOnfidoCheckEndpoint(req, res) {
  */
 async function refund(req, res) {
   const _id = req.params._id;
+  const to = req.body.to;
 
   try {
+    if (!to || to.length !== 42) {
+      return res
+        .status(400)
+        .json({
+          error: "to is required and must be a 42-character hexstring (including 0x)",
+        });
+    }
+
     const session = await Session.findOne({ _id: _id }).exec();
 
     if (!session) {
@@ -253,7 +262,7 @@ async function refund(req, res) {
     await newMutex.save();
 
     // Perform refund logic
-    const response = await refundTxSender(session);
+    const response = await refundMintFee(session, to);
 
     // Delete mutex
     await SessionRefundMutex.deleteOne({ _id: _id }).exec();

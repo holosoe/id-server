@@ -103,7 +103,7 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   return {};
 }
 
-async function refundTxSender(session) {
+async function refundMintFee(session, to) {
   let provider;
   if (session.chainId === 10) {
     provider = optimismProvider;
@@ -142,7 +142,7 @@ async function refundTxSender(session) {
   }
 
   const txResponse = await wallet.sendTransaction({
-    to: tx.from,
+    to: to,
     value: refundAmount,
   });
 
@@ -160,4 +160,4 @@ async function refundTxSender(session) {
   };
 }
 
-export { validateTxForIDVSessionCreation, refundTxSender };
+export { validateTxForIDVSessionCreation, refundMintFee };
