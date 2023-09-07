@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import { Session, SessionRefundMutex } from "../../init.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
@@ -229,11 +230,9 @@ async function refund(req, res) {
 
   try {
     if (!to || to.length !== 42) {
-      return res
-        .status(400)
-        .json({
-          error: "to is required and must be a 42-character hexstring (including 0x)",
-        });
+      return res.status(400).json({
+        error: "to is required and must be a 42-character hexstring (including 0x)",
+      });
     }
 
     const session = await Session.findOne({ _id: _id }).exec();
@@ -302,7 +301,13 @@ async function getSessions(req, res) {
 
     let sessions;
     if (id) {
-      sessions = await Session.find({ _id: id }).exec();
+      let objectId = null;
+      try {
+        objectId = new ObjectId(id);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid id" });
+      }
+      sessions = await Session.find({ _id: objectId }).exec();
     } else {
       sessions = await Session.find({ sigDigest }).exec();
     }
