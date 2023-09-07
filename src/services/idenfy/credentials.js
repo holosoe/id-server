@@ -354,6 +354,7 @@ async function getCredentials(req, res) {
       await saveCollisionMetadata(uuid, scanRef, verificationData);
 
       endpointLogger.error({ uuid }, "User has already registered.");
+      await updateSessionStatus(scanRef, sessionStatusEnum.VERIFICATION_FAILED);
       return res
         .status(400)
         .json({ error: `User has already registered. User ID: ${user._id}` });
