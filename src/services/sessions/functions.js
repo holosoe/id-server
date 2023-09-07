@@ -64,7 +64,8 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   }
 
   // NOTE: This const must stay in sync with the frontend.
-  const expectedAmountInUSD = 12.47;
+  // We allow a 2% margin of error.
+  const expectedAmountInUSD = 12.47 * 0.98;
 
   let expectedAmount;
   if (chainId === 10) {
