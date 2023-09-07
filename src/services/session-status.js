@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ObjectId } from "mongodb";
 import { Session, IDVSessions } from "../init.js";
 import logger from "../utils/logger.js";
 import { getVeriffSessionDecision } from "../utils/veriff.js";
@@ -268,7 +269,14 @@ async function getSessionStatusV2(req, res) {
       return res.status(400).json({ error: "Missing sid" });
     }
 
-    const session = await Session.findOne({ _id: sid }).exec();
+    let objectId = null;
+    try {
+      objectId = new ObjectId(sid);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid sid" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });

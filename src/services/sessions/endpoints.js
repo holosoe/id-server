@@ -101,7 +101,14 @@ async function createIdvSession(req, res) {
       return res.status(400).json({ error: "txHash is required" });
     }
 
-    const session = await Session.findOne({ _id: _id }).exec();
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
@@ -194,7 +201,14 @@ async function createOnfidoCheckEndpoint(req, res) {
   try {
     const _id = req.params._id;
 
-    const session = await Session.findOne({ _id: _id }).exec();
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
@@ -235,7 +249,14 @@ async function refund(req, res) {
       });
     }
 
-    const session = await Session.findOne({ _id: _id }).exec();
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
