@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import registerVouched from "./routes/register-vouched.js";
-import vouchedMisc from "./routes/vouched.js";
 import veriff from "./routes/veriff.js";
 import idenfy from "./routes/idenfy.js";
 import onfido from "./routes/onfido.js";
@@ -23,8 +21,6 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
-app.use("/v2/registerVouched", registerVouched);
-app.use("/vouched", vouchedMisc);
 app.use("/credentials", credentials);
 app.use("/proof-metadata", proofMetadata);
 app.use("/veriff", veriff);
@@ -37,7 +33,6 @@ app.use("/sessions", sessions);
 
 app.get("/", (req, res) => {
   const routes = [
-    "GET /registerVouched/vouchedCredentials",
     "GET /veriff/credentials",
     "GET /credentials",
     "POST /credentials",

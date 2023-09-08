@@ -29,15 +29,6 @@ function validateEnv() {
   assert.ok(process.env.NODE_ENV, "NODE_ENV environment variable is not set");
 
   assert.ok(
-    process.env.VOUCHED_PUBLIC_KEY,
-    "VOUCHED_PUBLIC_KEY environment variable is not set"
-  );
-  assert.ok(
-    process.env.VOUCHED_PRIVATE_KEY,
-    "VOUCHED_PRIVATE_KEY environment variable is not set"
-  );
-
-  assert.ok(
     process.env.VERIFF_PUBLIC_API_KEY,
     "VERIFF_PUBLIC_API_KEY environment variable is not set"
   );
@@ -75,18 +66,10 @@ function validateEnv() {
 async function initializeDailyVerificationCount(DailyVerificationCount) {
   const DailyverificationCountCollection = await DailyVerificationCount.find();
   if (DailyverificationCountCollection.length == 0) {
-    const url = `https://verify.vouched.id/api/jobs?page=1&pageSize=1`;
-    const resp = await axios.get(url, {
-      headers: { "X-API-Key": process.env.VOUCHED_PRIVATE_KEY },
-    });
-    const vouchedJobCount = resp.data?.total || 0;
     // TODO: Get total Veriff verifications
     // TODO: Get total iDenfy verifications
     const newDailyVerificationCount = new DailyVerificationCount({
       date: new Date().toISOString().slice(0, 10),
-      vouched: {
-        jobCount: vouchedJobCount,
-      },
       veriff: {
         sessionCount: 0,
       },
@@ -344,12 +327,6 @@ async function initializeMongoDb() {
     date: {
       type: String, // use: new Date().toISOString().slice(0, 10)
       required: true,
-    },
-    vouched: {
-      type: {
-        jobCount: Number,
-      },
-      required: false,
     },
     veriff: {
       type: {
