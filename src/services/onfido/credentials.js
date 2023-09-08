@@ -332,7 +332,7 @@ async function updateSessionStatus(check_id, status) {
 /**
  * ENDPOINT
  *
- * Allows user to retrieve their Vouched verification info
+ * Allows user to retrieve their signed verification info
  */
 async function getCredentials(req, res) {
   try {
