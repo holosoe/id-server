@@ -8,6 +8,7 @@ import proofMetadata from "./routes/proof-metadata.js";
 import admin from "./routes/admin.js";
 import sessionStatus from "./routes/session-status.js";
 import ipInfo from "./routes/ip-info.js";
+import prices from "./routes/prices.js";
 import sessions from "./routes/sessions.js";
 
 const app = express();
@@ -30,6 +31,7 @@ app.use("/admin", admin);
 app.use("/session-status", sessionStatus);
 app.use("/ip-info", ipInfo);
 app.use("/sessions", sessions);
+app.use("/prices", prices);
 
 app.get("/", (req, res) => {
   const routes = [
