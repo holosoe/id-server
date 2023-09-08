@@ -69,7 +69,8 @@ async function deleteUserVerification(req, res) {
     // NOTE: If we add other verification providers, we need to update the following line
     const sessionCountToday =
       (verificationCountDoc?.veriff?.sessionCount ?? 0) +
-      (verificationCountDoc?.vouched?.jobCount ?? 0);
+      (verificationCountDoc?.idenfy?.sessionCount ?? 0) +
+      (verificationCountDoc?.onfido?.applicantCount ?? 0);
     const deletionCountDoc = await DailyVerificationDeletions.findOne({
       date: new Date().toISOString().slice(0, 10),
     }).exec();
