@@ -226,6 +226,10 @@ async function initializeMongoDb() {
     // provided by the IDV provider). The possible values of status are:
     // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED' | 'REFUNDED'
     status: String,
+    deletedFromIDVProvider: {
+      type: Boolean,
+      required: false,
+    },
     txHash: {
       type: String,
       required: false,
