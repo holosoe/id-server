@@ -87,7 +87,7 @@ export async function getIdenfySessionVerificationData(scanRef) {
 
 export async function deleteIdenfySession(scanRef) {
   try {
-    const resp = await axios.post(
+    return await axios.post(
       "https://ivs.idenfy.com/api/v2/delete",
       {
         scanRef,
@@ -101,7 +101,6 @@ export async function deleteIdenfySession(scanRef) {
         },
       }
     );
-    return resp.data;
   } catch (err) {
     console.error(
       `Error deleting idenfy session (scanRef: ${scanRef}):`,

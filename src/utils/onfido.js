@@ -131,7 +131,7 @@ export async function getOnfidoReports(report_ids) {
 
 export async function deleteOnfidoApplicant(applicant_id) {
   try {
-    const resp = await axios.delete(
+    return await axios.delete(
       `https://api.us.onfido.com/v3.6/applicants/${applicant_id}`,
       {
         headers: {
@@ -140,7 +140,6 @@ export async function deleteOnfidoApplicant(applicant_id) {
         },
       }
     );
-    return resp.data;
   } catch (err) {
     console.log(
       `Error deleting Onfido applicant with applicant_id ${applicant_id}`,
