@@ -58,6 +58,8 @@ Open a terminal window, navigate to the root directory of this repo, and run:
 
         npm run start:dev
 
+Note that the daemon can also be run. However, for development, running the daemon is not necessary.
+
 ## Test
 
 We use mocha for tests. Run tests with:
