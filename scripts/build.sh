@@ -25,4 +25,4 @@ if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
     exit 1;
 fi
 
-docker build -f Dockerfile -t id-server $REPO_DIR
+docker build -f Dockerfile.server -t id-server $REPO_DIR

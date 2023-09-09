@@ -23,6 +23,6 @@ if [[ "$TARGET_ENV" != "dev" && "$TARGET_ENV" != "prod" ]]; then
     exit 1;
 fi
 
-docker build -f Dockerfile -t id-server $REPO_DIR
+docker build -f Dockerfile.server -t id-server $REPO_DIR
 printf "\n"
 docker run --env-file $REPO_DIR/.env.docker.$TARGET_ENV -p 3000:3000 id-server
