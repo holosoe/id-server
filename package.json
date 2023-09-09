@@ -4,6 +4,7 @@
     "start:dev": "bash scripts/run.sh dev",
     "start:prod": "bash scripts/run.sh prod",
     "build:prod": "bash scripts/build.sh prod",
+    "dev-daemon": "cargo run --manifest-path=./daemon/Cargo.toml",
     "test": "TESTING=true npx mocha --timeout 5s"
   },
   "type": "module",
