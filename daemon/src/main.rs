@@ -10,8 +10,7 @@ struct DeleteUserDataResponse {
     error: Option<String>,
 }
 
-/// Tell the relayer to write the merkle tree to a file.
-async fn trigger_deletion_of_user_idv_data() {
+fn get_id_server_url() -> String {
     let environment = env::var("ENVIRONMENT").expect("ENVIRONMENT must be set");
     
     let id_server_url = if environment == "dev" {
@@ -19,7 +18,12 @@ async fn trigger_deletion_of_user_idv_data() {
     } else {
         "https://id-server.holonym.io"
     };
-    let url = id_server_url.to_owned() + "/admin/user-idv-data";
+    id_server_url.to_owned() + "/admin/user-idv-data"
+}
+
+/// Tell the relayer to write the merkle tree to a file.
+async fn trigger_deletion_of_user_idv_data() {
+    let url = get_id_server_url();
 
     let api_key = env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY must be set");
 
