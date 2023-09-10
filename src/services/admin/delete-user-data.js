@@ -109,7 +109,9 @@ async function deleteUserData(req, res) {
     return res.status(200).json({ message: "Success" });
   } catch (err) {
     console.log("deleteUserData: Error encountered (a)", err.message);
-    console.log("deleteUserData: Error encountered (b)", err?.response?.data);
+    if (err?.response?.data)
+      console.log("deleteUserData: Error encountered (b)", err?.response?.data);
+    else console.log("deleteUserData: Error encountered (b)", err);
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
