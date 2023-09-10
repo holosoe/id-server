@@ -1,19 +1,13 @@
 import axios from "axios";
 import { ethers } from "ethers";
 import { Session } from "../../init.js";
-import { idServerPaymentAddress, sessionStatusEnum } from "../../constants/misc.js";
-
-const optimismProvider = new ethers.providers.AlchemyProvider(
-  "optimism",
-  process.env.ALCHEMY_APIKEY
-);
-const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
-  "optimism-goerli",
-  process.env.ALCHEMY_APIKEY
-);
-const fantomProvider = new ethers.providers.JsonRpcProvider(
-  `https://fantom-rpc.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_APIKEY}`
-);
+import {
+  idServerPaymentAddress,
+  sessionStatusEnum,
+  optimismProvider,
+  optimismGoerliProvider,
+  fantomProvider,
+} from "../../constants/misc.js";
 
 async function usdToETH(usdAmount) {
   const { data } = await axios.get(

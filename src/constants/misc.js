@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+
 export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
 
 export const holonymIssuers = [
@@ -29,3 +31,15 @@ export const sessionStatusEnum = {
   VERIFICATION_FAILED: "VERIFICATION_FAILED",
   REFUNDED: "REFUNDED",
 };
+
+export const optimismProvider = new ethers.providers.AlchemyProvider(
+  "optimism",
+  process.env.ALCHEMY_APIKEY
+);
+export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
+  "optimism-goerli",
+  process.env.ALCHEMY_APIKEY
+);
+export const fantomProvider = new ethers.providers.JsonRpcProvider(
+  `https://fantom-rpc.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_APIKEY}`
+);
