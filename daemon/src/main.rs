@@ -6,7 +6,8 @@ use dotenv::dotenv;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct DeleteUserDataResponse {
-    message: String,
+    message: Option<String>,
+    error: Option<String>,
 }
 
 /// Tell the relayer to write the merkle tree to a file.
