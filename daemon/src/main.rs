@@ -19,12 +19,12 @@ async fn trigger_deletion_of_user_idv_data() {
     } else {
         "https://id-server.holonym.io"
     };
-    let url = id_server_url.to_owned() + "/admin/delete-user-data";
+    let url = id_server_url.to_owned() + "/admin/user-idv-data";
 
     let api_key = env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY must be set");
 
     let client = reqwest::Client::new();
-    let req_result = client.post(url).header("x-api-key", api_key).send().await;
+    let req_result = client.delete(url).header("x-api-key", api_key).send().await;
 
     match req_result {
         Ok(resp) => {
