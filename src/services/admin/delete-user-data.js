@@ -95,7 +95,7 @@ async function deleteUserData(req, res) {
     const thirtyDaysAgo = subDays(new Date(), 30);
     const sessions2 = await Session.find({
       _id: {
-        $lt: dateToObjectId(thirtyDaysAgo / 1000),
+        $lt: dateToObjectId(thirtyDaysAgo),
       },
       status: { $in: [sessionStatusEnum.IN_PROGRESS, sessionStatusEnum.REFUNDED] },
       deletedFromIDVProvider: { $eq: false },
