@@ -18,13 +18,17 @@ env:
   ECS_SERVICE: prod-id-server-ecs-service
   ECS_CLUSTER: prod-id-server-ecs-cluster
   TASK_DEF_NAME: prod-id-server-task-def
+  DAEMON_ECS_SERVICE: prod-id-server-daemon-ecs-service
+  DAEMON_TASK_DEF_NAME: prod-id-server-daemon-task-def
   CONTAINER_NAME: id-server
   IMAGE_NAME: holonym/id-server:latest
+  DAEMON_CONTAINER_NAME: id-server-daemon
+  DAEMON_IMAGE_NAME: holonym/id-server-daemon:latest
   IAM_ROLE: arn:aws:iam::187023981994:role/github-actions-role
 
 jobs:
   # Build Docker image and push to Docker Hub
-  docker-build-push:
+  docker-build-push-server:
     name: Build and push
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -44,10 +48,32 @@ jobs:
           file: ./Dockerfile.server
           push: true
           tags: holonym/id-server:latest
+
+  docker-build-push-daemon:
+    name: Build and push id-server daemon
+    runs-on: ubuntu-latest
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          file: ./Dockerfile.daemon
+          push: true
+          tags: ${{ env.DAEMON_IMAGE_NAME }}
+
   # Deploy to Amazon ECS
-  aws-deploy:
+  aws-deploy-server:
     name: Deploy to AWS
-    needs: docker-build-push
+    needs: docker-build-push-server
     runs-on: ubuntu-latest
 
     steps:
@@ -77,5 +103,40 @@ jobs:
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+  aws-deploy-daemon:
+    name: Deploy daemon to AWS
+    needs: docker-build-push-daemon
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.IAM_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download ECS task definition
+        run: |
+          aws ecs describe-task-definition --task-definition $DAEMON_TASK_DEF_NAME --query taskDefinition > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.DAEMON_CONTAINER_NAME }}
+          image: ${{ env.DAEMON_IMAGE_NAME }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.DAEMON_ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
