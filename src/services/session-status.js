@@ -283,6 +283,16 @@ async function getSessionStatusV2(req, res) {
     }
 
     if (session.idvProvider === "veriff") {
+      if (!session.sessionId) {
+        return res.status(200).json({
+          veriff: {
+            sid: session._id,
+            status: null,
+            sessionId: null,
+          },
+        });
+      }
+
       const decision = await getVeriffSessionDecision(session.sessionId);
       if (!decision) {
         return res.status(404).json({ error: "IDV Session not found" });
