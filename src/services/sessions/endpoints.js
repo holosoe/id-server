@@ -30,6 +30,12 @@ const createIdvSessionLogger = logger.child({
 //     ...pinoOptions.base,
 //   },
 // });
+const createOnfidoCheckLogger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/idv-session/onfido/check] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
 
 // Session object
 // - _id: created by id-server (not by an idv provider)
@@ -144,6 +150,11 @@ async function createIdvSession(req, res) {
       session.veriffUrl = veriffSession.verification.url;
       await session.save();
 
+      createIdvSessionLogger.info(
+        { sessionId: veriffSession.verification.id, idvProvider: "veriff" },
+        "Created Veriff session"
+      );
+
       return res.status(200).json({
         url: veriffSession.verification.url,
         id: veriffSession.verification.id,
@@ -158,6 +169,11 @@ async function createIdvSession(req, res) {
       session.idenfyAuthToken = tokenData.authToken;
       await session.save();
 
+      createIdvSessionLogger.info(
+        { authToken: tokenData.authToken, idvProvider: "idenfy" },
+        "Created iDenfy session"
+      );
+
       return res.status(200).json({
         url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
         scanRef: tokenData.scanRef,
@@ -169,6 +185,11 @@ async function createIdvSession(req, res) {
       }
 
       session.applicant_id = applicant.id;
+
+      createIdvSessionLogger.info(
+        { applicantId: applicant.id, idvProvider: "onfido" },
+        "Created Onfido applicant"
+      );
 
       const sdkTokenData = await createOnfidoSdkToken(applicant.id);
       if (!sdkTokenData) {
@@ -235,6 +256,11 @@ async function createOnfidoCheckEndpoint(req, res) {
 
     session.check_id = check.id;
     await session.save();
+
+    createOnfidoCheckLogger.info(
+      { check_id: check.id, applicant_id: session.applicant_id },
+      "Created Onfido check"
+    );
 
     return res.status(200).json({
       id: check.id,
