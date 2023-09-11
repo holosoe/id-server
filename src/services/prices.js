@@ -1,4 +1,12 @@
 import axios from "axios";
+import { pinoOptions, logger } from "../utils/logger.js";
+
+const endpointLogger = logger.child({
+  msgPrefix: "[GET /prices] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
 
 const ethereumCMCID = 1027;
 const fantomCMCID = 3513;
@@ -33,8 +41,19 @@ async function getPrice(req, res) {
       price,
     });
   } catch (err) {
-    console.log("getPrice: Error encountered (a)", err.message);
-    console.log("getPrice: Error encountered (b)", err?.response?.data);
+    if (err.response) {
+      endpointLogger.error(
+        { error: err.response.data },
+        "Error getting price from CMC"
+      );
+    } else if (err.request) {
+      endpointLogger.error(
+        { error: err.request.data },
+        "Error getting price from CMC"
+      );
+    } else {
+      endpointLogger.error({ error: err.message }, "Error getting price from CMC");
+    }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
