@@ -1,5 +1,6 @@
 import axios from "axios";
 import { pinoOptions, logger } from "../utils/logger.js";
+import { getLatestCryptoPrice } from "../utils/cmc.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /prices] ",
@@ -25,16 +26,7 @@ async function getPrice(req, res) {
 
     const id = slugToID[slug];
 
-    const resp = await axios.get(
-      `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?id=${id}`,
-      {
-        headers: {
-          "X-CMC_PRO_API_KEY": process.env.CMC_API_KEY,
-          // "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
+    const resp = await getLatestCryptoPrice(id);
     const price = resp?.data?.data?.[id]?.quote?.USD?.price;
 
     return res.status(200).json({
