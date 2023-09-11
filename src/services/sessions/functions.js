@@ -1,4 +1,3 @@
-import axios from "axios";
 import { ethers } from "ethers";
 import { Session } from "../../init.js";
 import {
@@ -8,21 +7,19 @@ import {
   optimismGoerliProvider,
   fantomProvider,
 } from "../../constants/misc.js";
+import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
+import { getLatestCryptoPrice } from "../../utils/cmc.js";
 
 async function usdToETH(usdAmount) {
-  const { data } = await axios.get(
-    "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=USD"
-  );
-  const ethPrice = data.ethereum.usd;
+  const resp = await getLatestCryptoPrice(ethereumCMCID);
+  const ethPrice = resp?.data?.data?.[ethereumCMCID]?.quote?.USD?.price;
   const ethAmount = usdAmount / ethPrice;
   return ethAmount;
 }
 
 async function usdToFTM(usdAmount) {
-  const { data } = await axios.get(
-    "https://api.coingecko.com/api/v3/simple/price?ids=fantom&vs_currencies=USD"
-  );
-  const fantomPrice = data.fantom.usd;
+  const resp = await getLatestCryptoPrice(fantomCMCID);
+  const fantomPrice = resp?.data?.data?.[fantomCMCID]?.quote?.USD?.price;
   const ftmAmount = usdAmount / fantomPrice;
   return ftmAmount;
 }

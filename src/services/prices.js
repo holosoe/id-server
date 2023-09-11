@@ -1,6 +1,6 @@
-import axios from "axios";
 import { pinoOptions, logger } from "../utils/logger.js";
 import { getLatestCryptoPrice } from "../utils/cmc.js";
+import { slugToID } from "../constants/cmc.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /prices] ",
@@ -8,14 +8,6 @@ const endpointLogger = logger.child({
     ...pinoOptions.base,
   },
 });
-
-const ethereumCMCID = 1027;
-const fantomCMCID = 3513;
-
-const slugToID = {
-  ethereum: ethereumCMCID,
-  fantom: fantomCMCID,
-};
 
 async function getPrice(req, res) {
   try {
