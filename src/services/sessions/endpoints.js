@@ -18,12 +18,12 @@ import { pinoOptions, logger } from "../../utils/logger.js";
 //     ...pinoOptions.base,
 //   },
 // });
-// const createIdvSessionLogger = logger.child({
-//   msgPrefix: "[POST /sessions/:_id/idv-session] ",
-//   base: {
-//     ...pinoOptions.base,
-//   },
-// });
+const createIdvSessionLogger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/idv-session] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
 // const getSessionsLogger = logger.child({
 //   msgPrefix: "[GET /sessions] ",
 //   base: {
@@ -186,7 +186,20 @@ async function createIdvSession(req, res) {
       return res.status(500).json({ error: "Invalid idvProvider" });
     }
   } catch (err) {
-    console.log("POST /sessions/:_id/idv-session: Error encountered", err.message);
+    if (err.response) {
+      createIdvSessionLogger.error(
+        { error: err.response.data },
+        "Error creating IDV session"
+      );
+    } else if (err.request) {
+      createIdvSessionLogger.error(
+        { error: err.request.data },
+        "Error creating IDV session"
+      );
+    } else {
+      createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
+    }
+
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
