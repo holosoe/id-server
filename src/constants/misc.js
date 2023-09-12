@@ -41,5 +41,5 @@ export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
   process.env.ALCHEMY_APIKEY
 );
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
-  `https://fantom-rpc.gateway.pokt.network/v1/lb/${process.env.POCKET_NETWORK_APIKEY}`
+  "https://rpc.ftm.tools"
 );
