@@ -1,5 +1,10 @@
 import { ethers } from "ethers";
-import { optimismProvider, fantomProvider } from "../../constants/misc.js";
+import {
+  optimismProvider,
+  fantomProvider,
+  companyAddressOP,
+  companyAddressFTM,
+} from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 // const endpointLogger = logger.child({
@@ -33,7 +38,7 @@ async function transferFunds(req, res) {
     // We keep some ETH to pay for refunds.
     if (balanceOptimism.gte(ethers.utils.parseEther("0.5"))) {
       const tx = await optimismWallet.sendTransaction({
-        to: process.env.COMPANY_EVM_ADDRESS,
+        to: companyAddressOP,
         value: ethers.utils.parseEther("0.4"),
       });
 
@@ -51,7 +56,7 @@ async function transferFunds(req, res) {
     // We keep some FTM to pay for refunds.
     if (balanceFantom.gte(ethers.utils.parseEther("5000"))) {
       const tx = await fantomWallet.sendTransaction({
-        to: process.env.COMPANY_EVM_ADDRESS,
+        to: companyAddressFTM,
         value: ethers.utils.parseEther("4000"),
       });
 

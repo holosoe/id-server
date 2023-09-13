@@ -2,6 +2,11 @@ import { ethers } from "ethers";
 
 export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
 
+// Holonym multisig on Optimism
+export const companyAddressOP = "0x03627Ac5A08056B50084d8B9cf550EB74a13C78A";
+
+export const companyAddressFTM = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
+
 export const holonymIssuers = [
   "0x8281316ac1d51c94f2de77575301cef615adea84", // gov-id
   "0xb625e69ab86db23c23682875ba10fbc8f8756d16", // phone
