@@ -56,7 +56,7 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
 
   // NOTE: This const must stay in sync with the frontend.
   // We allow a 2% margin of error.
-  const expectedAmountInUSD = 12.47 * 0.98;
+  const expectedAmountInUSD = 8.0 * 0.98;
 
   let expectedAmount;
   if (chainId === 10) {
@@ -122,9 +122,9 @@ async function refundMintFee(session, to) {
 
   const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
 
-  // Refund 80.2% of the transaction amount. This approximates the mint cost to
+  // Refund 69.1% of the transaction amount. This approximates the mint cost to
   // a fraction of a cent.
-  const refundAmount = tx.value.mul(802).div(1000);
+  const refundAmount = tx.value.mul(691).div(1000);
 
   // Ensure wallet has enough funds to refund
   const balance = await wallet.getBalance();
