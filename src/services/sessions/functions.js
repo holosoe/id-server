@@ -58,21 +58,26 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   // We allow a 2% margin of error.
   const expectedAmountInUSD = 8.0 * 0.98;
 
-  let expectedAmount;
+  let expectedAmountInToken;
   if (chainId === 10) {
-    const expectedAmountInETH = await usdToETH(expectedAmountInUSD);
-    expectedAmount = ethers.utils.parseEther(expectedAmountInETH.toString());
+    expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   } else if (chainId === 250) {
-    const expectedAmountInFTM = await usdToFTM(expectedAmountInUSD);
-    expectedAmount = ethers.utils.parseEther(expectedAmountInFTM.toString());
+    expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
   }
   // else if (process.env.NODE_ENV === "development" && chainId === 420) {
   //   expectedAmount = ethers.BigNumber.from("0");
   // }
   else if (process.env.NODE_ENV === "development" && chainId === 420) {
-    const expectedAmountInETH = await usdToETH(expectedAmountInUSD);
-    expectedAmount = ethers.utils.parseEther(expectedAmountInETH.toString());
+    expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   }
+
+  // Round to 18 decimal places to avoid this underflow error from ethers:
+  // "fractional component exceeds decimals"
+  const decimals = 18;
+  const multiplier = 10 ** decimals;
+  const rounded = Math.round(expectedAmountInToken * multiplier) / multiplier;
+
+  const expectedAmount = ethers.utils.parseEther(rounded.toString());
 
   if (tx.value.lt(expectedAmount)) {
     return {
