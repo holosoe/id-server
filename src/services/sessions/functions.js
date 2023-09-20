@@ -3,6 +3,7 @@ import { Session } from "../../init.js";
 import {
   idServerPaymentAddress,
   sessionStatusEnum,
+  ethereumProvider,
   optimismProvider,
   optimismGoerliProvider,
   fantomProvider,
@@ -32,7 +33,9 @@ async function usdToFTM(usdAmount) {
  */
 async function validateTxForIDVSessionCreation(chainId, txHash) {
   let tx;
-  if (chainId === 10) {
+  if (chainId === 1) {
+    tx = await ethereumProvider.getTransaction(txHash);
+  } else if (chainId === 10) {
     tx = await optimismProvider.getTransaction(txHash);
   } else if (chainId === 250) {
     tx = await fantomProvider.getTransaction(txHash);
@@ -59,7 +62,7 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   const expectedAmountInUSD = 8.0 * 0.98;
 
   let expectedAmountInToken;
-  if (chainId === 10) {
+  if ([1, 10].includes(chainId)) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   } else if (chainId === 250) {
     expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
@@ -106,7 +109,9 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
 
 async function refundMintFee(session, to) {
   let provider;
-  if (session.chainId === 10) {
+  if (session.chainId === 1) {
+    provider = ethereumProvider;
+  } else if (session.chainId === 10) {
     provider = optimismProvider;
   } else if (session.chainId === 250) {
     provider = fantomProvider;

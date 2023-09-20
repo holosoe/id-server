@@ -21,6 +21,7 @@ export const relayerURL =
       "https://relayer.holonym-internal.net";
 
 const supportedChainIds = [
+  1, // Ethereum
   10, // Optimism
   250, // Fantom
 ];
@@ -37,6 +38,10 @@ export const sessionStatusEnum = {
   REFUNDED: "REFUNDED",
 };
 
+export const ethereumProvider = new ethers.providers.AlchemyProvider(
+  "homestead",
+  process.env.ALCHEMY_APIKEY
+);
 export const optimismProvider = new ethers.providers.AlchemyProvider(
   "optimism",
   process.env.ALCHEMY_APIKEY
