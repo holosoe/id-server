@@ -24,6 +24,12 @@ const createIdvSessionLogger = logger.child({
     ...pinoOptions.base,
   },
 });
+const refreshOnfidoTokenLogger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/idv-session/onfido/token] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
 // const getSessionsLogger = logger.child({
 //   msgPrefix: "[GET /sessions] ",
 //   base: {
@@ -225,6 +231,41 @@ async function createIdvSession(req, res) {
   }
 }
 
+async function refreshOnfidoToken(req, res) {
+  const _id = req.params._id;
+
+  try {
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (!session.applicant_id) {
+      return res.status(400).json({ error: "Session is missing applicant_id" });
+    }
+
+    const sdkTokenData = await createOnfidoSdkToken(session.applicant_id);
+
+    session.onfido_sdk_token = sdkTokenData.token;
+    await session.save();
+
+    return res.status(200).json({
+      sdk_token: sdkTokenData.token,
+    });
+  } catch (err) {
+    refreshOnfidoTokenLogger.error({ error: err }, "Error creating Onfido check");
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
 async function createOnfidoCheckEndpoint(req, res) {
   // NOTE:
   // From Onfido docs:
@@ -382,6 +423,7 @@ async function getSessions(req, res) {
 export {
   postSession,
   createIdvSession,
+  refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
   getSessions,
