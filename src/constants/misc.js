@@ -2,6 +2,9 @@ import { ethers } from "ethers";
 
 export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
 
+// Holonym multisig on Ethereum
+export const companyENS = "holonym.eth";
+
 // Holonym multisig on Optimism
 export const companyAddressOP = "0x03627Ac5A08056B50084d8B9cf550EB74a13C78A";
 

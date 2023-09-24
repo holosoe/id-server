@@ -3,6 +3,7 @@ import {
   ethereumProvider,
   optimismProvider,
   fantomProvider,
+  companyENS,
   companyAddressOP,
   companyAddressFTM,
 } from "../../constants/misc.js";
@@ -29,21 +30,21 @@ async function transferFunds(req, res) {
   const txReceipts = {};
 
   try {
-    // const mainnetWallet = new ethers.Wallet(
-    //   process.env.PAYMENTS_PRIVATE_KEY,
-    //   ethereumProvider
-    // );
-    // const balanceMainnet = await mainnetWallet.getBalance();
-    // // If balance is less than 0.5 ETH, don't transfer. Otherwise, send 0.4 ETH.
-    // // We keep some ETH to pay for refunds.
-    // if (balanceMainnet.gte(ethers.utils.parseEther("0.5"))) {
-    //   const tx = await mainnetWallet.sendTransaction({
-    //     to: companyAddressFTM,
-    //     value: ethers.utils.parseEther("0.4"),
-    //   });
+    const mainnetWallet = new ethers.Wallet(
+      process.env.PAYMENTS_PRIVATE_KEY,
+      ethereumProvider
+    );
+    const balanceMainnet = await mainnetWallet.getBalance();
+    // If balance is less than 0.5 ETH, don't transfer. Otherwise, send 0.4 ETH.
+    // We keep some ETH to pay for refunds.
+    if (balanceMainnet.gte(ethers.utils.parseEther("0.5"))) {
+      const tx = await mainnetWallet.sendTransaction({
+        to: companyENS,
+        value: ethers.utils.parseEther("0.4"),
+      });
 
-    //   txReceipts["ethereum"] = await tx.wait();
-    // }
+      txReceipts["ethereum"] = await tx.wait();
+    }
 
     // Transfer ETH on Optimism \\
     const optimismWallet = new ethers.Wallet(
