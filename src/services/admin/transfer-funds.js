@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import {
+  ethereumProvider,
   optimismProvider,
   fantomProvider,
   companyAddressOP,
@@ -28,6 +29,22 @@ async function transferFunds(req, res) {
   const txReceipts = {};
 
   try {
+    // const mainnetWallet = new ethers.Wallet(
+    //   process.env.PAYMENTS_PRIVATE_KEY,
+    //   ethereumProvider
+    // );
+    // const balanceMainnet = await mainnetWallet.getBalance();
+    // // If balance is less than 0.5 ETH, don't transfer. Otherwise, send 0.4 ETH.
+    // // We keep some ETH to pay for refunds.
+    // if (balanceMainnet.gte(ethers.utils.parseEther("0.5"))) {
+    //   const tx = await mainnetWallet.sendTransaction({
+    //     to: companyAddressFTM,
+    //     value: ethers.utils.parseEther("0.4"),
+    //   });
+
+    //   txReceipts["ethereum"] = await tx.wait();
+    // }
+
     // Transfer ETH on Optimism \\
     const optimismWallet = new ethers.Wallet(
       process.env.PAYMENTS_PRIVATE_KEY,
