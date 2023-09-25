@@ -18,6 +18,6 @@ router.post("/:_id/idv-session/onfido/token", refreshOnfidoToken);
 router.post("/:_id/idv-session/onfido/check", createOnfidoCheckEndpoint);
 router.get("/", getSessions);
 
-router.post("/:_id/idv-session/sandbox", createIdvSessionSandbox);
+// router.post("/:_id/idv-session/sandbox", createIdvSessionSandbox);
 
 export default router;
