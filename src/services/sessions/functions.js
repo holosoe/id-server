@@ -107,6 +107,86 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   return {};
 }
 
+/**
+ * TODO: DELETE THIS FUNCTION ONCE DONE WITH TESTING.
+ *
+ * Check blockchain for tx.
+ * - Ensure recipient of tx is id-server's address.
+ * - Ensure amount is > desired amount.
+ * - Ensure tx is confirmed.
+ */
+async function validateTxForIDVSessionCreationSandbox(chainId, txHash) {
+  let tx;
+  if (chainId === 1) {
+    tx = await ethereumProvider.getTransaction(txHash);
+  } else if (chainId === 10) {
+    tx = await optimismProvider.getTransaction(txHash);
+  } else if (chainId === 250) {
+    tx = await fantomProvider.getTransaction(txHash);
+  } else if (chainId === 420) {
+    tx = await optimismGoerliProvider.getTransaction(txHash);
+  }
+
+  if (!tx) {
+    return {
+      status: 400,
+      error: "Could not find transaction with given txHash",
+    };
+  }
+
+  if (idServerPaymentAddress !== tx.to.toLowerCase()) {
+    return {
+      status: 400,
+      error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
+    };
+  }
+
+  // NOTE: This const must stay in sync with the frontend.
+  // We allow a 2% margin of error.
+  const expectedAmountInUSD = 8.0 * 0.98;
+
+  let expectedAmountInToken;
+  if ([1, 10].includes(chainId)) {
+    expectedAmountInToken = await usdToETH(expectedAmountInUSD);
+  } else if (chainId === 250) {
+    expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
+  } else if (chainId === 420) {
+    expectedAmountInToken = await usdToETH(expectedAmountInUSD);
+  }
+
+  // Round to 18 decimal places to avoid this underflow error from ethers:
+  // "fractional component exceeds decimals"
+  const decimals = 18;
+  const multiplier = 10 ** decimals;
+  const rounded = Math.round(expectedAmountInToken * multiplier) / multiplier;
+
+  const expectedAmount = ethers.utils.parseEther(rounded.toString());
+
+  if (tx.value.lt(expectedAmount)) {
+    return {
+      status: 400,
+      error: `Invalid transaction amount. Amount must be greater than ${expectedAmount.toString()} on chain ${chainId}`,
+    };
+  }
+
+  if (!tx.blockHash || tx.confirmations === 0) {
+    return {
+      status: 400,
+      error: "Transaction has not been confirmed yet.",
+    };
+  }
+
+  const session = await Session.findOne({ txHash: txHash }).exec();
+  if (session) {
+    return {
+      status: 400,
+      error: "Transaction has already been used to pay for a session",
+    };
+  }
+
+  return {};
+}
+
 async function refundMintFee(session, to) {
   let provider;
   if (session.chainId === 1) {
@@ -166,4 +246,8 @@ async function refundMintFee(session, to) {
   };
 }
 
-export { validateTxForIDVSessionCreation, refundMintFee };
+export {
+  validateTxForIDVSessionCreation,
+  refundMintFee,
+  validateTxForIDVSessionCreationSandbox,
+};
