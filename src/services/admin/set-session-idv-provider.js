@@ -31,8 +31,8 @@ async function setSessionIdvProvider(req, res) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
-    const id = req.query.id;
-    const newIdvProvider = req.query.idvProvider;
+    const id = req.body.id;
+    const newIdvProvider = req.body.idvProvider;
 
     if (!id) {
       return res.status(400).json({ error: "No user ID specified." });
