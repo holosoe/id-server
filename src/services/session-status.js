@@ -303,12 +303,41 @@ async function getSessionStatusV2(req, res) {
           sid: session._id,
           status: decision?.verification?.status,
           sessionId: session.sessionId,
+          // failureReason should be populated with a reason for verification failure
+          // iff the verification failed. If verification is in progress, it should be null.
+          failureReason: decision?.verification?.reason,
         },
       });
     } else if (session.idvProvider === "idenfy") {
+      if (!session.scanRef) {
+        return res.status(200).json({
+          idenfy: {
+            sid: session._id,
+            status: null,
+            scanRef: null,
+          },
+        });
+      }
+
       const idenfySession = await getIdenfySession(session.scanRef);
       if (!idenfySession) {
         return res.status(404).json({ error: "IDV Session not found" });
+      }
+
+      let failureReason = undefined;
+      if (
+        (idenfySession?.fraudTags ?? []).length > 0 ||
+        (idenfySession?.mismatchTags ?? []).length > 0 ||
+        (idenfySession?.manualDocument &&
+          idenfySession.manualDocument !== "DOC_VALIDATED") ||
+        (idenfySession?.manualFace && idenfySession.manualFace !== "DOC_VALIDATED")
+      ) {
+        failureReason = {
+          fraudTags: idenfySession?.fraudTags,
+          mismatchTags: idenfySession?.mismatchTags,
+          manualDocument: idenfySession?.manualDocument,
+          manualFace: idenfySession?.manualFace,
+        };
       }
 
       return res.status(200).json({
@@ -316,6 +345,9 @@ async function getSessionStatusV2(req, res) {
           sid: session._id,
           status: idenfySession?.status,
           scanRef: session.scanRef,
+          // failureReason should be populated with a reason for verification failure
+          // iff the verification failed. If verification is in progress, it should be null.
+          failureReason,
         },
       });
     } else if (session.idvProvider === "onfido") {
@@ -332,12 +364,20 @@ async function getSessionStatusV2(req, res) {
         return res.status(404).json({ error: "IDV Session not found" });
       }
 
+      let failureReason = undefined;
+
+      if (check?.status === "complete" && check?.result === "consider") {
+        const reports = (await getOnfidoReports(check?.report_ids)) ?? [];
+        failureReason = getOnfidoVerificationFailureReasons(reports);
+      }
+
       return res.status(200).json({
         onfido: {
           sid: session._id,
           status: check?.status,
           result: check?.result,
           check_id: session.check_id,
+          failureReason,
         },
       });
     } else {
