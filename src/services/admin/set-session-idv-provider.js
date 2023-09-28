@@ -27,7 +27,7 @@ async function setSessionIdvProvider(req, res) {
   try {
     const apiKey = req.headers["x-api-key"];
 
-    if (apiKey !== process.env.ADMIN_API_KEY) {
+    if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
