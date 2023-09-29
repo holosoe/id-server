@@ -28,13 +28,6 @@ async function setSessionIdvProvider(req, res) {
     const apiKey = req.headers["x-api-key"];
 
     if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
-      // log first 3 letters of api key
-      console.log(
-        `Invalid API key: ${apiKey.slice(
-          0,
-          3
-        )}. Expected: ${process.env.ADMIN_API_KEY_LOW_PRIVILEGE.slice(0, 3)}`
-      );
       return res.status(401).json({ error: "Invalid API key." });
     }
 
