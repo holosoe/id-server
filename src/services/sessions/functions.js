@@ -9,6 +9,13 @@ import {
   fantomProvider,
 } from "../../constants/misc.js";
 import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
+import { createVeriffSession } from "../../utils/veriff.js";
+import { createIdenfyToken } from "../../utils/idenfy.js";
+import {
+  createOnfidoApplicant,
+  createOnfidoSdkToken,
+  createOnfidoCheck,
+} from "../../utils/onfido.js";
 import { getLatestCryptoPrice } from "../../utils/cmc.js";
 
 async function usdToETH(usdAmount) {
@@ -177,4 +184,73 @@ async function refundMintFee(session, to) {
   };
 }
 
-export { validateTxForIDVSessionCreation, refundMintFee };
+async function handleIdvSessionCreation(res, session, logger) {
+  if (session.idvProvider === "veriff") {
+    const veriffSession = await createVeriffSession();
+    if (!veriffSession) {
+      return res.status(500).json({ error: "Error creating Veriff session" });
+    }
+
+    session.sessionId = veriffSession.verification.id;
+    session.veriffUrl = veriffSession.verification.url;
+    await session.save();
+
+    logger.info(
+      { sessionId: veriffSession.verification.id, idvProvider: "veriff" },
+      "Created Veriff session"
+    );
+
+    return res.status(200).json({
+      url: veriffSession.verification.url,
+      id: veriffSession.verification.id,
+    });
+  } else if (session.idvProvider === "idenfy") {
+    const tokenData = await createIdenfyToken(session.sigDigest);
+    if (!tokenData) {
+      return res.status(500).json({ error: "Error creating iDenfy token" });
+    }
+
+    session.scanRef = tokenData.scanRef;
+    session.idenfyAuthToken = tokenData.authToken;
+    await session.save();
+
+    logger.info(
+      { authToken: tokenData.authToken, idvProvider: "idenfy" },
+      "Created iDenfy session"
+    );
+
+    return res.status(200).json({
+      url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
+      scanRef: tokenData.scanRef,
+    });
+  } else if (session.idvProvider === "onfido") {
+    const applicant = await createOnfidoApplicant();
+    if (!applicant) {
+      return res.status(500).json({ error: "Error creating Onfido applicant" });
+    }
+
+    session.applicant_id = applicant.id;
+
+    logger.info(
+      { applicantId: applicant.id, idvProvider: "onfido" },
+      "Created Onfido applicant"
+    );
+
+    const sdkTokenData = await createOnfidoSdkToken(applicant.id);
+    if (!sdkTokenData) {
+      return res.status(500).json({ error: "Error creating Onfido SDK token" });
+    }
+
+    session.onfido_sdk_token = sdkTokenData.token;
+    await session.save();
+
+    return res.status(200).json({
+      applicant_id: applicant.id,
+      sdk_token: sdkTokenData.token,
+    });
+  } else {
+    return res.status(500).json({ error: "Invalid idvProvider" });
+  }
+}
+
+export { validateTxForIDVSessionCreation, refundMintFee, handleIdvSessionCreation };
