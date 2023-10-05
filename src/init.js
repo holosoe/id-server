@@ -230,6 +230,21 @@ async function initializeMongoDb() {
       type: Boolean,
       required: false,
     },
+    // PayPal payment details
+    payPal: {
+      type: {
+        orders: {
+          type: [
+            {
+              id: String,
+              createdAt: Date,
+            },
+          ],
+          required: false,
+        },
+      },
+      required: false,
+    },
     txHash: {
       type: String,
       required: false,

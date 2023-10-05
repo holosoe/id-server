@@ -1,6 +1,7 @@
 import express from "express";
 import {
   postSession,
+  createPayPalOrder,
   createIdvSession,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
@@ -12,6 +13,7 @@ import {
 const router = express.Router();
 
 router.post("/", postSession);
+router.post("/:_id/paypal-order", createPayPalOrder);
 router.post("/:_id/idv-session", createIdvSession);
 router.post("/:_id/idv-session/refund", refund);
 router.post("/:_id/idv-session/onfido/token", refreshOnfidoToken);

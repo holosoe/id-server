@@ -1,3 +1,4 @@
+import axios from "axios";
 import { ObjectId } from "mongodb";
 import { Session, SessionRefundMutex } from "../../init.js";
 import { createVeriffSession } from "../../utils/veriff.js";
@@ -24,6 +25,12 @@ import { pinoOptions, logger } from "../../utils/logger.js";
 // });
 const createIdvSessionLogger = logger.child({
   msgPrefix: "[POST /sessions/:_id/idv-session] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
+const createPayPalOrderLogger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/paypal-order] ",
   base: {
     ...pinoOptions.base,
   },
@@ -93,6 +100,95 @@ async function postSession(req, res) {
     return res.status(201).json({ session });
   } catch (err) {
     console.log("POST /sessions: Error encountered", err.message);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+async function createPayPalOrder(req, res) {
+  try {
+    const _id = req.params._id;
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const url =
+      process.env.NODE_ENV === "development"
+        ? "https://api-m.sandbox.paypal.com/v2/checkout/orders"
+        : "";
+    const body = {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          // reference_id: `idv-session-${_id}`,
+          amount: {
+            currency_code: "USD",
+            value: "10.00",
+          },
+        },
+      ],
+      // payment_source: {
+      //   paypal: {
+      //     experience_context: {
+      //       payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+      //       brand_name: "EXAMPLE INC",
+      //       locale: "en-US",
+      //       landing_page: "LOGIN",
+      //       shipping_preference: "SET_PROVIDED_ADDRESS",
+      //       user_action: "PAY_NOW",
+      //       return_url: "https://example.com/returnUrl",
+      //       cancel_url: "https://example.com/cancelUrl",
+      //     },
+      //   },
+      // },
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        // TODO: Is PayPal-Request-Id necessary?
+        // "PayPal-Request-Id": "7b92603e-77ed-4896-8e78-5dea2050476a",
+        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+      },
+    };
+
+    const resp = await axios.post(url, body, config);
+
+    const order = resp.data;
+
+    if ((session.payPal?.orders ?? []).length > 0) {
+      session.payPal.orders.push({ id: order.id, createdAt: new Date() });
+    } else {
+      session.payPal = {
+        orders: [{ id: order.id, createdAt: new Date() }],
+      };
+    }
+
+    await session.save();
+
+    return res.status(201).json(order);
+  } catch (err) {
+    if (err.response) {
+      createPayPalOrderLogger.error(
+        { error: err.response.data },
+        "Error creating PayPal order"
+      );
+    } else if (err.request) {
+      createPayPalOrderLogger.error(
+        { error: err.request.data },
+        "Error creating PayPal order"
+      );
+    } else {
+      createPayPalOrderLogger.error({ error: err }, "Error creating PayPal order");
+    }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
@@ -572,6 +668,7 @@ async function createIdvSessionSandbox(req, res) {
 
 export {
   postSession,
+  createPayPalOrder,
   createIdvSession,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
