@@ -29,8 +29,20 @@ const createIdvSessionLogger = logger.child({
     ...pinoOptions.base,
   },
 });
+const createIdvSessionV2Logger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/idv-session/v2] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
 const createPayPalOrderLogger = logger.child({
   msgPrefix: "[POST /sessions/:_id/paypal-order] ",
+  base: {
+    ...pinoOptions.base,
+  },
+});
+const capturePayPalOrderLogger = logger.child({
+  msgPrefix: "[POST /sessions/:_id/paypal-order/capture] ",
   base: {
     ...pinoOptions.base,
   },
@@ -154,8 +166,6 @@ async function createPayPalOrder(req, res) {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        // TODO: Is PayPal-Request-Id necessary?
-        // "PayPal-Request-Id": "7b92603e-77ed-4896-8e78-5dea2050476a",
         Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
       },
     };
@@ -188,6 +198,79 @@ async function createPayPalOrder(req, res) {
       );
     } else {
       createPayPalOrderLogger.error({ error: err }, "Error creating PayPal order");
+    }
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+async function capturePayPalOrder(req, res) {
+  try {
+    const _id = req.params._id;
+    const orderId = req.body.orderId;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "orderId is required" });
+    }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const filteredOrders = (session.payPal?.orders).filter(
+      (order) => order.id === orderId
+    );
+    if (filteredOrders.length === 0) {
+      return res.status(400).json({
+        error: `Order ${orderId} is not associated with session ${_id}`,
+      });
+    }
+
+    const url =
+      process.env.NODE_ENV === "development"
+        ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`
+        : "";
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+      },
+    };
+    const resp = await axios.post(url, {}, config);
+
+    const order = resp.data;
+
+    if (order.status !== "COMPLETED") {
+      return res.status(400).json({
+        error: `Order ${orderId} has status ${order.status} and cannot be captured`,
+      });
+    }
+
+    return res.status(200).json(order);
+  } catch (err) {
+    if (err.response) {
+      capturePayPalOrderLogger.error(
+        { error: err.response.data },
+        "Error trying to capture PayPal order"
+      );
+    } else if (err.request) {
+      capturePayPalOrderLogger.error(
+        { error: err.request.data },
+        "Error trying to capture PayPal order"
+      );
+    } else {
+      capturePayPalOrderLogger.error(
+        { error: err },
+        "Error trying to capture PayPal order"
+      );
     }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
@@ -325,6 +408,186 @@ async function createIdvSession(req, res) {
       );
     } else {
       createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
+    }
+
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * Allows a user to create an IDV session by either (a) associating a
+ * transaction with an id-server session or (b) associating a PayPal
+ * order with an id-server session.
+ */
+async function createIdvSessionV2(req, res) {
+  try {
+    if (req.body.chainId && req.body.txHash) {
+      return createIdvSession(req, res);
+    }
+
+    const _id = req.params._id;
+    const orderId = req.body.orderId;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "orderId is required" });
+    }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.NEEDS_PAYMENT}'`,
+      });
+    }
+
+    const filteredOrders = (session.payPal?.orders).filter(
+      (order) => order.id === orderId
+    );
+    if (filteredOrders.length === 0) {
+      return res.status(400).json({
+        error: `Order ${orderId} is not associated with session ${_id}`,
+      });
+    }
+
+    const sessions = await Session.find({
+      _id: { $ne: objectId },
+      "payPal.orders": {
+        $elemMatch: {
+          id: orderId,
+        },
+      },
+    }).exec();
+
+    if (sessions.length > 0) {
+      return res.status(400).json({
+        error: `Order ${orderId} is already associated with session ${sessions[0]._id}`,
+      });
+    }
+
+    const url =
+      process.env.NODE_ENV === "development"
+        ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}`
+        : "";
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+      },
+    };
+    const resp = await axios.get(url, config);
+    const order = resp.data;
+
+    if (order.status !== "COMPLETED") {
+      return res.status(400).json({
+        error: `Order ${orderId} has status ${order.status}. Must be COMPLETED`,
+      });
+    }
+
+    const expectedAmountInUSD = 10;
+    const amount = Number(order?.purchase_units?.[0]?.amount?.value);
+    if (amount < expectedAmountInUSD) {
+      return res.status(400).json({
+        error: `Invalid order amount. Amount must be greater than or equal to ${expectedAmountInUSD}`,
+      });
+    }
+
+    // Note: We do not immediately call session.save() after adding txHash to
+    // the session because we want the session to be saved only if the rest of
+    // this function executes successfully.
+    session.status = sessionStatusEnum.IN_PROGRESS;
+
+    // TODO: The following is copied from createIdvSession. Refactor so that
+    // there is less duplicate code.
+    if (session.idvProvider === "veriff") {
+      const veriffSession = await createVeriffSession();
+      if (!veriffSession) {
+        return res.status(500).json({ error: "Error creating Veriff session" });
+      }
+
+      session.sessionId = veriffSession.verification.id;
+      session.veriffUrl = veriffSession.verification.url;
+      await session.save();
+
+      createIdvSessionV2Logger.info(
+        { sessionId: veriffSession.verification.id, idvProvider: "veriff" },
+        "Created Veriff session"
+      );
+
+      return res.status(200).json({
+        url: veriffSession.verification.url,
+        id: veriffSession.verification.id,
+      });
+    } else if (session.idvProvider === "idenfy") {
+      const tokenData = await createIdenfyToken(session.sigDigest);
+      if (!tokenData) {
+        return res.status(500).json({ error: "Error creating iDenfy token" });
+      }
+
+      session.scanRef = tokenData.scanRef;
+      session.idenfyAuthToken = tokenData.authToken;
+      await session.save();
+
+      createIdvSessionV2Logger.info(
+        { authToken: tokenData.authToken, idvProvider: "idenfy" },
+        "Created iDenfy session"
+      );
+
+      return res.status(200).json({
+        url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
+        scanRef: tokenData.scanRef,
+      });
+    } else if (session.idvProvider === "onfido") {
+      const applicant = await createOnfidoApplicant();
+      if (!applicant) {
+        return res.status(500).json({ error: "Error creating Onfido applicant" });
+      }
+
+      session.applicant_id = applicant.id;
+
+      createIdvSessionV2Logger.info(
+        { applicantId: applicant.id, idvProvider: "onfido" },
+        "Created Onfido applicant"
+      );
+
+      const sdkTokenData = await createOnfidoSdkToken(applicant.id);
+      if (!sdkTokenData) {
+        return res.status(500).json({ error: "Error creating Onfido SDK token" });
+      }
+
+      session.onfido_sdk_token = sdkTokenData.token;
+      await session.save();
+
+      return res.status(200).json({
+        applicant_id: applicant.id,
+        sdk_token: sdkTokenData.token,
+      });
+    } else {
+      return res.status(500).json({ error: "Invalid idvProvider" });
+    }
+  } catch (err) {
+    if (err.response) {
+      createIdvSessionV2Logger.error(
+        { error: err.response.data },
+        "Error creating IDV session"
+      );
+    } else if (err.request) {
+      createIdvSessionV2Logger.error(
+        { error: err.request.data },
+        "Error creating IDV session"
+      );
+    } else {
+      createIdvSessionV2Logger.error({ error: err }, "Error creating IDV session");
     }
 
     return res.status(500).json({ error: "An unknown error occurred" });
@@ -669,7 +932,9 @@ async function createIdvSessionSandbox(req, res) {
 export {
   postSession,
   createPayPalOrder,
+  capturePayPalOrder,
   createIdvSession,
+  createIdvSessionV2,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
