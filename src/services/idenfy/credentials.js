@@ -16,7 +16,6 @@ import {
   getIdenfySessionVerificationData,
   deleteIdenfySession,
 } from "../../utils/idenfy.js";
-// import { getPaymentStatus } from "../utils/paypal.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /idenfy/credentials] ",

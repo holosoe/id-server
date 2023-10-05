@@ -17,7 +17,6 @@ import {
   deleteOnfidoApplicant,
 } from "../../utils/onfido.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
-// import { getPaymentStatus } from "../utils/paypal.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",

@@ -13,7 +13,6 @@ import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
 import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
-// import { getPaymentStatus } from "../utils/paypal.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /veriff/credentials] ",

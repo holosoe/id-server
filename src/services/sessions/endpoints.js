@@ -1,6 +1,7 @@
 import axios from "axios";
 import { ObjectId } from "mongodb";
 import { Session, SessionRefundMutex } from "../../init.js";
+import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
 import {
@@ -133,6 +134,8 @@ async function createPayPalOrder(req, res) {
       return res.status(404).json({ error: "Session not found" });
     }
 
+    const accessToken = await getPayPalAccessToken();
+
     const url =
       process.env.NODE_ENV === "development"
         ? "https://api-m.sandbox.paypal.com/v2/checkout/orders"
@@ -166,7 +169,7 @@ async function createPayPalOrder(req, res) {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     };
 
@@ -234,6 +237,8 @@ async function capturePayPalOrder(req, res) {
       });
     }
 
+    const accessToken = await getPayPalAccessToken();
+
     const url =
       process.env.NODE_ENV === "development"
         ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`
@@ -241,7 +246,7 @@ async function capturePayPalOrder(req, res) {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     };
     const resp = await axios.post(url, {}, config);
@@ -475,6 +480,8 @@ async function createIdvSessionV2(req, res) {
       });
     }
 
+    const accessToken = await getPayPalAccessToken();
+
     const url =
       process.env.NODE_ENV === "development"
         ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}`
@@ -482,7 +489,7 @@ async function createIdvSessionV2(req, res) {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.PAYPAL_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${accessToken}`,
       },
     };
     const resp = await axios.get(url, config);
