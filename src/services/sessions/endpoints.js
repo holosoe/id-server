@@ -11,11 +11,7 @@ import {
 } from "../../utils/onfido.js";
 import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
-import {
-  validateTxForIDVSessionCreation,
-  refundMintFee,
-  validateTxForIDVSessionCreationSandbox,
-} from "./functions.js";
+import { validateTxForIDVSessionCreation, refundMintFee } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 // const postSessionsLogger = logger.child({
@@ -790,152 +786,6 @@ async function getSessions(req, res) {
   }
 }
 
-/**
- * TODO: DELETE THIS ENDPOINT AFTER TESTING.
- */
-async function createIdvSessionSandbox(req, res) {
-  try {
-    const _id = req.params._id;
-    const chainId = Number(req.body.chainId);
-    const txHash = req.body.txHash;
-    const supportedChainIds = [
-      1, // Ethereum
-      10, // Optimism
-      250, // Fantom
-      420, // Optimism goerli
-    ];
-    if (!chainId || supportedChainIds.indexOf(chainId) === -1) {
-      return res.status(400).json({
-        error: `Missing chainId. chainId must be one of ${supportedChainIds.join(
-          ", "
-        )}`,
-      });
-    }
-    if (!txHash) {
-      return res.status(400).json({ error: "txHash is required" });
-    }
-
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
-    }
-
-    if (session.txHash) {
-      return res
-        .status(400)
-        .json({ error: "Session is already associated with a transaction" });
-    }
-
-    const validationResult = await validateTxForIDVSessionCreationSandbox(
-      chainId,
-      txHash
-    );
-    if (validationResult.error) {
-      return res
-        .status(validationResult.status)
-        .json({ error: validationResult.error });
-    }
-
-    // Note: We do not immediately call session.save() after adding txHash to
-    // the session because we want the session to be saved only if the rest of
-    // this function executes successfully.
-    session.status = sessionStatusEnum.IN_PROGRESS;
-    session.chainId = chainId;
-    session.txHash = txHash;
-
-    if (session.idvProvider === "veriff") {
-      const veriffSession = await createVeriffSession();
-      if (!veriffSession) {
-        return res.status(500).json({ error: "Error creating Veriff session" });
-      }
-
-      session.sessionId = veriffSession.verification.id;
-      session.veriffUrl = veriffSession.verification.url;
-      await session.save();
-
-      createIdvSessionLogger.info(
-        { sessionId: veriffSession.verification.id, idvProvider: "veriff" },
-        "Created Veriff session"
-      );
-
-      return res.status(200).json({
-        url: veriffSession.verification.url,
-        id: veriffSession.verification.id,
-      });
-    } else if (session.idvProvider === "idenfy") {
-      const tokenData = await createIdenfyToken(session.sigDigest);
-      if (!tokenData) {
-        return res.status(500).json({ error: "Error creating iDenfy token" });
-      }
-
-      session.scanRef = tokenData.scanRef;
-      session.idenfyAuthToken = tokenData.authToken;
-      await session.save();
-
-      createIdvSessionLogger.info(
-        { authToken: tokenData.authToken, idvProvider: "idenfy" },
-        "Created iDenfy session"
-      );
-
-      return res.status(200).json({
-        url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
-        scanRef: tokenData.scanRef,
-      });
-    } else if (session.idvProvider === "onfido") {
-      const applicant = await createOnfidoApplicant();
-      if (!applicant) {
-        return res.status(500).json({ error: "Error creating Onfido applicant" });
-      }
-
-      session.applicant_id = applicant.id;
-
-      createIdvSessionLogger.info(
-        { applicantId: applicant.id, idvProvider: "onfido" },
-        "Created Onfido applicant"
-      );
-
-      const sdkTokenData = await createOnfidoSdkToken(applicant.id);
-      if (!sdkTokenData) {
-        return res.status(500).json({ error: "Error creating Onfido SDK token" });
-      }
-
-      session.onfido_sdk_token = sdkTokenData.token;
-      await session.save();
-
-      return res.status(200).json({
-        applicant_id: applicant.id,
-        sdk_token: sdkTokenData.token,
-      });
-    } else {
-      return res.status(500).json({ error: "Invalid idvProvider" });
-    }
-  } catch (err) {
-    if (err.response) {
-      createIdvSessionLogger.error(
-        { error: err.response.data },
-        "Error creating IDV session"
-      );
-    } else if (err.request) {
-      createIdvSessionLogger.error(
-        { error: err.request.data },
-        "Error creating IDV session"
-      );
-    } else {
-      createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
-    }
-
-    return res.status(500).json({ error: "An unknown error occurred" });
-  }
-}
-
 export {
   postSession,
   createPayPalOrder,
@@ -946,5 +796,4 @@ export {
   createOnfidoCheckEndpoint,
   refund,
   getSessions,
-  createIdvSessionSandbox,
 };
