@@ -1,3 +1,4 @@
+import axios from "axios";
 import { ethers } from "ethers";
 import { Session } from "../../init.js";
 import {
@@ -9,6 +10,7 @@ import {
   fantomProvider,
 } from "../../constants/misc.js";
 import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
+import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
 import {
@@ -184,6 +186,24 @@ async function refundMintFee(session, to) {
   };
 }
 
+async function capturePayPalOrder(orderId) {
+  const accessToken = await getPayPalAccessToken();
+
+  const url =
+    process.env.NODE_ENV === "development"
+      ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`
+      : "";
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+  const resp = await axios.post(url, {}, config);
+
+  return resp.data;
+}
+
 async function handleIdvSessionCreation(res, session, logger) {
   if (session.idvProvider === "veriff") {
     const veriffSession = await createVeriffSession();
@@ -253,4 +273,9 @@ async function handleIdvSessionCreation(res, session, logger) {
   }
 }
 
-export { validateTxForIDVSessionCreation, refundMintFee, handleIdvSessionCreation };
+export {
+  validateTxForIDVSessionCreation,
+  refundMintFee,
+  capturePayPalOrder,
+  handleIdvSessionCreation,
+};

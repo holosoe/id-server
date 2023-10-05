@@ -7,6 +7,7 @@ import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import {
   validateTxForIDVSessionCreation,
   refundMintFee,
+  capturePayPalOrder,
   handleIdvSessionCreation,
 } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
@@ -199,81 +200,6 @@ async function createPayPalOrder(req, res) {
   }
 }
 
-async function capturePayPalOrder(req, res) {
-  try {
-    const _id = req.params._id;
-    const orderId = req.body.orderId;
-
-    if (!orderId) {
-      return res.status(400).json({ error: "orderId is required" });
-    }
-
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
-    }
-
-    const filteredOrders = (session.payPal?.orders).filter(
-      (order) => order.id === orderId
-    );
-    if (filteredOrders.length === 0) {
-      return res.status(400).json({
-        error: `Order ${orderId} is not associated with session ${_id}`,
-      });
-    }
-
-    const accessToken = await getPayPalAccessToken();
-
-    const url =
-      process.env.NODE_ENV === "development"
-        ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`
-        : "";
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-    const resp = await axios.post(url, {}, config);
-
-    const order = resp.data;
-
-    if (order.status !== "COMPLETED") {
-      return res.status(400).json({
-        error: `Order ${orderId} has status ${order.status} and cannot be captured`,
-      });
-    }
-
-    return res.status(200).json(order);
-  } catch (err) {
-    if (err.response) {
-      capturePayPalOrderLogger.error(
-        { error: err.response.data },
-        "Error trying to capture PayPal order"
-      );
-    } else if (err.request) {
-      capturePayPalOrderLogger.error(
-        { error: err.request.data },
-        "Error trying to capture PayPal order"
-      );
-    } else {
-      capturePayPalOrderLogger.error(
-        { error: err },
-        "Error trying to capture PayPal order"
-      );
-    }
-    return res.status(500).json({ error: "An unknown error occurred" });
-  }
-}
-
 /**
  * Allows a user to create an IDV session by associating a transaction
  * with an id-server session.
@@ -408,20 +334,7 @@ async function createIdvSessionV2(req, res) {
       });
     }
 
-    const accessToken = await getPayPalAccessToken();
-
-    const url =
-      process.env.NODE_ENV === "development"
-        ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}`
-        : "";
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-    const resp = await axios.get(url, config);
-    const order = resp.data;
+    const order = await capturePayPalOrder(orderId);
 
     if (order.status !== "COMPLETED") {
       return res.status(400).json({
@@ -437,9 +350,9 @@ async function createIdvSessionV2(req, res) {
       });
     }
 
-    // Note: We do not immediately call session.save() after adding txHash to
-    // the session because we want the session to be saved only if the rest of
-    // this function executes successfully.
+    // Note: We do not immediately call session.save() after adding updating
+    // session status because we want the session to be saved only if the rest
+    // of this function executes successfully.
     session.status = sessionStatusEnum.IN_PROGRESS;
 
     return handleIdvSessionCreation(res, session, createIdvSessionV2Logger);
@@ -654,7 +567,7 @@ async function getSessions(req, res) {
 export {
   postSession,
   createPayPalOrder,
-  capturePayPalOrder,
+  // capturePayPalOrder,
   createIdvSession,
   createIdvSessionV2,
   refreshOnfidoToken,
