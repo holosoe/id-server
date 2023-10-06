@@ -344,10 +344,22 @@ async function createIdvSessionV2(req, res) {
     }
 
     const expectedAmountInUSD = 10;
-    const amount = Number(order?.purchase_units?.[0]?.amount?.value);
-    if (isNaN(amount) || amount < expectedAmountInUSD) {
+
+    let successfulOrder;
+    for (const pu of order.purchase_units) {
+      for (const payment of pu.payments.captures) {
+        if (payment.status === "COMPLETED") {
+          if (Number(payment.amount.value) >= expectedAmountInUSD) {
+            successfulOrder = order;
+          }
+          break;
+        }
+      }
+    }
+
+    if (!successfulOrder) {
       return res.status(400).json({
-        error: `Invalid order amount. Amount must be greater than or equal to ${expectedAmountInUSD}`,
+        error: `Order ${orderId} does not have a successful payment capture with amount >= ${expectedAmountInUSD}`,
       });
     }
 
