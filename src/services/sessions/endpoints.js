@@ -311,7 +311,7 @@ async function createIdvSessionV2(req, res) {
       });
     }
 
-    const filteredOrders = (session.payPal?.orders).filter(
+    const filteredOrders = (session.payPal?.orders ?? []).filter(
       (order) => order.id === orderId
     );
     if (filteredOrders.length === 0) {
