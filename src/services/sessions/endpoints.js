@@ -345,7 +345,7 @@ async function createIdvSessionV2(req, res) {
 
     const expectedAmountInUSD = 10;
     const amount = Number(order?.purchase_units?.[0]?.amount?.value);
-    if (amount < expectedAmountInUSD) {
+    if (isNaN(amount) || amount < expectedAmountInUSD) {
       return res.status(400).json({
         error: `Invalid order amount. Amount must be greater than or equal to ${expectedAmountInUSD}`,
       });
