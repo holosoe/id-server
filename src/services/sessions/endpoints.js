@@ -6,7 +6,8 @@ import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
 import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
 import {
   validateTxForIDVSessionCreation,
-  refundMintFee,
+  refundMintFeeOnChain,
+  refundMintFeePayPal,
   capturePayPalOrder,
   handleIdvSessionCreation,
 } from "./functions.js";
@@ -506,7 +507,82 @@ async function refund(req, res) {
     await newMutex.save();
 
     // Perform refund logic
-    const response = await refundMintFee(session, to);
+    const response = await refundMintFeeOnChain(session, to);
+
+    // Delete mutex
+    await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+
+    // Return response
+    return res.status(response.status).json(response.data);
+  } catch (err) {
+    // Delete mutex. We have this here in case an unknown error occurs above.
+    try {
+      await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+    } catch (err) {
+      console.log(
+        "POST /sessions/:_id/idv-session/refund/v2: Error encountered while deleting mutex",
+        err.message
+      );
+    }
+
+    if (err.response) {
+      console.error({ error: err.response.data }, "Error during refund");
+    } else if (err.request) {
+      console.error({ error: err.request.data }, "Error during refund");
+    } else {
+      console.error({ error: err }, "Error during refund");
+    }
+
+    console.log(
+      "POST /sessions/:_id/idv-session/refund/v2: Error encountered",
+      err.message
+    );
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+async function refundV2(req, res) {
+  if (req.body.to) {
+    return refund(req, res);
+  }
+
+  const _id = req.params._id;
+
+  try {
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
+      return res
+        .status(400)
+        .json({ error: "Only failed verifications can be refunded." });
+    }
+
+    // Create mutex. We use mutex here so that only one refund request
+    // per session can be processed at a time. Otherwise, if the user
+    // spams this refund endpoint, we could send multiple transactions
+    // before the first one is confirmed.
+    // TODO: Do not use MongoDB for mutex purposes. Use something like
+    // like Redis instead.
+    const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
+    if (mutex) {
+      return res.status(400).json({ error: "Refund already in progress" });
+    }
+    const newMutex = new SessionRefundMutex({ _id: _id });
+    await newMutex.save();
+
+    // Perform refund logic
+    const response = await refundMintFeePayPal(session);
 
     // Delete mutex
     await SessionRefundMutex.deleteOne({ _id: _id }).exec();
@@ -522,6 +598,20 @@ async function refund(req, res) {
         "POST /sessions/:_id/idv-session/refund: Error encountered while deleting mutex",
         err.message
       );
+    }
+
+    if (err.response) {
+      console.error(
+        { error: JSON.stringify(err.response.data, null, 2) },
+        "Error during refund"
+      );
+    } else if (err.request) {
+      console.error(
+        { error: JSON.stringify(err.request.data, null, 2) },
+        "Error during refund"
+      );
+    } else {
+      console.error({ error: err }, "Error during refund");
     }
 
     console.log(
@@ -573,5 +663,6 @@ export {
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
+  refundV2,
   getSessions,
 };

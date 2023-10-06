@@ -10,7 +10,11 @@ import {
   fantomProvider,
 } from "../../constants/misc.js";
 import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
-import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
+import {
+  getAccessToken as getPayPalAccessToken,
+  getOrder as getPayPalOrder,
+  getRefundDetails as getPayPalRefundDetails,
+} from "../../utils/paypal.js";
 import { createVeriffSession } from "../../utils/veriff.js";
 import { createIdenfyToken } from "../../utils/idenfy.js";
 import {
@@ -116,7 +120,7 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
   return {};
 }
 
-async function refundMintFee(session, to) {
+async function refundMintFeeOnChain(session, to) {
   let provider;
   if (session.chainId === 1) {
     provider = ethereumProvider;
@@ -183,6 +187,116 @@ async function refundMintFee(session, to) {
     data: {
       txReceipt: receipt,
     },
+  };
+}
+
+async function refundMintFeePayPal(session) {
+  const accessToken = await getPayPalAccessToken();
+
+  const orders = session.payPal?.orders ?? [];
+
+  if (orders.length === 0) {
+    return {
+      status: 404,
+      data: {
+        error: "No PayPal orders found for session",
+      },
+    };
+  }
+
+  let successfulOrder;
+  for (const { id: orderId } of orders) {
+    const order = await getPayPalOrder(orderId, accessToken);
+    if (order.status === "COMPLETED") {
+      successfulOrder = order;
+      break;
+    }
+  }
+
+  if (!successfulOrder) {
+    return {
+      status: 404,
+      data: {
+        error: "No successful PayPal orders found for session",
+      },
+    };
+  }
+
+  // Get the first successful payment capture
+  let capture;
+  for (const pu of successfulOrder.purchase_units) {
+    for (const payment of pu.payments.captures) {
+      if (payment.status === "COMPLETED") {
+        capture = payment;
+        break;
+      }
+    }
+  }
+
+  if (!capture) {
+    return {
+      status: 404,
+      data: {
+        error: "No successful PayPal payment captures found for session",
+      },
+    };
+  }
+
+  const paymentId = capture.id;
+
+  // PayPal returns a 403 when trying to get refund details. Not sure if this
+  // is because no refund exists had been performed yet or because of some other.
+  // issue I tried creating new credentials and using the sandbox API but still
+  // got a 403.
+  // const refundDetails = await getPayPalRefundDetails(paymentId, accessToken);
+
+  // console.log("line 257: refundDetails", refundDetails);
+
+  // if (refundDetails.status === "COMPLETED") {
+  //   return {
+  //     status: 400,
+  //     data: {
+  //       error: "Payment has already been refunded",
+  //     },
+  //   };
+  // }
+
+  const url =
+    process.env.NODE_ENV === "development"
+      ? `https://api-m.sandbox.paypal.com/v2/payments/captures/${paymentId}/refund`
+      : // TODO: Add production URL
+        "";
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+  const data = {
+    amount: {
+      value: "7.53",
+      currency_code: "USD",
+    },
+    // invoice_id: "INVOICE-123",
+    note_to_payer: "Failed verification",
+  };
+  const resp = await axios.post(url, data, config);
+
+  if (resp.data?.status !== "COMPLETED") {
+    return {
+      status: 500,
+      data: {
+        error: "Error refunding payment",
+      },
+    };
+  }
+
+  session.status = sessionStatusEnum.REFUNDED;
+  await session.save();
+
+  return {
+    status: 200,
+    data: {},
   };
 }
 
@@ -275,7 +389,8 @@ async function handleIdvSessionCreation(res, session, logger) {
 
 export {
   validateTxForIDVSessionCreation,
-  refundMintFee,
+  refundMintFeeOnChain,
+  refundMintFeePayPal,
   capturePayPalOrder,
   handleIdvSessionCreation,
 };

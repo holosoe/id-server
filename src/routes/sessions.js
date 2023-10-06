@@ -7,6 +7,7 @@ import {
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
+  refundV2,
   getSessions,
 } from "../services/sessions/endpoints.js";
 
@@ -17,6 +18,7 @@ router.post("/:_id/paypal-order", createPayPalOrder);
 router.post("/:_id/idv-session", createIdvSession);
 router.post("/:_id/idv-session/v2", createIdvSessionV2);
 router.post("/:_id/idv-session/refund", refund);
+router.post("/:_id/idv-session/refund/v2", refundV2);
 router.post("/:_id/idv-session/onfido/token", refreshOnfidoToken);
 router.post("/:_id/idv-session/onfido/check", createOnfidoCheckEndpoint);
 router.get("/", getSessions);

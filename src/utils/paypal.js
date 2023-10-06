@@ -18,4 +18,36 @@ async function getAccessToken() {
   return response?.data?.access_token;
 }
 
-export { getAccessToken };
+async function getOrder(id, accessToken) {
+  const url =
+    process.env.NODE_ENV === "development"
+      ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${id}`
+      : // TODO: Add production URL
+        "";
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+  const resp = await axios.get(url, config);
+  return resp.data;
+}
+
+async function getRefundDetails(id, accessToken) {
+  const url =
+    process.env.NODE_ENV === "development"
+      ? `https://api.sandbox.paypal.com/v2/payments/refunds/${id}`
+      : // TODO: Add production URL
+        "";
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+  const resp = await axios.get(url, config);
+  return resp.data;
+}
+
+export { getAccessToken, getOrder, getRefundDetails };
