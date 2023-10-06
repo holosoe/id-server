@@ -250,8 +250,6 @@ async function refundMintFeePayPal(session) {
   // got a 403.
   // const refundDetails = await getPayPalRefundDetails(paymentId, accessToken);
 
-  // console.log("line 257: refundDetails", refundDetails);
-
   // if (refundDetails.status === "COMPLETED") {
   //   return {
   //     status: 400,
