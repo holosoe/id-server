@@ -56,3 +56,8 @@ export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
   "https://rpc.ftm.tools"
 );
+
+export const payPalApiUrlBase =
+  process.env.NODE_ENV === "development"
+    ? `https://api-m.sandbox.paypal.com/`
+    : `https://api-m.paypal.com/`;

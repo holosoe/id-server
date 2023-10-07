@@ -3,7 +3,11 @@ import { ObjectId } from "mongodb";
 import { Session, SessionRefundMutex } from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
-import { supportedChainIds, sessionStatusEnum } from "../../constants/misc.js";
+import {
+  supportedChainIds,
+  sessionStatusEnum,
+  payPalApiUrlBase,
+} from "../../constants/misc.js";
 import {
   validateTxForIDVSessionCreation,
   refundMintFeeOnChain,
@@ -133,8 +137,8 @@ async function createPayPalOrder(req, res) {
 
     const url =
       process.env.NODE_ENV === "development"
-        ? "https://api-m.sandbox.paypal.com/v2/checkout/orders"
-        : "";
+        ? `${payPalApiUrlBase}/v2/checkout/orders`
+        : `${payPalApiUrlBase}/v2/checkout/orders`;
     const body = {
       intent: "CAPTURE",
       purchase_units: [

@@ -8,6 +8,7 @@ import {
   optimismProvider,
   optimismGoerliProvider,
   fantomProvider,
+  payPalApiUrlBase,
 } from "../../constants/misc.js";
 import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
 import {
@@ -261,9 +262,8 @@ async function refundMintFeePayPal(session) {
 
   const url =
     process.env.NODE_ENV === "development"
-      ? `https://api-m.sandbox.paypal.com/v2/payments/captures/${paymentId}/refund`
-      : // TODO: Add production URL
-        "";
+      ? `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`
+      : `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`;
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -303,8 +303,8 @@ async function capturePayPalOrder(orderId) {
 
   const url =
     process.env.NODE_ENV === "development"
-      ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`
-      : "";
+      ? `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`
+      : `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`;
   const config = {
     headers: {
       "Content-Type": "application/json",
