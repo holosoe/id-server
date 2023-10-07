@@ -104,6 +104,7 @@ async function setSessionIdvProvider(req, res) {
       });
     }
 
+    session.status = sessionStatusEnum.IN_PROGRESS;
     session.idvProvider = newIdvProvider;
 
     if (newIdvProvider === "veriff") {
