@@ -67,9 +67,9 @@ async function setSessionIdvProvider(req, res) {
       sessionStatusEnum.VERIFICATION_FAILED,
     ];
     if (acceptableSessionStatuses.indexOf(session.status) === -1) {
-      return res
-        .status(400)
-        .json({ error: `Session status must be one of ${acceptableSessionStatuses}` });
+      return res.status(400).json({
+        error: `Session status is ${session.status}. Must be one of ${acceptableSessionStatuses}`,
+      });
     }
 
     if (session.idvProvider === newIdvProvider) {
