@@ -59,5 +59,5 @@ export const fantomProvider = new ethers.providers.JsonRpcProvider(
 
 export const payPalApiUrlBase =
   process.env.NODE_ENV === "production"
-    ? `https://api-m.paypal.com/`
-    : `https://api-m.sandbox.paypal.com/`;
+    ? `https://api-m.paypal.com`
+    : `https://api-m.sandbox.paypal.com`;
