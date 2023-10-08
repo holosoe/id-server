@@ -260,10 +260,7 @@ async function refundMintFeePayPal(session) {
   //   };
   // }
 
-  const url =
-    process.env.NODE_ENV === "development"
-      ? `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`
-      : `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`;
+  const url = `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`;
   const config = {
     headers: {
       "Content-Type": "application/json",
@@ -301,10 +298,7 @@ async function refundMintFeePayPal(session) {
 async function capturePayPalOrder(orderId) {
   const accessToken = await getPayPalAccessToken();
 
-  const url =
-    process.env.NODE_ENV === "development"
-      ? `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`
-      : `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`;
+  const url = `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`;
   const config = {
     headers: {
       "Content-Type": "application/json",

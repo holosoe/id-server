@@ -135,10 +135,7 @@ async function createPayPalOrder(req, res) {
 
     const accessToken = await getPayPalAccessToken();
 
-    const url =
-      process.env.NODE_ENV === "development"
-        ? `${payPalApiUrlBase}/v2/checkout/orders`
-        : `${payPalApiUrlBase}/v2/checkout/orders`;
+    const url = `${payPalApiUrlBase}/v2/checkout/orders`;
     const body = {
       intent: "CAPTURE",
       purchase_units: [
