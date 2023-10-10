@@ -122,10 +122,11 @@ async function setSessionIdvProvider(req, res) {
         "Created Veriff session"
       );
 
-      return res.status(200).json({
-        url: veriffSession.verification.url,
-        id: veriffSession.verification.id,
-      });
+      // return res.status(200).json({
+      //   url: veriffSession.verification.url,
+      //   id: veriffSession.verification.id,
+      // });
+      return res.status(200).json({ message: "Veriff session created" });
     } else if (newIdvProvider === "idenfy") {
       const tokenData = await createIdenfyToken(session.sigDigest);
       if (!tokenData) {
@@ -141,10 +142,11 @@ async function setSessionIdvProvider(req, res) {
         "Created iDenfy session"
       );
 
-      return res.status(200).json({
-        url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
-        scanRef: tokenData.scanRef,
-      });
+      // return res.status(200).json({
+      //   url: `https://ivs.idenfy.com/api/v2/redirect?authToken=${tokenData.authToken}`,
+      //   scanRef: tokenData.scanRef,
+      // });
+      return res.status(200).json({ message: "iDenfy session created" });
     } else if (newIdvProvider === "onfido") {
       const applicant = await createOnfidoApplicant();
       if (!applicant) {
@@ -166,10 +168,11 @@ async function setSessionIdvProvider(req, res) {
       session.onfido_sdk_token = sdkTokenData.token;
       await session.save();
 
-      return res.status(200).json({
-        applicant_id: applicant.id,
-        sdk_token: sdkTokenData.token,
-      });
+      // return res.status(200).json({
+      //   applicant_id: applicant.id,
+      //   sdk_token: sdkTokenData.token,
+      // });
+      return res.status(200).json({ message: "Onfido session created" });
     }
   } catch (err) {
     postEndpointLogger.error({ error: err });
