@@ -70,16 +70,20 @@ async function deleteUserData(req, res) {
   try {
     // 1. Delete sessions that we know have failed verification. \\
     // Get all sessions that:
-    // - are older than 5 days
-    // - have status of VERIFICATION_FAILED
+    // - are older than 10 days AND
+    // - have status of VERIFICATION_FAILED AND
     // - have not already been deleted from IDV provider databases
-    const fiveDaysAgo = subDays(new Date(), 5);
+    const tenDaysAgo = subDays(new Date(), 10);
     const sessions = await Session.find({
-      _id: {
-        $lt: dateToObjectId(fiveDaysAgo),
-      },
-      status: sessionStatusEnum.VERIFICATION_FAILED,
-      deletedFromIDVProvider: { $eq: false },
+      $and: [
+        {
+          _id: {
+            $lt: dateToObjectId(tenDaysAgo),
+          },
+        },
+        { status: sessionStatusEnum.VERIFICATION_FAILED },
+        { deletedFromIDVProvider: { $eq: false } },
+      ],
     }).exec();
 
     // Delete sessions from IDV provider databases
@@ -89,16 +93,22 @@ async function deleteUserData(req, res) {
 
     // 2. Delete sessions that might have been abandoned. \\
     // Get all sessions that:
-    // - are older than 30 days
-    // - have status of IN_PROGRESS or REFUNDED
+    // - are older than 30 days AND
+    // - have status of IN_PROGRESS or REFUNDED AND
     // - have not already been deleted from IDV provider databases
     const thirtyDaysAgo = subDays(new Date(), 30);
     const sessions2 = await Session.find({
-      _id: {
-        $lt: dateToObjectId(thirtyDaysAgo),
-      },
-      status: { $in: [sessionStatusEnum.IN_PROGRESS, sessionStatusEnum.REFUNDED] },
-      deletedFromIDVProvider: { $eq: false },
+      $and: [
+        {
+          _id: {
+            $lt: dateToObjectId(thirtyDaysAgo),
+          },
+        },
+        {
+          status: { $in: [sessionStatusEnum.IN_PROGRESS, sessionStatusEnum.REFUNDED] },
+        },
+        { deletedFromIDVProvider: { $eq: false } },
+      ],
     }).exec();
 
     // Delete sessions from IDV provider databases
