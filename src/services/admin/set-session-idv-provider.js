@@ -67,9 +67,36 @@ async function setSessionIdvProvider(req, res) {
       sessionStatusEnum.VERIFICATION_FAILED,
     ];
     if (acceptableSessionStatuses.indexOf(session.status) === -1) {
-      return res.status(400).json({
-        error: `Session status is ${session.status}. Must be one of ${acceptableSessionStatuses}`,
-      });
+      // User might have other sessions that can be reset. If they do, we return
+      // those session IDs to the admin, so the admin can reset a different session.
+      try {
+        const sigDigest = session.sigDigest;
+        const sessions = await Session.find({ sigDigest }).exec();
+        const filteredSids = sessions
+          .filter((s) => {
+            return acceptableSessionStatuses.indexOf(s.status) !== -1;
+          })
+          .map((s) => `"${s._id.toString()}"`);
+
+        // User doesn't have other sessions. Simply return error
+        if (filteredSids.length === 0) {
+          return res.status(400).json({
+            error: `Session status is ${session.status}. Must be one of ${acceptableSessionStatuses}`,
+          });
+        }
+
+        return res.status(400).json({
+          error: `Session status is ${session.status}. Must be one of ${acceptableSessionStatuses}.`,
+          suggestion: `The user has other sessions. Try resetting one of these sessions: ${filteredSids.join(
+            ", "
+          )}`,
+        });
+      } catch (err) {
+        // An error occurred, likely due to the database. Ignore this error, and return informative error.
+        return res.status(400).json({
+          error: `Session status is ${session.status}. Must be one of ${acceptableSessionStatuses}`,
+        });
+      }
     }
 
     if (session.idvProvider === newIdvProvider) {
