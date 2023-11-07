@@ -76,7 +76,7 @@ async function setSessionIdvProvider(req, res) {
           .filter((s) => {
             return acceptableSessionStatuses.indexOf(s.status) !== -1;
           })
-          .map((s) => `"${s._id.toString()}"`);
+          .map((s) => `'${s._id.toString()}'`);
 
         // User doesn't have other sessions. Simply return error
         if (filteredSids.length === 0) {
