@@ -3,9 +3,11 @@ import {
   ethereumProvider,
   optimismProvider,
   fantomProvider,
+  avalancheProvider,
   companyENS,
   companyAddressOP,
   companyAddressFTM,
+  companyAddressAVAX,
 } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
@@ -79,6 +81,23 @@ async function transferFunds(req, res) {
       });
 
       txReceipts["fantom"] = await tx.wait();
+    }
+
+    // Transfer AVAX on Avalanche \\
+    const avalancheWallet = new ethers.Wallet(
+      process.env.PAYMENTS_PRIVATE_KEY,
+      avalancheProvider
+    );
+    const balanceAvalanche = await avalancheWallet.getBalance();
+    // If balance is less than 65 AVAX, don't transfer. Otherwise, send 50 AVAX.
+    // We keep some AVAX to pay for refunds.
+    if (balanceAvalanche.gte(ethers.utils.parseEther("65"))) {
+      const tx = await avalancheWallet.sendTransaction({
+        to: companyAddressAVAX,
+        value: ethers.utils.parseEther("50"),
+      });
+
+      txReceipts["avalanche"] = await tx.wait();
     }
 
     return res.status(200).json(txReceipts);

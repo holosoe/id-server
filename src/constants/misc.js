@@ -10,6 +10,8 @@ export const companyAddressOP = "0x03627Ac5A08056B50084d8B9cf550EB74a13C78A";
 
 export const companyAddressFTM = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
 
+export const companyAddressAVAX = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
+
 export const holonymIssuers = [
   "0x8281316ac1d51c94f2de77575301cef615adea84", // gov-id
   "0xb625e69ab86db23c23682875ba10fbc8f8756d16", // phone
@@ -27,6 +29,7 @@ const supportedChainIds = [
   1, // Ethereum
   10, // Optimism
   250, // Fantom
+  43114, // Avalanche
 ];
 if (process.env.NODE_ENV === "development") {
   supportedChainIds.push(420); // Optimism goerli
@@ -55,6 +58,9 @@ export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
 );
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
   "https://rpc.ftm.tools"
+);
+export const avalancheProvider = new ethers.providers.JsonRpcProvider(
+  "https://api.avax.network/ext/bc/C/rpc"
 );
 
 export const payPalApiUrlBase =

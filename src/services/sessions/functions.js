@@ -8,9 +8,10 @@ import {
   optimismProvider,
   optimismGoerliProvider,
   fantomProvider,
+  avalancheProvider,
   payPalApiUrlBase,
 } from "../../constants/misc.js";
-import { ethereumCMCID, fantomCMCID } from "../../constants/cmc.js";
+import { ethereumCMCID, fantomCMCID, avalancheCMCID } from "../../constants/cmc.js";
 import {
   getAccessToken as getPayPalAccessToken,
   getOrder as getPayPalOrder,
@@ -39,6 +40,13 @@ async function usdToFTM(usdAmount) {
   return ftmAmount;
 }
 
+async function usdToAVAX(usdAmount) {
+  const resp = await getLatestCryptoPrice(avalancheCMCID);
+  const avalanchePrice = resp?.data?.data?.[avalancheCMCID]?.quote?.USD?.price;
+  const ftmAmount = usdAmount / avalanchePrice;
+  return ftmAmount;
+}
+
 /**
  * Check blockchain for tx.
  * - Ensure recipient of tx is id-server's address.
@@ -53,6 +61,8 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     tx = await optimismProvider.getTransaction(txHash);
   } else if (chainId === 250) {
     tx = await fantomProvider.getTransaction(txHash);
+  } else if (chainId === 43114) {
+    tx = await avalancheProvider.getTransaction(txHash);
   } else if (process.env.NODE_ENV === "development" && chainId === 420) {
     tx = await optimismGoerliProvider.getTransaction(txHash);
   }
@@ -80,6 +90,8 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   } else if (chainId === 250) {
     expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
+  } else if (chainId === 43114) {
+    expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
   }
   // else if (process.env.NODE_ENV === "development" && chainId === 420) {
   //   expectedAmount = ethers.BigNumber.from("0");
@@ -129,6 +141,8 @@ async function refundMintFeeOnChain(session, to) {
     provider = optimismProvider;
   } else if (session.chainId === 250) {
     provider = fantomProvider;
+  } else if (session.chainId === 43114) {
+    provider = avalancheProvider;
   } else if (process.env.NODE_ENV === "development" && session.chainId === 420) {
     provider = optimismGoerliProvider;
   }

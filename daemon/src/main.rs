@@ -15,6 +15,7 @@ struct DeleteUserDataResponse {
 struct TransferFundsResponse {
     optimism: Option<Value>,
     fantom: Option<Value>,
+    avalanche: Option<Value>,
     error: Option<String>,
 }
 
