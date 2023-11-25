@@ -67,9 +67,7 @@ async function getPriceV2(req, res) {
       price[slug] = resp?.data?.data?.[id]?.quote?.USD?.price;
     }
 
-    return res.status(200).json({
-      price,
-    });
+    return res.status(200).json(price);
   } catch (err) {
     if (err.response) {
       endpointLogger.error(
