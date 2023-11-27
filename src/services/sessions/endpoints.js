@@ -506,6 +506,12 @@ async function refund(req, res) {
         .json({ error: "Only failed verifications can be refunded." });
     }
 
+    if (session.refundTxHash) {
+      return res
+        .status(400)
+        .json({ error: "This session has already been refunded." });
+    }
+
     // Create mutex. We use mutex here so that only one refund request
     // per session can be processed at a time. Otherwise, if the user
     // spams this refund endpoint, we could send multiple transactions
@@ -579,6 +585,12 @@ async function refundV2(req, res) {
       return res
         .status(400)
         .json({ error: "Only failed verifications can be refunded." });
+    }
+
+    if (session.refundTxHash) {
+      return res
+        .status(400)
+        .json({ error: "This session has already been refunded." });
     }
 
     // Create mutex. We use mutex here so that only one refund request
