@@ -301,6 +301,16 @@ async function saveUserToDb(uuid, sessionId) {
   return { success: true };
 }
 
+async function getSessionStatus(sessionId) {
+  const metaSession = await Session.findOne({ sessionId }).exec();
+
+  if (!metaSession) {
+    throw new Error("Session not found");
+  }
+
+  return metaSession.status;
+}
+
 async function updateSessionStatus(sessionId, status) {
   try {
     // TODO: Once pay-first frontend is pushed, remove the try-catch. We want
@@ -336,6 +346,12 @@ async function getCredentials(req, res) {
     if (!req?.query?.sessionId) {
       return res.status(400).json({ error: "No sessionId specified" });
     }
+
+    const metaSessionStatus = await getSessionStatus(req.query.sessionId);
+    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({ error: "Session is not in progress" });
+    }
+
     const session = await getVeriffSessionDecision(req.query.sessionId);
 
     if (!session) {

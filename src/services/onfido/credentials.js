@@ -316,6 +316,16 @@ async function saveUserToDb(uuid, check_id) {
   return { success: true };
 }
 
+async function getSessionStatus(check_id) {
+  const metaSession = await Session.findOne({ check_id }).exec();
+
+  if (!metaSession) {
+    throw new Error("Session not found");
+  }
+
+  return metaSession.status;
+}
+
 async function updateSessionStatus(check_id, status) {
   try {
     // TODO: Once pay-first frontend is pushed, remove the try-catch. We want
@@ -351,6 +361,11 @@ async function getCredentials(req, res) {
     const check_id = req.query.check_id;
     if (!check_id) {
       return res.status(400).json({ error: "No check_id specified" });
+    }
+
+    const metaSessionStatus = await getSessionStatus(check_id);
+    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({ error: "Session is not in progress" });
     }
 
     const check = await getOnfidoCheck(check_id);

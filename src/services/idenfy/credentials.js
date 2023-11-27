@@ -286,6 +286,16 @@ async function saveUserToDb(uuid, scanRef) {
   return { success: true };
 }
 
+async function getSessionStatus(scanRef) {
+  const metaSession = await Session.findOne({ scanRef }).exec();
+
+  if (!metaSession) {
+    throw new Error("Session not found");
+  }
+
+  return metaSession.status;
+}
+
 async function updateSessionStatus(scanRef, status) {
   try {
     // TODO: Once pay-first frontend is pushed, remove the try-catch. We want
@@ -322,6 +332,12 @@ async function getCredentials(req, res) {
     if (!scanRef) {
       return res.status(400).json({ error: "No scanRef specified" });
     }
+
+    const metaSessionStatus = await getSessionStatus(scanRef);
+    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({ error: "Session is not in progress" });
+    }
+
     const statusData = await getIdenfySessionStatus(scanRef);
     const verificationData = await getIdenfySessionVerificationData(scanRef);
 
