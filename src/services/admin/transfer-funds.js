@@ -37,12 +37,12 @@ async function transferFunds(req, res) {
       ethereumProvider
     );
     const balanceMainnet = await mainnetWallet.getBalance();
-    // If balance is less than 0.5 ETH, don't transfer. Otherwise, send 0.4 ETH.
+    // If balance is less than 0.3 ETH, don't transfer. Otherwise, send 0.25 ETH.
     // We keep some ETH to pay for refunds.
-    if (balanceMainnet.gte(ethers.utils.parseEther("0.5"))) {
+    if (balanceMainnet.gte(ethers.utils.parseEther("0.3"))) {
       const tx = await mainnetWallet.sendTransaction({
         to: companyENS,
-        value: ethers.utils.parseEther("0.4"),
+        value: ethers.utils.parseEther("0.25"),
       });
 
       txReceipts["ethereum"] = await tx.wait();
@@ -54,12 +54,12 @@ async function transferFunds(req, res) {
       optimismProvider
     );
     const balanceOptimism = await optimismWallet.getBalance();
-    // If balance is less than 0.5 ETH, don't transfer. Otherwise, send 0.4 ETH.
+    // If balance is less than 0.2 ETH, don't transfer. Otherwise, send 0.15 ETH.
     // We keep some ETH to pay for refunds.
-    if (balanceOptimism.gte(ethers.utils.parseEther("0.5"))) {
+    if (balanceOptimism.gte(ethers.utils.parseEther("0.2"))) {
       const tx = await optimismWallet.sendTransaction({
         to: companyAddressOP,
-        value: ethers.utils.parseEther("0.4"),
+        value: ethers.utils.parseEther("0.15"),
       });
 
       txReceipts["optimism"] = await tx.wait();
@@ -72,12 +72,12 @@ async function transferFunds(req, res) {
     );
     const balanceFantom = await fantomWallet.getBalance();
 
-    // If balance is less than 5k FTM, don't transfer. Otherwise, send 4k FTM.
+    // If balance is less than 1.3k FTM, don't transfer. Otherwise, send 1k FTM.
     // We keep some FTM to pay for refunds.
-    if (balanceFantom.gte(ethers.utils.parseEther("5000"))) {
+    if (balanceFantom.gte(ethers.utils.parseEther("1300"))) {
       const tx = await fantomWallet.sendTransaction({
         to: companyAddressFTM,
-        value: ethers.utils.parseEther("4000"),
+        value: ethers.utils.parseEther("1000"),
       });
 
       txReceipts["fantom"] = await tx.wait();
@@ -89,12 +89,12 @@ async function transferFunds(req, res) {
       avalancheProvider
     );
     const balanceAvalanche = await avalancheWallet.getBalance();
-    // If balance is less than 65 AVAX, don't transfer. Otherwise, send 50 AVAX.
+    // If balance is less than 20 AVAX, don't transfer. Otherwise, send 15 AVAX.
     // We keep some AVAX to pay for refunds.
-    if (balanceAvalanche.gte(ethers.utils.parseEther("65"))) {
+    if (balanceAvalanche.gte(ethers.utils.parseEther("20"))) {
       const tx = await avalancheWallet.sendTransaction({
         to: companyAddressAVAX,
-        value: ethers.utils.parseEther("50"),
+        value: ethers.utils.parseEther("15"),
       });
 
       txReceipts["avalanche"] = await tx.wait();
