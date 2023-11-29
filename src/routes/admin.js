@@ -15,6 +15,6 @@ router.delete("/user-verification", deleteUserVerification);
 router.delete("/user-idv-data", deleteUserData);
 router.post("/transfer-funds", transferFunds);
 router.post("/set-session-idv-provider", setSessionIdvProvider);
-router.get("/user-sessions", userSessions);
+router.post("/user-sessions", userSessions);
 
 export default router;
