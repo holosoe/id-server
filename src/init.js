@@ -304,8 +304,11 @@ async function initializeMongoDb() {
   );
 
   const userCredentialsSchema = new Schema({
-    proofDigest: String,
     sigDigest: String,
+    proofDigest: {
+      type: String,
+      required: false,
+    },
     // NOTE: encryptedCredentials is stored as base64 string. Use LitJsSdk.base64StringToBlob() to convert back to blob
     // For backwards compatibility (for the version that uses Lit). TODO: Remove after some time
     encryptedCredentials: {

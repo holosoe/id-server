@@ -12,58 +12,58 @@ const getEndpointLogger = logger.child({ msgPrefix: "[GET /credentials] " });
 
 async function validatePostCredentialsArgs(
   sigDigest,
-  proof,
+  // proof,
   encryptedCredentials,
   encryptedSymmetricKey
 ) {
-  if (!proof) {
-    return { error: "proof is empty" };
-  }
-  const root = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
+  // if (!proof) {
+  //   return { error: "proof is empty" };
+  // }
+  // const root = ethers.BigNumber.from(proof?.inputs?.[0]).toString();
 
-  try {
-    const rootIsRecent = (await axios.get(`${relayerURL}/v3/rootIsRecent/${root}`))
-      .data?.isRecent;
-    if (!rootIsRecent) {
-      return { error: "Root is not recent" };
-    }
-  } catch (err) {
-    if (err.response) {
-      postEndpointLogger.error(
-        { error: err.response.data },
-        "An error occurred calling relayer"
-      );
-    } else if (err.request) {
-      postEndpointLogger.error(
-        { error: err.request.data },
-        "An error occurred calling relayer"
-      );
-    } else {
-      postEndpointLogger.error(
-        { error: err.message },
-        "An error occurred calling relayer"
-      );
-    }
-    return { error: "An error occurred while checking whether the root is recent" };
-  }
+  // try {
+  //   const rootIsRecent = (await axios.get(`${relayerURL}/v3/rootIsRecent/${root}`))
+  //     .data?.isRecent;
+  //   if (!rootIsRecent) {
+  //     return { error: "Root is not recent" };
+  //   }
+  // } catch (err) {
+  //   if (err.response) {
+  //     postEndpointLogger.error(
+  //       { error: err.response.data },
+  //       "An error occurred calling relayer"
+  //     );
+  //   } else if (err.request) {
+  //     postEndpointLogger.error(
+  //       { error: err.request.data },
+  //       "An error occurred calling relayer"
+  //     );
+  //   } else {
+  //     postEndpointLogger.error(
+  //       { error: err.message },
+  //       "An error occurred calling relayer"
+  //     );
+  //   }
+  //   return { error: "An error occurred while checking whether the root is recent" };
+  // }
 
-  // Verify proof of knowledge of leaf preimage
-  try {
-    const verifKeyResp = await axios.get(
-      "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowledgeOfLeafPreimage.verifying.key"
-    );
-    const verificationKey = verifKeyResp.data;
-    const isVerified = zokProvider.verify(verificationKey, proof);
-    if (!isVerified) {
-      return { error: "Proof is invalid" };
-    }
-  } catch (err) {
-    postEndpointLogger.error(
-      { error: err },
-      "An error occurred while verifying KOLP proof"
-    );
-    return { error: "An error occurred while verifying proof" };
-  }
+  // // Verify proof of knowledge of leaf preimage
+  // try {
+  //   const verifKeyResp = await axios.get(
+  //     "https://preproc-zkp.s3.us-east-2.amazonaws.com/knowledgeOfLeafPreimage.verifying.key"
+  //   );
+  //   const verificationKey = verifKeyResp.data;
+  //   const isVerified = zokProvider.verify(verificationKey, proof);
+  //   if (!isVerified) {
+  //     return { error: "Proof is invalid" };
+  //   }
+  // } catch (err) {
+  //   postEndpointLogger.error(
+  //     { error: err },
+  //     "An error occurred while verifying KOLP proof"
+  //   );
+  //   return { error: "An error occurred while verifying proof" };
+  // }
 
   // Require that args are present
   if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
@@ -84,26 +84,30 @@ async function validatePostCredentialsArgs(
 
 async function storeOrUpdateUserCredentials(
   sigDigest,
-  proofDigest,
+  // proofDigest,
   encryptedCredentials,
   encryptedSymmetricKey,
   encryptedCredentialsAES
 ) {
   let userCredentialsDoc;
   try {
-    // Try getting user by proofDigest first. This prevents a single proof
-    // from being used multiple times for different users/sigDigests.
+    // // Try getting user by proofDigest first. This prevents a single proof
+    // // from being used multiple times for different users/sigDigests.
+    // userCredentialsDoc = await UserCredentials.findOne({
+    //   proofDigest: proofDigest,
+    // }).exec();
+    // // If this proof hasn't been used to store user credentials, search by
+    // // sigDigest. The user might be appending to a credential set that they
+    // // have already stored.
+    // if (!userCredentialsDoc) {
+    //   userCredentialsDoc = await UserCredentials.findOne({
+    //     sigDigest: sigDigest,
+    //   }).exec();
+    // }
+
     userCredentialsDoc = await UserCredentials.findOne({
-      proofDigest: proofDigest,
+      sigDigest: sigDigest,
     }).exec();
-    // If this proof hasn't been used to store user credentials, search by
-    // sigDigest. The user might be appending to a credential set that they
-    // have already stored.
-    if (!userCredentialsDoc) {
-      userCredentialsDoc = await UserCredentials.findOne({
-        sigDigest: sigDigest,
-      }).exec();
-    }
   } catch (err) {
     postEndpointLogger.error(
       { error: err },
@@ -112,14 +116,14 @@ async function storeOrUpdateUserCredentials(
     return { error: "An error occurred while retrieving credentials." };
   }
   if (userCredentialsDoc) {
-    userCredentialsDoc.proofDigest = proofDigest;
+    // userCredentialsDoc.proofDigest = proofDigest;
     userCredentialsDoc.sigDigest = sigDigest;
     userCredentialsDoc.encryptedCredentials = encryptedCredentials;
     userCredentialsDoc.encryptedSymmetricKey = encryptedSymmetricKey;
     userCredentialsDoc.encryptedCredentialsAES = encryptedCredentialsAES;
   } else {
     userCredentialsDoc = new UserCredentials({
-      proofDigest,
+      // proofDigest,
       sigDigest,
       encryptedCredentials,
       encryptedSymmetricKey,
@@ -172,7 +176,7 @@ async function getCredentials(req, res) {
 /**
  * Set user's encrypted credentials and symmetric key.
  *
- * NOTE: The user can store 1 credential set per proof, where the proof proves
+ * NOTE (OUTDATED): The user can store 1 credential set per proof, where the proof proves
  * knowledge of a preimage of a leaf in the Merkle tree. So, if the user has 3 leaves,
  * they can store 3 credential sets. This is a limitation of the current design.
  * Ideally, each user can store only 1 credential set. However, given our privacy
@@ -187,7 +191,7 @@ async function postCredentials(req, res) {
 
   const validationResult = await validatePostCredentialsArgs(
     sigDigest,
-    proof,
+    // proof,
     encryptedCredentials,
     encryptedSymmetricKey
   );
@@ -202,13 +206,13 @@ async function postCredentials(req, res) {
   // To save space, we store a hash of the proof, instead of the proof itself.
   // The `toLowerCase` step is important because case differences could allow users
   // to use the same proof (varying only casing) to store multiple sets of data.
-  const serializedProof =
-    "0x" + Buffer.from(JSON.stringify(proof).toLowerCase()).toString("hex");
-  const proofDigest = poseidon([serializedProof]).toString();
+  // const serializedProof =
+  //   "0x" + Buffer.from(JSON.stringify(proof).toLowerCase()).toString("hex");
+  // const proofDigest = poseidon([serializedProof]).toString();
 
   const storeOrUpdateResult = await storeOrUpdateUserCredentials(
     sigDigest,
-    proofDigest,
+    // proofDigest,
     encryptedCredentials,
     encryptedSymmetricKey,
     encryptedCredentialsAES
