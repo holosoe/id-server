@@ -6,6 +6,7 @@ import {
 import { deleteUserData } from "../services/admin/user-idv-data.js";
 import { transferFunds } from "../services/admin/transfer-funds.js";
 import { setSessionIdvProvider } from "../services/admin/set-session-idv-provider.js";
+import { userSessions } from "../services/admin/user-sessions.js";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.delete("/user-verification", deleteUserVerification);
 router.delete("/user-idv-data", deleteUserData);
 router.post("/transfer-funds", transferFunds);
 router.post("/set-session-idv-provider", setSessionIdvProvider);
+router.get("/user-sessions", userSessions);
 
 export default router;
