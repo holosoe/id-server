@@ -247,7 +247,11 @@ async function createIdvSession(req, res) {
         .json({ error: "Session is already associated with a transaction" });
     }
 
-    const validationResult = await validateTxForIDVSessionCreation(chainId, txHash);
+    const validationResult = await validateTxForIDVSessionCreation(
+      session,
+      chainId,
+      txHash
+    );
     if (validationResult.error) {
       return res
         .status(validationResult.status)

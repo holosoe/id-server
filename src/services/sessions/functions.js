@@ -53,7 +53,7 @@ async function usdToAVAX(usdAmount) {
  * - Ensure amount is > desired amount.
  * - Ensure tx is confirmed.
  */
-async function validateTxForIDVSessionCreation(chainId, txHash) {
+async function validateTxForIDVSessionCreation(session, chainId, txHash) {
   let tx;
   if (chainId === 1) {
     tx = await ethereumProvider.getTransaction(txHash);
@@ -122,8 +122,16 @@ async function validateTxForIDVSessionCreation(chainId, txHash) {
     };
   }
 
-  const session = await Session.findOne({ txHash: txHash }).exec();
-  if (session) {
+  const sidDigest = ethers.utils.keccak256("0x" + session._id);
+  if (tx.data !== sidDigest) {
+    return {
+      status: 400,
+      error: "Invalid transaction data",
+    };
+  }
+
+  const otherSession = await Session.findOne({ txHash: txHash }).exec();
+  if (otherSession) {
     return {
       status: 400,
       error: "Transaction has already been used to pay for a session",
