@@ -235,6 +235,12 @@ async function createIdvSession(req, res) {
       return res.status(404).json({ error: "Session not found" });
     }
 
+    if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.NEEDS_PAYMENT}'`,
+      });
+    }
+
     if (session.txHash) {
       return res
         .status(400)
