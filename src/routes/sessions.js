@@ -4,6 +4,7 @@ import {
   createPayPalOrder,
   createIdvSession,
   createIdvSessionV2,
+  createIdvSessionV3,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
@@ -17,6 +18,7 @@ router.post("/", postSession);
 router.post("/:_id/paypal-order", createPayPalOrder);
 // router.post("/:_id/idv-session", createIdvSession);
 router.post("/:_id/idv-session/v2", createIdvSessionV2);
+router.post("/:_id/idv-session/v3", createIdvSessionV3);
 router.post("/:_id/idv-session/refund", refund);
 router.post("/:_id/idv-session/refund/v2", refundV2);
 router.post("/:_id/idv-session/onfido/token", refreshOnfidoToken);

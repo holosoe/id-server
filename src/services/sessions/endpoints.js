@@ -247,6 +247,13 @@ async function createIdvSession(req, res) {
         .json({ error: "Session is already associated with a transaction" });
     }
 
+    const otherSession = await Session.findOne({ txHash: txHash }).exec();
+    if (otherSession) {
+      return res
+        .status(400)
+        .json({ error: "Transaction has already been used to pay for a session" });
+    }
+
     const validationResult = await validateTxForIDVSessionCreation(
       session,
       chainId,
@@ -393,6 +400,100 @@ async function createIdvSessionV2(req, res) {
       );
     } else {
       createIdvSessionV2Logger.error({ error: err }, "Error creating IDV session");
+    }
+
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * Create an IDV session. Use on-chain payment. Does not validate
+ * transaction data.
+ */
+async function createIdvSessionV3(req, res) {
+  try {
+    const _id = req.params._id;
+    const chainId = Number(req.body.chainId);
+    const txHash = req.body.txHash;
+    if (!chainId || supportedChainIds.indexOf(chainId) === -1) {
+      return res.status(400).json({
+        error: `Missing chainId. chainId must be one of ${supportedChainIds.join(
+          ", "
+        )}`,
+      });
+    }
+    if (!txHash) {
+      return res.status(400).json({ error: "txHash is required" });
+    }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.NEEDS_PAYMENT}'`,
+      });
+    }
+
+    if (session.txHash) {
+      return res
+        .status(400)
+        .json({ error: "Session is already associated with a transaction" });
+    }
+
+    const otherSession = await Session.findOne({ txHash: txHash }).exec();
+    if (otherSession) {
+      return res
+        .status(400)
+        .json({ error: "Transaction has already been used to pay for a session" });
+    }
+
+    const validationResult = await validateTxForIDVSessionCreation(
+      session,
+      chainId,
+      txHash
+    );
+    if (
+      validationResult.error &&
+      // We ignore "Invalid transaction data" here
+      validationResult.error !== "Invalid transaction data"
+    ) {
+      return res
+        .status(validationResult.status)
+        .json({ error: validationResult.error });
+    }
+
+    // Note: We do not immediately call session.save() after adding txHash to
+    // the session because we want the session to be saved only if the rest of
+    // this function executes successfully.
+    session.status = sessionStatusEnum.IN_PROGRESS;
+    session.chainId = chainId;
+    session.txHash = txHash;
+
+    return handleIdvSessionCreation(res, session, createIdvSessionLogger);
+  } catch (err) {
+    if (err.response) {
+      createIdvSessionLogger.error(
+        { error: err.response.data },
+        "Error creating IDV session"
+      );
+    } else if (err.request) {
+      createIdvSessionLogger.error(
+        { error: err.request.data },
+        "Error creating IDV session"
+      );
+    } else {
+      createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
     }
 
     return res.status(500).json({ error: "An unknown error occurred" });
@@ -695,6 +796,7 @@ export {
   // capturePayPalOrder,
   createIdvSession,
   createIdvSessionV2,
+  createIdvSessionV3,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,

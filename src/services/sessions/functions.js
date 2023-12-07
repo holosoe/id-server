@@ -130,14 +130,6 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
     };
   }
 
-  const otherSession = await Session.findOne({ txHash: txHash }).exec();
-  if (otherSession) {
-    return {
-      status: 400,
-      error: "Transaction has already been used to pay for a session",
-    };
-  }
-
   return {};
 }
 
