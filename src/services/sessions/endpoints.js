@@ -408,10 +408,16 @@ async function createIdvSessionV2(req, res) {
 
 /**
  * Create an IDV session. Use on-chain payment. Does not validate
- * transaction data.
+ * transaction data. Requires admin API key.
  */
 async function createIdvSessionV3(req, res) {
   try {
+    const apiKey = req.headers["x-api-key"];
+
+    if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
+      return res.status(401).json({ error: "Invalid API key." });
+    }
+
     const _id = req.params._id;
     const chainId = Number(req.body.chainId);
     const txHash = req.body.txHash;
