@@ -474,6 +474,24 @@ async function createIdvSessionV3(req, res) {
       // We ignore "Invalid transaction data" here
       validationResult.error !== "Invalid transaction data"
     ) {
+      // We ignore "Invalid transaction amount" here if the tx amount is
+      // at least 50% of the expected amount.
+      if (validationResult.error.includes("Invalid transaction amount")) {
+        const expected = ethers.BigNumber.from(
+          validationResult.error.split("Expected: ")[1].split(".")[0]
+        );
+        const found = vethers.BigNumber.from(
+          validationResult.error.split("Found: ")[1].split(".")[0]
+        );
+
+        // Make sure found is at least 50% of expected
+        if (found.lt(expected.div(2))) {
+          return res
+            .status(validationResult.status)
+            .json({ error: validationResult.error });
+        }
+      }
+
       return res
         .status(validationResult.status)
         .json({ error: validationResult.error });

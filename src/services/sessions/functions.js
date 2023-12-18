@@ -100,6 +100,13 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   }
 
+  if (!tx.blockHash || tx.confirmations === 0) {
+    return {
+      status: 400,
+      error: "Transaction has not been confirmed yet.",
+    };
+  }
+
   // Round to 18 decimal places to avoid this underflow error from ethers:
   // "fractional component exceeds decimals"
   const decimals = 18;
@@ -111,14 +118,7 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
   if (tx.value.lt(expectedAmount)) {
     return {
       status: 400,
-      error: `Invalid transaction amount. Amount must be greater than ${expectedAmount.toString()} on chain ${chainId}`,
-    };
-  }
-
-  if (!tx.blockHash || tx.confirmations === 0) {
-    return {
-      status: 400,
-      error: "Transaction has not been confirmed yet.",
+      error: `Invalid transaction amount. Expected: ${tx.value.toString()}. Found: ${expectedAmount.toString()}. (chain ID: ${chainId})`,
     };
   }
 
