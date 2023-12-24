@@ -1,0 +1,124 @@
+import axios from "axios";
+import { GalxeCampaignZeroUser } from "../../init.js";
+
+const silkMfaServerOrigin =
+  process.env.NODE_ENV === "production"
+    ? "https://server.silkwallet.net"
+    : "http://127.0.0.1:3003";
+
+async function getSilkAccountFromGalxeAddress(email) {
+  try {
+    const resp = await axios.post(
+      `${silkMfaServerOrigin}/galxe-campaigns/0/get-linked-account`,
+      {
+        email,
+        api_key: process.env.SILK_MFASERVER_API_KEY,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return resp.data;
+  } catch (err) {
+    if (err.response?.data) {
+      console.error(err);
+    } else if (err.request?.data) {
+      console.error(err);
+    } else {
+      console.error(err);
+    }
+  }
+}
+
+/**
+ * ENDPOINT
+ */
+async function storePeanutData(req, res) {
+  try {
+    const apiKey = req.headers["x-api-key"];
+
+    if (apiKey !== process.env.SILK_ADMIN_API_KEY) {
+      return res.status(401).json({ error: "Invalid API key." });
+    }
+
+    const generatedLink = req.body.generatedLink;
+    const peanutLink = req.body.peanutLink;
+    const email = req.body.email;
+
+    if (!generatedLink) {
+      return res.status(400).json({ error: "No generated link specified." });
+    }
+
+    if (!peanutLink) {
+      return res.status(400).json({ error: "No peanut link specified." });
+    }
+
+    if (!email) {
+      return res.status(400).json({ error: "No email specified." });
+    }
+
+    const newUser = new GalxeCampaignZeroUser({
+      email,
+      generatedLink,
+      peanutLink,
+    });
+    await newUser.save();
+    return res.status(200).json({
+      message: `Created new user with email ${email}`,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * ENDPOINT
+ */
+async function getUserHasClaimedNFT(req, res) {
+  try {
+    // The address the user is using with Galxe
+    const galxeAddress = req.params.address;
+
+    if (!galxeAddress) {
+      return res.status(400).json({
+        error: "No address specified",
+      });
+    }
+
+    const silkAccount = await getSilkAccountFromGalxeAddress(galxeAddress);
+
+    if (!silkAccount) {
+      return res.status(400).json({
+        error: "User's account isn't linked",
+      });
+    }
+
+    const { _id: email, signer: silkAddress } = silkAccount;
+
+    const user = await GalxeCampaignZeroUser.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        error: "Peanut data not found for user",
+      });
+    }
+
+    // TODO...
+    // const linkDetails = peanut.getLinkDetails({ link: user.peanutLink })
+    // - if (!linkDetails.claimed) return error
+    // - const nfts = moralis.getNfts(silkAddress)
+    // - if (linkDetails.tokenId not in nfts) return error
+
+    return res.status(200).json({
+      claimed: true,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+export { storePeanutData, getUserHasClaimedNFT };

@@ -437,6 +437,16 @@ async function initializeMongoDb() {
     "VerificationCollisionMetadata",
     VerificationCollisionMetadataSchema
   );
+  const GalxeCampaignZeroUserSchema = new Schema({
+    // TODO: Is there anything else we need for this? (This comment is irrelevant after Dec 25, 2023)
+    generatedLink: String,
+    peanutLink: String,
+    email: String,
+  });
+  const GalxeCampaignZeroUser = mongoose.model(
+    "GalxeCampaignZeroUser",
+    GalxeCampaignZeroUserSchema
+  );
   await initializeDailyVerificationCount(DailyVerificationCount);
   await initializeDailyVerificationDeletions(DailyVerificationDeletions);
   return {
@@ -449,6 +459,7 @@ async function initializeMongoDb() {
     DailyVerificationCount,
     DailyVerificationDeletions,
     VerificationCollisionMetadata,
+    GalxeCampaignZeroUser,
   };
 }
 
@@ -462,7 +473,8 @@ let UserVerifications,
   UserProofMetadata,
   DailyVerificationCount,
   DailyVerificationDeletions,
-  VerificationCollisionMetadata;
+  VerificationCollisionMetadata,
+  GalxeCampaignZeroUser;
 initializeMongoDb().then((result) => {
   if (result) {
     logger.info("Initialized MongoDB connection");
@@ -475,6 +487,7 @@ initializeMongoDb().then((result) => {
     DailyVerificationCount = result.DailyVerificationCount;
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
+    GalxeCampaignZeroUser = result.GalxeCampaignZeroUser;
   } else {
     logger.error("MongoDB initialization failed");
   }
@@ -497,5 +510,6 @@ export {
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
+  GalxeCampaignZeroUser,
   zokProvider,
 };
