@@ -1,4 +1,5 @@
 import axios from "axios";
+import peanut from "@squirrel-labs/peanut-sdk";
 import { GalxeCampaignZeroUser } from "../../init.js";
 
 const silkMfaServerOrigin =
@@ -29,6 +30,30 @@ async function getSilkAccountFromGalxeAddress(email) {
     } else {
       console.error(err);
     }
+  }
+}
+
+async function getAllNfts(address) {
+  const apiUrl = `https://deep-index.moralis.io/api/v2.2/${address}/nft`;
+
+  const config = {
+    headers: {
+      accept: "application/json",
+      "X-API-Key": process.env.MORALIS_API_KEY,
+    },
+    params: {
+      chain: "optimism",
+      format: "decimal",
+      media_items: false,
+    },
+  };
+
+  try {
+    const response = await axios.get(apiUrl, config);
+    const nfts = response.data.result;
+    return nfts;
+  } catch (error) {
+    console.log("Error while fetching NFTs: ", error?.response?.data?.message);
   }
 }
 
@@ -100,20 +125,44 @@ async function getUserHasClaimedNFT(req, res) {
 
     const user = await GalxeCampaignZeroUser.findOne({ email });
 
-    if (!user) {
+    if (!user || !user.generatedLink) {
       return res.status(400).json({
         error: "Peanut data not found for user",
       });
     }
 
-    // TODO...
-    // const linkDetails = peanut.getLinkDetails({ link: user.peanutLink })
-    // - if (!linkDetails.claimed) return error
-    // - const nfts = moralis.getNfts(silkAddress)
-    // - if (linkDetails.tokenId not in nfts) return error
+    const linkDetails = await peanut.getLinkDetails({ link: user.peanutLink });
 
-    return res.status(200).json({
-      claimed: true,
+    if (!linkDetails.claimed) {
+      return res.status(400).json({
+        error: "Peanut link has not been claimed",
+      });
+    }
+
+    const nfts = await getAllNfts(silkAddress);
+
+    if ((nfts ?? []).length === 0) {
+      return res.status(400).json({
+        error: "User has no NFTs",
+      });
+    }
+
+    const tokenAddress = linkDetails.tokenAddress.toLowerCase();
+    const tokenId = linkDetails.tokenId;
+
+    for (const nft of nfts) {
+      if (
+        tokenAddress === nft.token_address.toLowerCase() &&
+        nft.token_id === tokenId
+      ) {
+        return res.status(200).json({
+          claimed: true,
+        });
+      }
+    }
+
+    return res.status(400).json({
+      error: "User has not claimed NFT",
     });
   } catch (err) {
     console.error(err);
