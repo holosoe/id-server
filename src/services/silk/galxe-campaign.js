@@ -7,12 +7,12 @@ const silkMfaServerOrigin =
     ? "https://server.silkwallet.net"
     : "http://127.0.0.1:3003";
 
-async function getSilkAccountFromGalxeAddress(email) {
+async function getSilkAccountFromGalxeAddress(address) {
   try {
     const resp = await axios.post(
       `${silkMfaServerOrigin}/galxe-campaigns/0/get-linked-account`,
       {
-        email,
+        address,
         api_key: process.env.SILK_MFASERVER_API_KEY,
       },
       {
