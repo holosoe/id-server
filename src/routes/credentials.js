@@ -11,6 +11,6 @@ const router = express.Router();
 router.get("/", getCredentials);
 router.post("/", postCredentials);
 router.get("/v2", getCredentialsV2);
-router.put("/v2", putPhoneCredentials);
+router.put("/v2/phone", putPhoneCredentials);
 
 export default router;
