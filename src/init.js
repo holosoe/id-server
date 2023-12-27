@@ -326,6 +326,27 @@ async function initializeMongoDb() {
     },
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
+  const userCredentialsV2Schema = new Schema({
+    sigDigest: String,
+    encryptedPhoneCreds: {
+      type: {
+        ciphertext: String,
+        iv: String,
+      },
+      required: false,
+    },
+    encryptedGovIdCreds: {
+      type: {
+        ciphertext: String,
+        iv: String,
+      },
+      required: false,
+    },
+  });
+  const UserCredentialsV2 = mongoose.model(
+    "UserCredentialsV2",
+    userCredentialsV2Schema
+  );
   const userProofMetadataSchema = new Schema({
     sigDigest: String,
     encryptedProofMetadata: {
@@ -438,7 +459,6 @@ async function initializeMongoDb() {
     VerificationCollisionMetadataSchema
   );
   const GalxeCampaignZeroUserSchema = new Schema({
-    // TODO: Is there anything else we need for this? (This comment is irrelevant after Dec 25, 2023)
     generatedLink: String,
     peanutLink: String,
     email: String,
@@ -455,6 +475,7 @@ async function initializeMongoDb() {
     Session,
     SessionRefundMutex,
     UserCredentials,
+    UserCredentialsV2,
     UserProofMetadata,
     DailyVerificationCount,
     DailyVerificationDeletions,
@@ -470,6 +491,7 @@ let UserVerifications,
   Session,
   SessionRefundMutex,
   UserCredentials,
+  UserCredentialsV2,
   UserProofMetadata,
   DailyVerificationCount,
   DailyVerificationDeletions,
@@ -483,6 +505,7 @@ initializeMongoDb().then((result) => {
     Session = result.Session;
     SessionRefundMutex = result.SessionRefundMutex;
     UserCredentials = result.UserCredentials;
+    UserCredentialsV2 = result.UserCredentialsV2;
     UserProofMetadata = result.UserProofMetadata;
     DailyVerificationCount = result.DailyVerificationCount;
     DailyVerificationDeletions = result.DailyVerificationDeletions;
@@ -506,6 +529,7 @@ export {
   Session,
   SessionRefundMutex,
   UserCredentials,
+  UserCredentialsV2,
   UserProofMetadata,
   DailyVerificationCount,
   DailyVerificationDeletions,
