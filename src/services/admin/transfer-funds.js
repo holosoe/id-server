@@ -75,10 +75,13 @@ async function transferFunds(req, res) {
     // If balance is less than 1.3k FTM, don't transfer. Otherwise, send 1k FTM.
     // We keep some FTM to pay for refunds.
     if (balanceFantom.gte(ethers.utils.parseEther("1300"))) {
-      const tx = await fantomWallet.sendTransaction({
+      const txReq = await fantomWallet.populateTransaction({
         to: companyAddressFTM,
-        value: ethers.utils.parseEther("1000"),
+        value: ethers.utils.parseEther("1100"),
       });
+
+      txReq.maxFeePerGas = txReq.maxFeePerGas.mul(2);
+      txReq.maxPriorityFeePerGas = txReq.maxPriorityFeePerGas.mul(14);
 
       txReceipts["fantom"] = await tx.wait();
     }
