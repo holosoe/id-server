@@ -174,4 +174,38 @@ async function getUserHasClaimedNFT(req, res) {
   }
 }
 
-export { storePeanutData, getUserHasClaimedNFT };
+/**
+ * ENDPOINT
+ */
+async function getUserHasClaimedNFTByEmail(req, res) {
+  try {
+    const email = req.params.email;
+
+    if (!email) {
+      return res.status(400).json({
+        error: "No address specified",
+      });
+    }
+
+    const user = await GalxeCampaignZeroUser.findOne({ email });
+
+    if (!user || !user.generatedLink) {
+      return res.status(400).json({
+        error: "Peanut data not found for user",
+      });
+    }
+
+    const linkDetails = await peanut.getLinkDetails({ link: user.peanutLink });
+
+    return res.status(200).json({
+      claimed: linkDetails.claimed,
+      generatedLink: user.generatedLink,
+      peanutLink: user.peanutLink,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+export { storePeanutData, getUserHasClaimedNFT, getUserHasClaimedNFTByEmail };
