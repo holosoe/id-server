@@ -80,8 +80,10 @@ async function transferFunds(req, res) {
         value: ethers.utils.parseEther("1100"),
       });
 
-      txReq.maxFeePerGas = txReq.maxFeePerGas.mul(6);
+      txReq.maxFeePerGas = txReq.maxFeePerGas.mul(4);
       txReq.maxPriorityFeePerGas = txReq.maxPriorityFeePerGas.mul(14);
+
+      const tx = await fantomWallet.sendTransaction(txReq);
 
       txReceipts["fantom"] = await tx.wait();
     }
