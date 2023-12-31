@@ -4,29 +4,29 @@ import logger from "../utils/logger.js";
 const postEndpointLogger = logger.child({ msgPrefix: "[POST /credentials/v2] " });
 const getEndpointLogger = logger.child({ msgPrefix: "[GET /credentials/v2] " });
 
-async function validatePutCredentialsArgs(sigDigest) {
+async function validatePutCredentialsArgs(holoUserId) {
   // Require that args are present
-  if (!sigDigest || sigDigest == "null" || sigDigest == "undefined") {
-    return { error: "No sigDigest specified" };
+  if (!holoUserId || holoUserId == "null" || holoUserId == "undefined") {
+    return { error: "No holoUserId specified" };
   }
 
   // Require that args are correct types
-  if (typeof sigDigest != "string") {
-    return { error: "sigDigest isn't a string" };
+  if (typeof holoUserId != "string") {
+    return { error: "holoUserId isn't a string" };
   }
 
   // Ensure that args are not too large
-  if (sigDigest.length != 64) {
-    return { error: "sigDigest is not 64 characters long" };
+  if (holoUserId.length != 64) {
+    return { error: "holoUserId is not 64 characters long" };
   }
   return { success: true };
 }
 
-async function storeOrUpdatePhoneCredentials(sigDigest, encryptedCredentials) {
+async function storeOrUpdatePhoneCredentials(holoUserId, encryptedCredentials) {
   let userCredentialsDoc;
   try {
     userCredentialsDoc = await UserCredentialsV2.findOne({
-      sigDigest: sigDigest,
+      holoUserId: holoUserId,
     }).exec();
   } catch (err) {
     postEndpointLogger.error(
@@ -36,11 +36,11 @@ async function storeOrUpdatePhoneCredentials(sigDigest, encryptedCredentials) {
     return { error: "An error occurred while retrieving credentials." };
   }
   if (userCredentialsDoc) {
-    userCredentialsDoc.sigDigest = sigDigest;
+    userCredentialsDoc.holoUserId = holoUserId;
     userCredentialsDoc.phone = encryptedCredentials;
   } else {
     userCredentialsDoc = new UserCredentialsV2({
-      sigDigest,
+      holoUserId,
       encryptedPhoneCreds: encryptedCredentials,
     });
   }
@@ -60,25 +60,25 @@ async function storeOrUpdatePhoneCredentials(sigDigest, encryptedCredentials) {
  * Get user's encrypted credentials and symmetric key from document store.
  */
 async function getCredentials(req, res) {
-  const sigDigest = req?.query?.sigDigest;
+  const holoUserId = req?.query?.holoUserId;
 
-  if (!sigDigest) {
-    getEndpointLogger.error("No sigDigest specified.");
-    return res.status(400).json({ error: "No sigDigest specified" });
+  if (!holoUserId) {
+    getEndpointLogger.error("No holoUserId specified.");
+    return res.status(400).json({ error: "No holoUserId specified" });
   }
-  if (typeof sigDigest != "string") {
-    getEndpointLogger.error("sigDigest isn't a string.");
-    return res.status(400).json({ error: "sigDigest isn't a string" });
+  if (typeof holoUserId != "string") {
+    getEndpointLogger.error("holoUserId isn't a string.");
+    return res.status(400).json({ error: "holoUserId isn't a string" });
   }
 
   try {
     const userCreds = await UserCredentialsV2.findOne({
-      sigDigest: sigDigest,
+      holoUserId: holoUserId,
     }).exec();
     return res.status(200).json(userCreds);
   } catch (err) {
     getEndpointLogger.error(
-      { error: err, sigDigest },
+      { error: err, holoUserId },
       "An error occurred while retrieving credentials from database"
     );
     return res.status(400).json({
@@ -91,11 +91,11 @@ async function getCredentials(req, res) {
  * ENDPOINT
  */
 async function putPhoneCredentials(req, res) {
-  const sigDigest = req?.body?.sigDigest;
+  const holoUserId = req?.body?.holoUserId;
   const encryptedCredentials = req?.body?.encryptedCredentials;
 
   const validationResult = await validatePutCredentialsArgs(
-    sigDigest,
+    holoUserId,
     encryptedCredentials
   );
   if (validationResult.error) {
@@ -107,12 +107,12 @@ async function putPhoneCredentials(req, res) {
   }
 
   const storeOrUpdateResult = await storeOrUpdatePhoneCredentials(
-    sigDigest,
+    holoUserId,
     encryptedCredentials
   );
   if (storeOrUpdateResult.error) {
     postEndpointLogger.error(
-      { error: storeOrUpdateResult.error, sigDigest },
+      { error: storeOrUpdateResult.error, holoUserId },
       "An error occurred while storing or updating user credentials"
     );
     return res.status(500).json({ error: storeOrUpdateResult.error });

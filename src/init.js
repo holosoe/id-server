@@ -327,7 +327,7 @@ async function initializeMongoDb() {
   });
   const UserCredentials = mongoose.model("UserCredentials", userCredentialsSchema);
   const userCredentialsV2Schema = new Schema({
-    sigDigest: String,
+    holoUserId: String,
     encryptedPhoneCreds: {
       type: {
         ciphertext: String,
