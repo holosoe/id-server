@@ -37,7 +37,7 @@ async function storeOrUpdatePhoneCredentials(holoUserId, encryptedCredentials) {
   }
   if (userCredentialsDoc) {
     userCredentialsDoc.holoUserId = holoUserId;
-    userCredentialsDoc.phone = encryptedCredentials;
+    userCredentialsDoc.encryptedPhoneCreds = encryptedCredentials;
   } else {
     userCredentialsDoc = new UserCredentialsV2({
       holoUserId,
