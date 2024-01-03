@@ -74,6 +74,8 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
     };
   }
 
+  const txReceipt = await tx.wait();
+
   if (idServerPaymentAddress !== tx.to.toLowerCase()) {
     return {
       status: 400,
@@ -100,7 +102,7 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   }
 
-  if (!tx.blockHash || tx.confirmations === 0) {
+  if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
     return {
       status: 400,
       error: "Transaction has not been confirmed yet.",
