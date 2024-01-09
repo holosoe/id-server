@@ -1,7 +1,6 @@
 import { UserCredentialsV2 } from "../init.js";
 import logger from "../utils/logger.js";
 
-const postEndpointLogger = logger.child({ msgPrefix: "[POST /credentials/v2] " });
 const getEndpointLogger = logger.child({ msgPrefix: "[GET /credentials/v2] " });
 
 async function validatePutCredentialsArgs(holoUserId) {
@@ -29,10 +28,7 @@ async function storeOrUpdatePhoneCredentials(holoUserId, encryptedCredentials) {
       holoUserId: holoUserId,
     }).exec();
   } catch (err) {
-    postEndpointLogger.error(
-      { error: err },
-      "An error occurred while retrieving credentials"
-    );
+    logger.error({ error: err }, "An error occurred while retrieving credentials");
     return { error: "An error occurred while retrieving credentials." };
   }
   if (userCredentialsDoc) {
@@ -47,7 +43,38 @@ async function storeOrUpdatePhoneCredentials(holoUserId, encryptedCredentials) {
   try {
     await userCredentialsDoc.save();
   } catch (err) {
-    postEndpointLogger.error(
+    logger.error(
+      { error: err },
+      "An error occurred while saving user credentials to database"
+    );
+    return { error: "An error occurred while trying to save object to database." };
+  }
+  return { success: true };
+}
+
+async function storeOrUpdateGovIdCredentials(holoUserId, encryptedCredentials) {
+  let userCredentialsDoc;
+  try {
+    userCredentialsDoc = await UserCredentialsV2.findOne({
+      holoUserId: holoUserId,
+    }).exec();
+  } catch (err) {
+    logger.error({ error: err }, "An error occurred while retrieving credentials");
+    return { error: "An error occurred while retrieving credentials." };
+  }
+  if (userCredentialsDoc) {
+    userCredentialsDoc.holoUserId = holoUserId;
+    userCredentialsDoc.encryptedGovIdCreds = encryptedCredentials;
+  } else {
+    userCredentialsDoc = new UserCredentialsV2({
+      holoUserId,
+      encryptedGovIdCreds: encryptedCredentials,
+    });
+  }
+  try {
+    await userCredentialsDoc.save();
+  } catch (err) {
+    logger.error(
       { error: err },
       "An error occurred while saving user credentials to database"
     );
@@ -99,10 +126,7 @@ async function putPhoneCredentials(req, res) {
     encryptedCredentials
   );
   if (validationResult.error) {
-    postEndpointLogger.error(
-      { error: validationResult.error },
-      "Invalid request body"
-    );
+    logger.error({ error: validationResult.error }, "Invalid request body");
     return res.status(400).json({ error: validationResult.error });
   }
 
@@ -111,14 +135,39 @@ async function putPhoneCredentials(req, res) {
     encryptedCredentials
   );
   if (storeOrUpdateResult.error) {
-    postEndpointLogger.error(
-      { error: storeOrUpdateResult.error, holoUserId },
-      "An error occurred while storing or updating user credentials"
-    );
+    logger.error({ error: storeOrUpdateResult.error, holoUserId });
     return res.status(500).json({ error: storeOrUpdateResult.error });
   }
 
   return res.status(200).json({ success: true });
 }
 
-export { getCredentials, putPhoneCredentials };
+/**
+ * ENDPOINT
+ */
+async function putGovIdCredentials(req, res) {
+  const holoUserId = req?.body?.holoUserId;
+  const encryptedCredentials = req?.body?.encryptedCredentials;
+
+  const validationResult = await validatePutCredentialsArgs(
+    holoUserId,
+    encryptedCredentials
+  );
+  if (validationResult.error) {
+    logger.error({ error: validationResult.error }, "Invalid request body");
+    return res.status(400).json({ error: validationResult.error });
+  }
+
+  const storeOrUpdateResult = await storeOrUpdateGovIdCredentials(
+    holoUserId,
+    encryptedCredentials
+  );
+  if (storeOrUpdateResult.error) {
+    logger.error({ error: storeOrUpdateResult.error, holoUserId });
+    return res.status(500).json({ error: storeOrUpdateResult.error });
+  }
+
+  return res.status(200).json({ success: true });
+}
+
+export { getCredentials, putPhoneCredentials, putGovIdCredentials };
