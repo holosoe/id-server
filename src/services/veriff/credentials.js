@@ -8,6 +8,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
+import { issue as issuev1 } from "holonym-wasm-issuer-v1";
 import { getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
@@ -433,4 +434,126 @@ async function getCredentials(req, res) {
   }
 }
 
-export { getCredentials };
+/**
+ * ENDPOINT
+ *
+ * Allows user to retrieve their signed verification info.
+ *
+ * This endpoint is for the V3 Holonym architecture. (The version numbers for
+ * the endpoints do not necessarily correspond to the version numbers for the
+ * protocol as a whole.)
+ */
+async function getCredentialsV2(req, res) {
+  try {
+    const issuanceNullifier = req.params.nullifier;
+
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = newDummyUserCreds;
+
+      const response = JSON.parse(
+        issuev1(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          creds.rawCreds.countryCode.toString(),
+          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+        )
+      );
+      response.metadata = newDummyUserCreds;
+
+      return res.status(200).json(response);
+    }
+
+    if (!req?.query?.sessionId) {
+      return res.status(400).json({ error: "No sessionId specified" });
+    }
+
+    const metaSessionStatus = await getSessionStatus(req.query.sessionId);
+    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({ error: "Session is not in progress" });
+    }
+
+    const session = await getVeriffSessionDecision(req.query.sessionId);
+
+    if (!session) {
+      endpointLogger.error(
+        { sessionId: req.query.sessionId },
+        "Failed to retrieve Verrif session."
+      );
+      return res.status(400).json({ error: "Failed to retrieve Verrif session." });
+    }
+
+    const validationResult = validateSession(session, req.query.sessionId);
+    if (validationResult.error) {
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(
+        req.query.sessionId,
+        sessionStatusEnum.VERIFICATION_FAILED
+      );
+      return res.status(400).json({ error: validationResult.error });
+    }
+
+    // Get UUID
+    const uuidConstituents =
+      (session.verification.person.firstName || "") +
+      (session.verification.person.lastName || "") +
+      (session.verification.person.addresses?.[0]?.postcode || "") +
+      (session.verification.person.dateOfBirth || "");
+    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    if (user) {
+      await saveCollisionMetadata(uuid, req.query.sessionId, session);
+
+      endpointLogger.error({ uuid }, "User has already registered.");
+      await updateSessionStatus(
+        req.query.sessionId,
+        sessionStatusEnum.VERIFICATION_FAILED
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. User ID: ${user._id}` });
+    }
+
+    // Store UUID for Sybil resistance
+    const dbResponse = await saveUserToDb(uuid, req.query.sessionId);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(session);
+
+    const response = JSON.parse(
+      issuev1(
+        PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      )
+    );
+    response.metadata = creds;
+
+    await deleteVeriffSession(req.query.sessionId);
+
+    // TODO: MAYBE: Update IDVSessions. Set the status to "credentials-issued" and add the UUID.
+    // This will help us ensure that we never display a "completed - click here to retrieve your
+    // credentials" message to the user if their verification is complete but their creds haven't
+    // been signed by Holonym (and returned) yet. It's not necessary to set status to
+    // "credentials-issued" since the frontend can check for the presence of gov ID creds; however,
+    // if there's a bug between the end of this function and credential storage logic in the
+    // frontend, then the user might see "completed - click, etc." even after their creds have
+    // been issued.
+
+    endpointLogger.info(
+      { uuid, sessionId: req.query.sessionId },
+      "Issuing credentials"
+    );
+
+    await updateSessionStatus(req.query.sessionId, sessionStatusEnum.ISSUED);
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
+  }
+}
+
+export { getCredentials, getCredentialsV2 };
