@@ -120,7 +120,7 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
   if (tx.value.lt(expectedAmount)) {
     return {
       status: 400,
-      error: `Invalid transaction amount. Expected: ${tx.value.toString()}. Found: ${expectedAmount.toString()}. (chain ID: ${chainId})`,
+      error: `Invalid transaction amount. Expected: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`,
     };
   }
 
