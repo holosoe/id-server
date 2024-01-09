@@ -523,7 +523,7 @@ async function getCredentialsV2(req, res) {
 
     const response = JSON.parse(
       issuev1(
-        PRIVKEY,
+        process.env.HOLONYM_ISSUER_PRIVKEY,
         issuanceNullifier,
         creds.rawCreds.countryCode.toString(),
         creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
