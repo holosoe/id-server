@@ -97,6 +97,19 @@ function validateReports(reports) {
         };
       }
     }
+    if (report.name === "device_intelligence") {
+      if (report?.properties?.device?.ip_reputation === "HIGH_RISK") {
+        return {
+          error: `Verification failed. IP address is high risk.`,
+          log: {
+            msg: "IP address is high risk",
+            data: {
+              ip: report?.properties?.ip?.address,
+            },
+          },
+        };
+      }
+    }
     if (report.status !== "complete") {
       verificationFailed = true;
       failureReasons.push(`Report status is '${report.status}'. Expected 'complete'.`);
