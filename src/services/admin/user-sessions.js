@@ -57,6 +57,7 @@ async function userSessions(req, res) {
       txHash: s.txHash,
       chainId: s.chainId,
       refundTxHash: s.refundTxHash,
+      sid: s._id.toString(),
     }));
 
     return res.status(200).json({ sessions: filteredSessions });
