@@ -109,6 +109,20 @@ function validateReports(reports) {
           },
         };
       }
+      if (
+        typeof report?.properties?.device?.device_fingerprint_reuse === "number" &&
+        report?.properties?.device?.device_fingerprint_reuse > 5
+      ) {
+        return {
+          error: `Verification failed. device_fingerprint_reuse is ${report?.properties?.device?.device_fingerprint_reuse}.`,
+          log: {
+            msg: "device_fingerprint_reuse is greater than 5",
+            data: {
+              ip: report?.properties?.device?.device_fingerprint_reuse,
+            },
+          },
+        };
+      }
     }
     if (report.status !== "complete") {
       verificationFailed = true;
