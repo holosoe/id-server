@@ -111,7 +111,7 @@ function validateReports(reports) {
       }
       if (
         typeof report?.properties?.device?.device_fingerprint_reuse === "number" &&
-        report?.properties?.device?.device_fingerprint_reuse > 5
+        report?.properties?.device?.device_fingerprint_reuse > 3
       ) {
         return {
           error: `Verification failed. device_fingerprint_reuse is ${report?.properties?.device?.device_fingerprint_reuse}.`,
