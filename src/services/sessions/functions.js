@@ -11,7 +11,6 @@ import {
   avalancheProvider,
   payPalApiUrlBase,
 } from "../../constants/misc.js";
-import { ethereumCMCID, fantomCMCID, avalancheCMCID } from "../../constants/cmc.js";
 import {
   getAccessToken as getPayPalAccessToken,
   getOrder as getPayPalOrder,
@@ -24,28 +23,7 @@ import {
   createOnfidoSdkToken,
   createOnfidoCheck,
 } from "../../utils/onfido.js";
-import { getLatestCryptoPrice } from "../../utils/cmc.js";
-
-async function usdToETH(usdAmount) {
-  const resp = await getLatestCryptoPrice(ethereumCMCID);
-  const ethPrice = resp?.data?.data?.[ethereumCMCID]?.quote?.USD?.price;
-  const ethAmount = usdAmount / ethPrice;
-  return ethAmount;
-}
-
-async function usdToFTM(usdAmount) {
-  const resp = await getLatestCryptoPrice(fantomCMCID);
-  const fantomPrice = resp?.data?.data?.[fantomCMCID]?.quote?.USD?.price;
-  const ftmAmount = usdAmount / fantomPrice;
-  return ftmAmount;
-}
-
-async function usdToAVAX(usdAmount) {
-  const resp = await getLatestCryptoPrice(avalancheCMCID);
-  const avalanchePrice = resp?.data?.data?.[avalancheCMCID]?.quote?.USD?.price;
-  const ftmAmount = usdAmount / avalanchePrice;
-  return ftmAmount;
-}
+import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
 /**
  * Check blockchain for tx.

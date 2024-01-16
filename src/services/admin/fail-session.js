@@ -22,7 +22,7 @@ async function failSession(req, res) {
     const id = req.body.id;
 
     if (!id) {
-      return res.status(400).json({ error: "No user ID specified." });
+      return res.status(400).json({ error: "No session ID specified." });
     }
 
     let objectId = null;

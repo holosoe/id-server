@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ethereumCMCID, fantomCMCID, avalancheCMCID } from "../constants/cmc.js";
 
 /**
  * Get price of the crypto designated by the given CMC ID.
@@ -13,4 +14,25 @@ export function getLatestCryptoPrice(id) {
       },
     }
   );
+}
+
+export async function usdToETH(usdAmount) {
+  const resp = await getLatestCryptoPrice(ethereumCMCID);
+  const ethPrice = resp?.data?.data?.[ethereumCMCID]?.quote?.USD?.price;
+  const ethAmount = usdAmount / ethPrice;
+  return ethAmount;
+}
+
+export async function usdToFTM(usdAmount) {
+  const resp = await getLatestCryptoPrice(fantomCMCID);
+  const fantomPrice = resp?.data?.data?.[fantomCMCID]?.quote?.USD?.price;
+  const ftmAmount = usdAmount / fantomPrice;
+  return ftmAmount;
+}
+
+export async function usdToAVAX(usdAmount) {
+  const resp = await getLatestCryptoPrice(avalancheCMCID);
+  const avalanchePrice = resp?.data?.data?.[avalancheCMCID]?.quote?.USD?.price;
+  const ftmAmount = usdAmount / avalanchePrice;
+  return ftmAmount;
 }

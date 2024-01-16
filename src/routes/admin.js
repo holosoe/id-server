@@ -8,6 +8,7 @@ import { transferFunds } from "../services/admin/transfer-funds.js";
 import { setSessionIdvProvider } from "../services/admin/set-session-idv-provider.js";
 import { userSessions } from "../services/admin/user-sessions.js";
 import { failSession } from "../services/admin/fail-session.js";
+import { refundUnusedTransaction } from "../services/admin/refund-unused-transaction.js";
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.post("/transfer-funds", transferFunds);
 router.post("/set-session-idv-provider", setSessionIdvProvider);
 router.post("/user-sessions", userSessions);
 router.post("/fail-session", failSession);
+router.post("/refund-unused-transaction", refundUnusedTransaction);
 
 export default router;
