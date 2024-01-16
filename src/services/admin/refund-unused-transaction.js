@@ -166,7 +166,7 @@ export async function refundUnusedTransaction(req, res) {
     await newSession.save();
 
     return res.status(200).json({
-      message: `Successfully refunded ${refundAmount.toString()} to ${to} on chain ${chainId}.`,
+      message: `Successfully refunded user ${to} for transaction ${txHash} on chain ${chainId}.`,
       refundTxHash: txResponse.hash,
     });
   } catch (err) {
