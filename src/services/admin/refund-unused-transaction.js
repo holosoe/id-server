@@ -145,7 +145,7 @@ export async function refundUnusedTransaction(req, res) {
     // gas to avoid "transaction underpriced" error. Hopefully this is unnecessary
     // in the future. The following values happened to be sufficient at the time
     // of adding this block.
-    if (session.chainId === 250) {
+    if (chainId === 250) {
       txReq.maxFeePerGas = txReq.maxFeePerGas.mul(2);
       txReq.maxPriorityFeePerGas = txReq.maxPriorityFeePerGas.mul(14);
     }
