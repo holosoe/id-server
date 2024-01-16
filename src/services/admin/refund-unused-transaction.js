@@ -151,9 +151,11 @@ export async function refundUnusedTransaction(req, res) {
 
     // create new session to ensure this transaction cannot be used again
     const newSession = new Session({
+      sigDigest: "n/a",
+      idvProvider: "n/a",
+      status: sessionStatusEnum.REFUNDED,
       txHash,
       chainId,
-      status: sessionStatusEnum.REFUNDED,
       refundTxHash: txResponse.hash,
     });
     await newSession.save();
