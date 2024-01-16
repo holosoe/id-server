@@ -527,6 +527,9 @@ async function createIdvSessionV3(req, res) {
 async function refreshOnfidoToken(req, res) {
   const _id = req.params._id;
 
+  // Optional req body parameter. Either 'holonym' or 'silk'
+  const referrer = req.body.referrer;
+
   try {
     let objectId = null;
     try {
@@ -545,7 +548,22 @@ async function refreshOnfidoToken(req, res) {
       return res.status(400).json({ error: "Session is missing applicant_id" });
     }
 
-    const sdkTokenData = await createOnfidoSdkToken(session.applicant_id);
+    let actualReferrer = "";
+    if (referrer && referrer === "silk") {
+      actualReferrer =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/*"
+          : "https://silksecure.net/*";
+    } else {
+      actualReferrer =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3002/*"
+          : "https://app.holonym.id/*";
+    }
+    const sdkTokenData = await createOnfidoSdkToken(
+      session.applicant_id,
+      actualReferrer
+    );
 
     session.onfido_sdk_token = sdkTokenData.token;
     await session.save();

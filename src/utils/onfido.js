@@ -31,14 +31,19 @@ export async function createOnfidoApplicant() {
   }
 }
 
-export async function createOnfidoSdkToken(applicant_id) {
+/**
+ * @param {string} [referrer] The match pattern URL. Defaults to Holonym frontend URL.
+ */
+export async function createOnfidoSdkToken(applicant_id, referrer) {
   try {
+    if (!referrer) {
+      referrer =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3002/*"
+          : "https://app.holonym.id/*";
+    }
     // Create an SDK token for the applicant
-    const body = `applicant_id=${applicant_id}&referrer=${
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3002/*"
-        : "https://app.holonym.id/*"
-    }`;
+    const body = `applicant_id=${applicant_id}&referrer=${referrer}`;
     const config = {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",

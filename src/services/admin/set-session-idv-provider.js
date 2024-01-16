@@ -187,6 +187,10 @@ async function setSessionIdvProvider(req, res) {
         "Created Onfido applicant"
       );
 
+      // BIG NOTE: Once we start using Holonym with Silk, we should parameterize the
+      // referrer passed to createOnfidoSdkToken. For now, we assume the admin is
+      // always working with a Holonym user, but in the future, an admin might be
+      // working with a Holonym-within-Silk user.
       const sdkTokenData = await createOnfidoSdkToken(applicant.id);
       if (!sdkTokenData) {
         return res.status(500).json({ error: "Error creating Onfido SDK token" });
