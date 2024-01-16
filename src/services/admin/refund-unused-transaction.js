@@ -28,6 +28,7 @@ export async function refundUnusedTransaction(req, res) {
 
     const txHash = req.body.txHash;
     const chainId = Number(req.body.chainId);
+    const to = req.body.to;
 
     if (!txHash) {
       return res.status(400).json({ error: "No txHash specified." });
@@ -41,6 +42,10 @@ export async function refundUnusedTransaction(req, res) {
       return res.status(400).json({
         error: `chainId must be one of ${supportedChainIds.join(", ")}`,
       });
+    }
+
+    if (!to) {
+      return res.status(400).json({ error: "No 'to' specified." });
     }
 
     const session = await Session.findOne({ txHash }).exec();
@@ -165,7 +170,7 @@ export async function refundUnusedTransaction(req, res) {
       refundTxHash: txResponse.hash,
     });
   } catch (err) {
-    postEndpointLogger.error({ error: err });
+    postEndpointLogger.error({ error: err, errMsg: err.message });
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
