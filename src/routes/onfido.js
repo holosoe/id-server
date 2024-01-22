@@ -1,7 +1,7 @@
 import express from "express";
 import { createApplicant } from "../services/onfido/applicant.js";
 import { v1CreateCheck, v2CreateCheck } from "../services/onfido/check.js";
-import { getCredentials } from "../services/onfido/credentials.js";
+import { getCredentials, getCredentialsV2 } from "../services/onfido/credentials.js";
 
 const router = express.Router();
 
@@ -11,5 +11,6 @@ router.post("/check", v1CreateCheck);
 router.post("/v2/check", v2CreateCheck);
 
 router.get("/credentials", getCredentials);
+router.get("/credentials/v2/:nullifier", getCredentialsV2);
 
 export default router;

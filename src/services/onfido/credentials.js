@@ -7,6 +7,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
+import { issue as issuev1 } from "holonym-wasm-issuer-v1";
 import { getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
@@ -468,4 +469,115 @@ async function getCredentials(req, res) {
   }
 }
 
-export { getCredentials };
+/**
+ * ENDPOINT
+ *
+ * Allows user to retrieve their signed verification info
+ */
+async function getCredentialsV2(req, res) {
+  try {
+    const issuanceNullifier = req.params.nullifier;
+
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = newDummyUserCreds;
+
+      const response = JSON.parse(
+        issuev1(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          creds.rawCreds.countryCode.toString(),
+          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+        )
+      );
+      response.metadata = newDummyUserCreds;
+
+      return res.status(200).json(response);
+    }
+
+    const check_id = req.query.check_id;
+    if (!check_id) {
+      return res.status(400).json({ error: "No check_id specified" });
+    }
+
+    const metaSessionStatus = await getSessionStatus(check_id);
+    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({ error: "Session is not in progress" });
+    }
+
+    const check = await getOnfidoCheck(check_id);
+    const validationResultCheck = validateCheck(check);
+    if (validationResultCheck.error) {
+      endpointLogger.error(
+        validationResultCheck.log.data,
+        validationResultCheck.log.msg
+      );
+      return res.status(400).json({ error: validationResultCheck.error });
+    }
+
+    const reports = await getOnfidoReports(check.report_ids);
+    if (!reports || reports.length == 0) {
+      endpointLogger.error("No reports found");
+      return res.status(400).json({ error: "No reports found" });
+    }
+    const validationResult = validateReports(reports);
+    if (validationResult.error) {
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      return res
+        .status(400)
+        .json({ error: validationResult.error, reasons: validationResult.reasons });
+    }
+
+    const documentReport = reports.find((report) => report.name == "document");
+    // Get UUID
+    const uuidConstituents =
+      (documentReport.properties.first_name || "") +
+      (documentReport.properties.last_name || "") +
+      // Getting address info is in beta for Onfido, so we don't include it yet.
+      // See: https://documentation.onfido.com/#document-with-address-information-beta
+      // (documentReport.properties.addresses?.[0]?.postcode || "") +
+      (documentReport.properties.date_of_birth || "");
+    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    if (user) {
+      await saveCollisionMetadata(uuid, check_id, documentReport);
+
+      endpointLogger.error({ uuid }, "User has already registered");
+      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      return res
+        .status(400)
+        .json({ error: `User has already registered. User ID: ${user._id}` });
+    }
+
+    // Store UUID for Sybil resistance
+    const dbResponse = await saveUserToDb(uuid, check_id);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(documentReport);
+
+    const response = JSON.parse(
+      issuev1(
+        process.env.HOLONYM_ISSUER_PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      )
+    );
+    response.metadata = creds;
+
+    await deleteOnfidoApplicant(check.applicant_id);
+
+    endpointLogger.info({ uuid, check_id }, "Issuing credentials");
+
+    await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
+  }
+}
+
+export { getCredentials, getCredentialsV2 };
