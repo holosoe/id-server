@@ -290,6 +290,10 @@ async function initializeMongoDb() {
       type: String,
       required: false,
     },
+    verificationFailureReason: {
+      type: String,
+      required: false,
+    },
   });
   const Session = mongoose.model("Session", sessionSchema);
 

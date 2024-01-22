@@ -344,22 +344,23 @@ async function saveUserToDb(uuid, check_id) {
   return { success: true };
 }
 
-async function getSessionStatus(check_id) {
+async function getSession(check_id) {
   const metaSession = await Session.findOne({ check_id }).exec();
 
   if (!metaSession) {
     throw new Error("Session not found");
   }
 
-  return metaSession.status;
+  return metaSession;
 }
 
-async function updateSessionStatus(check_id, status) {
+async function updateSessionStatus(check_id, status, failureReason) {
   try {
     // TODO: Once pay-first frontend is pushed, remove the try-catch. We want
     // this endpoint to fail if we can't update the session.
     const metaSession = await Session.findOne({ check_id }).exec();
     metaSession.status = status;
+    if (failureReason) metaSession.verificationFailureReason = failureReason;
     await metaSession.save();
   } catch (err) {
     console.log("onfido/credentials: Error updating session status", err);
@@ -391,8 +392,13 @@ async function getCredentials(req, res) {
       return res.status(400).json({ error: "No check_id specified" });
     }
 
-    const metaSessionStatus = await getSessionStatus(check_id);
-    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+    const metaSession = await getSession(check_id);
+    if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
+        });
+      }
       return res.status(400).json({ error: "Session is not in progress" });
     }
 
@@ -414,7 +420,14 @@ async function getCredentials(req, res) {
     const validationResult = validateReports(reports);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
-      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      const failureReason = validationResult.reasons
+        ? validationResult.reasons.join(";")
+        : validationResult.error;
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        failureReason
+      );
       return res
         .status(400)
         .json({ error: validationResult.error, reasons: validationResult.reasons });
@@ -437,7 +450,11 @@ async function getCredentials(req, res) {
       await saveCollisionMetadata(uuid, check_id, documentReport);
 
       endpointLogger.error({ uuid }, "User has already registered");
-      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        `User has already registered. User ID: ${user._id}`
+      );
       return res
         .status(400)
         .json({ error: `User has already registered. User ID: ${user._id}` });
@@ -499,8 +516,13 @@ async function getCredentialsV2(req, res) {
       return res.status(400).json({ error: "No check_id specified" });
     }
 
-    const metaSessionStatus = await getSessionStatus(check_id);
-    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+    const metaSession = await getSession(check_id);
+    if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
+        });
+      }
       return res.status(400).json({ error: "Session is not in progress" });
     }
 
@@ -522,7 +544,14 @@ async function getCredentialsV2(req, res) {
     const validationResult = validateReports(reports);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
-      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      const failureReason = validationResult.reasons
+        ? validationResult.reasons.join(";")
+        : validationResult.error;
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        failureReason
+      );
       return res
         .status(400)
         .json({ error: validationResult.error, reasons: validationResult.reasons });
@@ -545,7 +574,11 @@ async function getCredentialsV2(req, res) {
       await saveCollisionMetadata(uuid, check_id, documentReport);
 
       endpointLogger.error({ uuid }, "User has already registered");
-      await updateSessionStatus(check_id, sessionStatusEnum.VERIFICATION_FAILED);
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        `User has already registered. User ID: ${user._id}`
+      );
       return res
         .status(400)
         .json({ error: `User has already registered. User ID: ${user._id}` });
