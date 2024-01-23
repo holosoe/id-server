@@ -8,7 +8,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { issue as issuev1 } from "holonym-wasm-issuer-v1";
+import { issue as issuev2 } from "holonym-wasm-issuer-v2";
 import { getDateAsInt, hash } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
@@ -451,7 +451,7 @@ async function getCredentialsV2(req, res) {
       const creds = newDummyUserCreds;
 
       const response = JSON.parse(
-        issuev1(
+        issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,
           issuanceNullifier,
           creds.rawCreds.countryCode.toString(),
@@ -522,7 +522,7 @@ async function getCredentialsV2(req, res) {
     const creds = extractCreds(session);
 
     const response = JSON.parse(
-      issuev1(
+      issuev2(
         process.env.HOLONYM_ISSUER_PRIVKEY,
         issuanceNullifier,
         creds.rawCreds.countryCode.toString(),
