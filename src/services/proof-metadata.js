@@ -107,7 +107,6 @@ async function postProofMetadata(req, res) {
     });
   }
   try {
-    postEndpointLogger.info({ sigDigest }, "Saving user proof metadata to database");
     await userProofMetadataDoc.save();
   } catch (err) {
     postEndpointLogger.error(
