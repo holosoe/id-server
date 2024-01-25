@@ -260,6 +260,10 @@ async function createIdvSession(req, res) {
       txHash
     );
     if (validationResult.error) {
+      createIdvSessionLogger.error(
+        { error: validationResult.error },
+        "Error validating tx for IDV session creation"
+      );
       return res
         .status(validationResult.status)
         .json({ error: validationResult.error });
