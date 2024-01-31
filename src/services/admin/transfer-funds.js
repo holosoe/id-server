@@ -83,6 +83,10 @@ async function transferFunds(req, res) {
       txReq.maxFeePerGas = txReq.maxFeePerGas.mul(4);
       txReq.maxPriorityFeePerGas = txReq.maxPriorityFeePerGas.mul(14);
 
+      if (txReq.maxPriorityFeePerGas.gt(txReq.maxFeePerGas)) {
+        txReq.maxPriorityFeePerGas = txReq.maxFeePerGas;
+      }
+
       const tx = await fantomWallet.sendTransaction(txReq);
 
       txReceipts["fantom"] = await tx.wait();
