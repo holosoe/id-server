@@ -42,7 +42,7 @@ async function setSessionIdvProvider(req, res) {
       return res.status(400).json({ error: "No IDV provider specified." });
     }
 
-    const supportedIdvProviders = ["onfido", "veriff", "idenfy"];
+    const supportedIdvProviders = ["onfido", "veriff"];
     if (supportedIdvProviders.indexOf(newIdvProvider) === -1) {
       return res.status(400).json({
         error: `Invalid IDV provider. Must be one of ${supportedIdvProviders}`,
