@@ -16,12 +16,14 @@ async function getUserVerification(req, res) {
   try {
     const apiKey = req.headers["x-api-key"];
 
-    if (apiKey !== process.env.ADMIN_API_KEY) {
+    // if (apiKey !== process.env.ADMIN_API_KEY) {
+    if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
     const id = req.query.id;
     const uuid = req.query.uuid;
+    const idvProviderSessionId = req.query.idvProviderSessionId;
 
     if (!id && !uuid) {
       return res.status(400).json({ error: "No user ID provided." });
@@ -29,7 +31,11 @@ async function getUserVerification(req, res) {
 
     // const user = await UserVerifications.findOne({ _id: id }).exec();
     const user = await UserVerifications.findOne({
-      $or: [{ _id: id }, { "govId.uuid": uuid }],
+      $or: [
+        { _id: id },
+        { "govId.uuid": uuid },
+        { "govId.sessionId": idvProviderSessionId },
+      ],
     }).exec();
     if (user) {
       getEndpointLogger.info({ _id: id, uuid }, "Found user ");
@@ -51,7 +57,8 @@ async function deleteUserVerification(req, res) {
   try {
     const apiKey = req.headers["x-api-key"];
 
-    if (apiKey !== process.env.ADMIN_API_KEY) {
+    // if (apiKey !== process.env.ADMIN_API_KEY) {
+    if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
       return res.status(401).json({ error: "Invalid API key." });
     }
 
