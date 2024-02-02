@@ -25,6 +25,20 @@ import {
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
+function getTransaction(chainId, txHash) {
+  if (chainId === 1) {
+    return ethereumProvider.getTransaction(txHash);
+  } else if (chainId === 10) {
+    return optimismProvider.getTransaction(txHash);
+  } else if (chainId === 250) {
+    return fantomProvider.getTransaction(txHash);
+  } else if (chainId === 43114) {
+    return avalancheProvider.getTransaction(txHash);
+  } else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    return optimismGoerliProvider.getTransaction(txHash);
+  }
+}
+
 /**
  * Check blockchain for tx.
  * - Ensure recipient of tx is id-server's address.
@@ -32,24 +46,33 @@ import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
  * - Ensure tx is confirmed.
  */
 async function validateTxForIDVSessionCreation(session, chainId, txHash) {
-  let tx;
-  if (chainId === 1) {
-    tx = await ethereumProvider.getTransaction(txHash);
-  } else if (chainId === 10) {
-    tx = await optimismProvider.getTransaction(txHash);
-  } else if (chainId === 250) {
-    tx = await fantomProvider.getTransaction(txHash);
-  } else if (chainId === 43114) {
-    tx = await avalancheProvider.getTransaction(txHash);
-  } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-    tx = await optimismGoerliProvider.getTransaction(txHash);
-  }
+  // let tx;
+  // if (chainId === 1) {
+  //   tx = await ethereumProvider.getTransaction(txHash);
+  // } else if (chainId === 10) {
+  //   tx = await optimismProvider.getTransaction(txHash);
+  // } else if (chainId === 250) {
+  //   tx = await fantomProvider.getTransaction(txHash);
+  // } else if (chainId === 43114) {
+  //   tx = await avalancheProvider.getTransaction(txHash);
+  // } else if (process.env.NODE_ENV === "development" && chainId === 420) {
+  //   tx = await optimismGoerliProvider.getTransaction(txHash);
+  // }
+  let tx = await getTransaction(chainId, txHash);
 
   if (!tx) {
-    return {
-      status: 400,
-      error: "Could not find transaction with given txHash",
-    };
+    // Hacky solution, but sometimes a transaction is not found even though it exists.
+    // Sleep for 5 seconds and try again.
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    tx = await getTransaction(chainId, txHash);
+
+    // If it's still not found, return an error.
+    if (!tx) {
+      return {
+        status: 400,
+        error: `Could not find transaction with txHash ${txHash}`,
+      };
+    }
   }
 
   const txReceipt = await tx.wait();
