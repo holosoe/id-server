@@ -115,11 +115,11 @@ export async function refundUnusedTransaction(req, res) {
 
     const expectedAmount = ethers.utils.parseEther(rounded.toString());
 
-    if (tx.value.lt(expectedAmount)) {
-      return res.status(400).json({
-        error: `Invalid transaction amount. Expected it to be greater than: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`,
-      });
-    }
+    // if (tx.value.lt(expectedAmount)) {
+    //   return res.status(400).json({
+    //     error: `Invalid transaction amount. Expected it to be greater than: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`,
+    //   });
+    // }
 
     // ------------ end tx validation ------------
 
