@@ -399,7 +399,9 @@ async function getCredentials(req, res) {
           error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
         });
       }
-      return res.status(400).json({ error: "Session is not in progress" });
+      return res.status(400).json({
+        error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
     }
 
     const check = await getOnfidoCheck(check_id);
@@ -523,7 +525,9 @@ async function getCredentialsV2(req, res) {
           error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
         });
       }
-      return res.status(400).json({ error: "Session is not in progress" });
+      return res.status(400).json({
+        error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
     }
 
     const check = await getOnfidoCheck(check_id);

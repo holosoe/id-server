@@ -350,7 +350,10 @@ async function getCredentials(req, res) {
 
     const metaSessionStatus = await getSessionStatus(req.query.sessionId);
     if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
-      return res.status(400).json({ error: "Session is not in progress" });
+      // TODO: If status is "VERIFICATION_FAILED", return failure reason too
+      return res.status(400).json({
+        error: `Session status is '${metaSessionStatus}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
     }
 
     const session = await getVeriffSessionDecision(req.query.sessionId);
@@ -469,7 +472,10 @@ async function getCredentialsV2(req, res) {
 
     const metaSessionStatus = await getSessionStatus(req.query.sessionId);
     if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
-      return res.status(400).json({ error: "Session is not in progress" });
+      // TODO: If status is "VERIFICATION_FAILED", return failure reason too
+      return res.status(400).json({
+        error: `Session status is '${metaSessionStatus}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
     }
 
     const session = await getVeriffSessionDecision(req.query.sessionId);
