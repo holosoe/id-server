@@ -25,7 +25,7 @@ async function getUserVerification(req, res) {
     const uuid = req.query.uuid;
     const idvProviderSessionId = req.query.idvProviderSessionId;
 
-    if (!id && !uuid) {
+    if (!id && !uuid && !idvProviderSessionId) {
       return res.status(400).json({ error: "No user ID provided." });
     }
 
