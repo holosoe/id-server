@@ -226,6 +226,12 @@ async function initializeMongoDb() {
     // provided by the IDV provider). The possible values of status are:
     // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED' | 'REFUNDED'
     status: String,
+    // frontendDomain allows mods to change their suggestions based on whether the domain
+    // is old Holonym or Holonym-within-Silk.
+    frontendDomain: {
+      type: String, // "app.holonym.id" | "silksecure.net"
+      required: false,
+    },
     deletedFromIDVProvider: {
       type: Boolean,
       required: false,

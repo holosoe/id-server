@@ -59,6 +59,7 @@ async function userSessions(req, res) {
       refundTxHash: s.refundTxHash,
       check_id: s.check_id,
       sessionId: s.sessionId,
+      frontendDomain: s.frontendDomain,
       sid: s._id.toString(),
     }));
 

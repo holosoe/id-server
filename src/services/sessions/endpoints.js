@@ -102,10 +102,18 @@ async function postSession(req, res) {
         .json({ error: "idvProvider must be one of 'veriff', 'idenfy', 'onfido'" });
     }
 
+    let domain = null;
+    if (req.body.domain === "app.holonym.id") {
+      domain = "app.holonym.id";
+    } else if (req.body.domain === "silksecure.net") {
+      domain = "silksecure.net";
+    }
+
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
       status: sessionStatusEnum.NEEDS_PAYMENT,
+      frontendDomain: domain,
     });
     await session.save();
 
