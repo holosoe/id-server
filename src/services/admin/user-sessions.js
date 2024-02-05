@@ -58,6 +58,7 @@ async function userSessions(req, res) {
       chainId: s.chainId,
       refundTxHash: s.refundTxHash,
       check_id: s.check_id,
+      sessionId: s.sessionId,
       sid: s._id.toString(),
     }));
 
