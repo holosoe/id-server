@@ -4,6 +4,7 @@ import {
   optimismProvider,
   fantomProvider,
   avalancheProvider,
+  auroraProvider,
   companyENS,
   companyAddressOP,
   companyAddressFTM,
@@ -107,6 +108,23 @@ async function transferFunds(req, res) {
       });
 
       txReceipts["avalanche"] = await tx.wait();
+    }
+
+    // Transfer ETH on Aurora \\
+    const auroraWallet = new ethers.Wallet(
+      process.env.PAYMENTS_PRIVATE_KEY,
+      auroraProvider
+    );
+    const balanceAurora = await auroraWallet.getBalance();
+    // If balance is less than 0.2 ETH, don't transfer. Otherwise, send 0.15 ETH.
+    // We keep some ETH to pay for refunds.
+    if (balanceAurora.gte(ethers.utils.parseEther("0.2"))) {
+      const tx = await auroraWallet.sendTransaction({
+        to: companyAddressAVAX,
+        value: ethers.utils.parseEther("0.15"),
+      });
+
+      txReceipts["aurora"] = await tx.wait();
     }
 
     return res.status(200).json(txReceipts);

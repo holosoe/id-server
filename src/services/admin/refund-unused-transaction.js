@@ -9,6 +9,7 @@ import {
   optimismGoerliProvider,
   fantomProvider,
   avalancheProvider,
+  auroraProvider,
   supportedChainIds,
 } from "../../constants/misc.js";
 import logger from "../../utils/logger.js";
@@ -66,6 +67,8 @@ export async function refundUnusedTransaction(req, res) {
       provider = fantomProvider;
     } else if (chainId === 43114) {
       provider = avalancheProvider;
+    } else if (chainId === 1313161554) {
+      provider = auroraProvider;
     } else if (process.env.NODE_ENV === "development" && chainId === 420) {
       provider = optimismGoerliProvider;
     }
@@ -91,7 +94,7 @@ export async function refundUnusedTransaction(req, res) {
     const expectedAmountInUSD = 6.0;
 
     let expectedAmountInToken;
-    if ([1, 10].includes(chainId)) {
+    if ([1, 10, 1313161554].includes(chainId)) {
       expectedAmountInToken = await usdToETH(expectedAmountInUSD);
     } else if (chainId === 250) {
       expectedAmountInToken = await usdToFTM(expectedAmountInUSD);

@@ -9,6 +9,7 @@ import {
   optimismGoerliProvider,
   fantomProvider,
   avalancheProvider,
+  auroraProvider,
   payPalApiUrlBase,
 } from "../../constants/misc.js";
 import {
@@ -36,6 +37,8 @@ function getTransaction(chainId, txHash) {
     return avalancheProvider.getTransaction(txHash);
   } else if (process.env.NODE_ENV === "development" && chainId === 420) {
     return optimismGoerliProvider.getTransaction(txHash);
+  } else if (chainId === 1313161554) {
+    return auroraProvider.getTransaction(txHash);
   }
 }
 
@@ -46,18 +49,6 @@ function getTransaction(chainId, txHash) {
  * - Ensure tx is confirmed.
  */
 async function validateTxForIDVSessionCreation(session, chainId, txHash) {
-  // let tx;
-  // if (chainId === 1) {
-  //   tx = await ethereumProvider.getTransaction(txHash);
-  // } else if (chainId === 10) {
-  //   tx = await optimismProvider.getTransaction(txHash);
-  // } else if (chainId === 250) {
-  //   tx = await fantomProvider.getTransaction(txHash);
-  // } else if (chainId === 43114) {
-  //   tx = await avalancheProvider.getTransaction(txHash);
-  // } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-  //   tx = await optimismGoerliProvider.getTransaction(txHash);
-  // }
   let tx = await getTransaction(chainId, txHash);
 
   if (!tx) {
@@ -89,7 +80,7 @@ async function validateTxForIDVSessionCreation(session, chainId, txHash) {
   const expectedAmountInUSD = 10.0 * 0.95;
 
   let expectedAmountInToken;
-  if ([1, 10].includes(chainId)) {
+  if ([1, 10, 1313161554].includes(chainId)) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   } else if (chainId === 250) {
     expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
@@ -146,6 +137,8 @@ async function refundMintFeeOnChain(session, to) {
     provider = fantomProvider;
   } else if (session.chainId === 43114) {
     provider = avalancheProvider;
+  } else if (chainId === 1313161554) {
+    provider = auroraProvider;
   } else if (process.env.NODE_ENV === "development" && session.chainId === 420) {
     provider = optimismGoerliProvider;
   }
