@@ -137,7 +137,7 @@ async function refundMintFeeOnChain(session, to) {
     provider = fantomProvider;
   } else if (session.chainId === 43114) {
     provider = avalancheProvider;
-  } else if (chainId === 1313161554) {
+  } else if (session.chainId === 1313161554) {
     provider = auroraProvider;
   } else if (process.env.NODE_ENV === "development" && session.chainId === 420) {
     provider = optimismGoerliProvider;
