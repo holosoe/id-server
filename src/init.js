@@ -477,6 +477,16 @@ async function initializeMongoDb() {
     "GalxeCampaignZeroUser",
     GalxeCampaignZeroUserSchema
   );
+  const SilkPeanutCampaignsMetadataSchema = new Schema({
+    generatedLink: String,
+    peanutLink: String,
+    email: String,
+    campaignId: String,
+  });
+  const SilkPeanutCampaignsMetadata = mongoose.model(
+    "SilkPeanutCampaignsMetadata",
+    SilkPeanutCampaignsMetadataSchema
+  );
   await initializeDailyVerificationCount(DailyVerificationCount);
   await initializeDailyVerificationDeletions(DailyVerificationDeletions);
   return {
@@ -491,6 +501,7 @@ async function initializeMongoDb() {
     DailyVerificationDeletions,
     VerificationCollisionMetadata,
     GalxeCampaignZeroUser,
+    SilkPeanutCampaignsMetadata,
   };
 }
 
@@ -506,7 +517,8 @@ let UserVerifications,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
-  GalxeCampaignZeroUser;
+  GalxeCampaignZeroUser,
+  SilkPeanutCampaignsMetadata;
 initializeMongoDb().then((result) => {
   if (result) {
     logger.info("Initialized MongoDB connection");
@@ -521,6 +533,7 @@ initializeMongoDb().then((result) => {
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
     GalxeCampaignZeroUser = result.GalxeCampaignZeroUser;
+    SilkPeanutCampaignsMetadata = result.SilkPeanutCampaignsMetadata;
   } else {
     logger.error("MongoDB initialization failed");
   }
@@ -545,5 +558,6 @@ export {
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
   GalxeCampaignZeroUser,
+  SilkPeanutCampaignsMetadata,
   zokProvider,
 };
