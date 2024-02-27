@@ -62,6 +62,7 @@ async function userSessions(req, res) {
       veriffUrl: s.veriffUrl,
       frontendDomain: s.frontendDomain,
       silkDiffWallet: s.silkDiffWallet,
+      verificationFailureReason: s.verificationFailureReason,
       sid: s._id.toString(),
     }));
 
