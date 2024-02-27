@@ -60,6 +60,7 @@ async function userSessions(req, res) {
       check_id: s.check_id,
       sessionId: s.sessionId,
       frontendDomain: s.frontendDomain,
+      silkDiffWallet: s.silkDiffWallet,
       sid: s._id.toString(),
     }));
 
