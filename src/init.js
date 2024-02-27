@@ -232,6 +232,12 @@ async function initializeMongoDb() {
       type: String, // "app.holonym.id" | "silksecure.net"
       required: false,
     },
+    // silkDiffWallet indicates whether the user is on silksecure.net/holonym/silk or
+    // silksecure.net/holonym/diff-wallet
+    silkDiffWallet: {
+      type: String,
+      required: false,
+    },
     deletedFromIDVProvider: {
       type: Boolean,
       required: false,

@@ -109,11 +109,19 @@ async function postSession(req, res) {
       domain = "silksecure.net";
     }
 
+    let silkDiffWallet = null;
+    if (req.body.silkDiffWallet === "silk") {
+      silkDiffWallet = "silk";
+    } else if (req.body.silkDiffWallet === "diff-wallet") {
+      silkDiffWallet = "diff-wallet";
+    }
+
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
       status: sessionStatusEnum.NEEDS_PAYMENT,
       frontendDomain: domain,
+      silkDiffWallet,
     });
     await session.save();
 
