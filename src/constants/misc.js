@@ -47,17 +47,26 @@ export const sessionStatusEnum = {
   REFUNDED: "REFUNDED",
 };
 
-export const ethereumProvider = new ethers.providers.AlchemyProvider(
-  "homestead",
-  process.env.ALCHEMY_APIKEY
+// export const ethereumProvider = new ethers.providers.AlchemyProvider(
+//   "homestead",
+//   process.env.ALCHEMY_APIKEY
+// );
+// export const optimismProvider = new ethers.providers.AlchemyProvider(
+//   "optimism",
+//   process.env.ALCHEMY_APIKEY
+// );
+// export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
+//   "optimism-goerli",
+//   process.env.ALCHEMY_APIKEY
+// );
+export const ethereumProvider = new ethers.providers.JsonRpcProvider(
+  process.env.ETHEREUM_RPC_URL
 );
-export const optimismProvider = new ethers.providers.AlchemyProvider(
-  "optimism",
-  process.env.ALCHEMY_APIKEY
+export const optimismProvider = new ethers.providers.JsonRpcProvider(
+  process.env.OPTIMISM_RPC_URL
 );
-export const optimismGoerliProvider = new ethers.providers.AlchemyProvider(
-  "optimism-goerli",
-  process.env.ALCHEMY_APIKEY
+export const optimismGoerliProvider = new ethers.providers.JsonRpcProvider(
+  process.env.OPTIMISM_GOERLI_RPC_URL
 );
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
   "https://rpc.ftm.tools"
