@@ -59,9 +59,6 @@ export const sessionStatusEnum = {
 //   "optimism-goerli",
 //   process.env.ALCHEMY_APIKEY
 // );
-console.log('process.env.ETHEREUM_RPC_URL', process.env.ETHEREUM_RPC_URL)
-console.log('process.env.OPTIMISM_RPC_URL', process.env.OPTIMISM_RPC_URL)
-console.log('process.env.OPTIMISM_GOERLI_RPC_URL', process.env.OPTIMISM_GOERLI_RPC_URL)
 export const ethereumProvider = new ethers.providers.JsonRpcProvider(
   process.env.ETHEREUM_RPC_URL
 );
