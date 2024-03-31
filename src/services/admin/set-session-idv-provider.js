@@ -42,7 +42,9 @@ async function setSessionIdvProvider(req, res) {
       return res.status(400).json({ error: "No IDV provider specified." });
     }
 
-    const supportedIdvProviders = ["onfido", "veriff"];
+    // We disabled Onfido on March 30, 2024. We plan to re-integrate it in the future.
+    // const supportedIdvProviders = ["onfido", "veriff"];
+    const supportedIdvProviders = ["veriff"];
     if (supportedIdvProviders.indexOf(newIdvProvider) === -1) {
       return res.status(400).json({
         error: `Invalid IDV provider. Must be one of ${supportedIdvProviders}`,
