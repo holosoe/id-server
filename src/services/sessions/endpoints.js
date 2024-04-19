@@ -501,7 +501,7 @@ async function createIdvSessionV3(req, res) {
         const expected = ethers.BigNumber.from(
           validationResult.error.split("Expected: ")[1].split(".")[0]
         );
-        const found = vethers.BigNumber.from(
+        const found = ethers.BigNumber.from(
           validationResult.error.split("Found: ")[1].split(".")[0]
         );
 
