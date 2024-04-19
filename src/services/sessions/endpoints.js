@@ -294,10 +294,6 @@ async function createIdvSession(req, res) {
 
     return handleIdvSessionCreation(res, session, createIdvSessionLogger);
   } catch (err) {
-    createIdvSessionLogger.error(
-      { errorMsg: err.message },
-      "Error creating IDV session"
-    );
     if (err.response) {
       createIdvSessionLogger.error(
         { error: err.response.data },
@@ -312,7 +308,7 @@ async function createIdvSession(req, res) {
       createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
     }
 
-    return res.status(500).json({ error: "An unknown error occurred", err });
+    return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
 
@@ -530,6 +526,7 @@ async function createIdvSessionV3(req, res) {
 
     return handleIdvSessionCreation(res, session, createIdvSessionLogger);
   } catch (err) {
+    console.log('err.message', err.message)
     if (err.response) {
       createIdvSessionLogger.error(
         { error: err.response.data },
@@ -544,7 +541,7 @@ async function createIdvSessionV3(req, res) {
       createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
     }
 
-    return res.status(500).json({ error: "An unknown error occurred" });
+    return res.status(500).json({ error: "An unknown error occurred", err });
   }
 }
 
