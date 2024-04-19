@@ -294,6 +294,10 @@ async function createIdvSession(req, res) {
 
     return handleIdvSessionCreation(res, session, createIdvSessionLogger);
   } catch (err) {
+    createIdvSessionLogger.error(
+      { errorMsg: err.message },
+      "Error creating IDV session"
+    );
     if (err.response) {
       createIdvSessionLogger.error(
         { error: err.response.data },
