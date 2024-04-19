@@ -511,11 +511,11 @@ async function createIdvSessionV3(req, res) {
             .status(validationResult.status)
             .json({ error: validationResult.error });
         }
-      }
-
-      return res
+      } else {
+        return res
         .status(validationResult.status)
         .json({ error: validationResult.error });
+      }
     }
 
     // Note: We do not immediately call session.save() after adding txHash to
