@@ -312,7 +312,7 @@ async function createIdvSession(req, res) {
       createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
     }
 
-    return res.status(500).json({ error: "An unknown error occurred" });
+    return res.status(500).json({ error: "An unknown error occurred", err });
   }
 }
 
