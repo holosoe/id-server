@@ -122,7 +122,11 @@ async function postSession(req, res) {
     const resp = await axios.get(
       `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
     );
-    const ipCountry = resp?.data?.country_name;
+    const ipCountry = resp?.data?.country;
+
+    if (!ipCountry) {
+      return res.status(500).json({ error: "Could not determine country from IP" });
+    }
 
     const session = new Session({
       sigDigest: sigDigest,
@@ -130,7 +134,7 @@ async function postSession(req, res) {
       status: sessionStatusEnum.NEEDS_PAYMENT,
       frontendDomain: domain,
       silkDiffWallet,
-      ipCountry: ipCountry ?? null, // prefer null over undefined
+      ipCountry: ipCountry,
     });
     await session.save();
 
