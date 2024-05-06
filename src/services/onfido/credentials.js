@@ -65,7 +65,7 @@ function validateCheck(check) {
   return { success: true };
 }
 
-function validateReports(reports) {
+function validateReports(reports, metaSession) {
   const reportNames = reports.map((report) => report.name);
   const missingReports = desiredOnfidoReports.filter(
     (report) => !reportNames.includes(report)
@@ -93,6 +93,18 @@ function validateReports(reports) {
             msg: "Unsupported country",
             data: {
               country: report.properties.issuing_country,
+            },
+          },
+        };
+      }
+      if (countryCodeToPrime[report.properties.issuing_country] != countryCodeToPrime[metaSession.ipCountry]) {
+        return {
+          error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${report.properties.issuing_country}'.`,
+          log: {
+            msg: "Country code mismatch",
+            data: { 
+              expected: countryCodeToPrime[metaSession.ipCountry], 
+              got: countryCodeToPrime[report.properties.issuing_country] 
             },
           },
         };
@@ -419,7 +431,7 @@ async function getCredentials(req, res) {
       endpointLogger.error("No reports found");
       return res.status(400).json({ error: "No reports found" });
     }
-    const validationResult = validateReports(reports);
+    const validationResult = validateReports(reports, metaSession);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       const failureReason = validationResult.reasons
@@ -545,7 +557,7 @@ async function getCredentialsV2(req, res) {
       endpointLogger.error("No reports found");
       return res.status(400).json({ error: "No reports found" });
     }
-    const validationResult = validateReports(reports);
+    const validationResult = validateReports(reports, metaSession);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       const failureReason = validationResult.reasons

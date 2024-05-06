@@ -23,7 +23,7 @@ const endpointLogger = logger.child({
   },
 });
 
-function validateSession(session) {
+function validateSession(session, metaSession) {
   if (session.status !== "success") {
     return {
       error: `Verification failed. Status is '${session.status}'. Expected 'success'.`,
@@ -111,6 +111,15 @@ function validateSession(session) {
         data: {
           country: session?.verification?.document?.country,
         },
+      },
+    };
+  }
+  if (countryCode != countryCodeToPrime[metaSession.ipCountry]) {
+    return {
+      error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${session?.verification?.document?.country}'.`,
+      log: {
+        msg: "Country code mismatch",
+        data: { expected: countryCodeToPrime[metaSession.ipCountry], got: countryCode },
       },
     };
   }
@@ -371,7 +380,7 @@ async function getCredentials(req, res) {
       return res.status(400).json({ error: "Failed to retrieve Verrif session." });
     }
 
-    const validationResult = validateSession(session, req.query.sessionId);
+    const validationResult = validateSession(session, metaSession);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       await updateSessionStatus(
@@ -499,7 +508,7 @@ async function getCredentialsV2(req, res) {
       return res.status(400).json({ error: "Failed to retrieve Verrif session." });
     }
 
-    const validationResult = validateSession(session, req.query.sessionId);
+    const validationResult = validateSession(session, metaSession);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       await updateSessionStatus(

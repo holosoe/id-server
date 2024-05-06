@@ -306,6 +306,7 @@ async function initializeMongoDb() {
       type: String,
       required: false,
     },
+    // ipCountry should be an ISO 3166-1 alpha-2 or alpha-3 country code
     ipCountry: {
       type: String,
       required: false,

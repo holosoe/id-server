@@ -25,7 +25,7 @@ const endpointLogger = logger.child({
   },
 });
 
-function validateSession(statusData, verificationData, scanRef) {
+function validateSession(metaSession, statusData, verificationData, scanRef) {
   // if (statusData.autoDocument !== "DOC_VALIDATED") {
   //   return {
   //     error: `Verification failed. Failed to auto validate document.`,
@@ -92,6 +92,15 @@ function validateSession(statusData, verificationData, scanRef) {
       log: {
         msg: "Unsupported country",
         data: { country },
+      },
+    };
+  }
+  if (countryCode != countryCodeToPrime[metaSession.ipCountry]) {
+    return {
+      error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${country}'. scanRef: ${scanRef}`,
+      log: {
+        msg: "Country code mismatch",
+        data: { expected: countryCodeToPrime[metaSession.ipCountry], got: countryCode },
       },
     };
   }
@@ -286,14 +295,14 @@ async function saveUserToDb(uuid, scanRef) {
   return { success: true };
 }
 
-async function getSessionStatus(scanRef) {
+async function getMetaSession(scanRef) {
   const metaSession = await Session.findOne({ scanRef }).exec();
 
   if (!metaSession) {
     throw new Error("Session not found");
   }
 
-  return metaSession.status;
+  return metaSession;
 }
 
 async function updateSessionStatus(scanRef, status) {
@@ -333,8 +342,8 @@ async function getCredentials(req, res) {
       return res.status(400).json({ error: "No scanRef specified" });
     }
 
-    const metaSessionStatus = await getSessionStatus(scanRef);
-    if (metaSessionStatus !== sessionStatusEnum.IN_PROGRESS) {
+    const metaSession = await getMetaSession(scanRef);
+    if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
       return res.status(400).json({ error: "Session is not in progress" });
     }
 
@@ -346,7 +355,7 @@ async function getCredentials(req, res) {
       return res.status(400).json({ error: "Failed to retrieve iDenfy session." });
     }
 
-    const validationResult = validateSession(statusData, verificationData, scanRef);
+    const validationResult = validateSession(metaSession, statusData, verificationData, scanRef);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       await updateSessionStatus(scanRef, sessionStatusEnum.VERIFICATION_FAILED);
