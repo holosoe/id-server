@@ -117,12 +117,20 @@ async function postSession(req, res) {
       silkDiffWallet = "diff-wallet";
     }
 
+    // Get country from IP address
+    const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const resp = await axios.get(
+      `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
+    );
+    const ipCountry = resp?.data?.country_name;
+
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
       status: sessionStatusEnum.NEEDS_PAYMENT,
       frontendDomain: domain,
       silkDiffWallet,
+      ipCountry: ipCountry ?? null, // prefer null over undefined
     });
     await session.save();
 
