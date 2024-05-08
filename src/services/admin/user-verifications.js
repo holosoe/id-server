@@ -70,19 +70,20 @@ async function deleteUserVerification(req, res) {
     }
 
     // Limit the number of deletions per day to 2% of the number of verifications per day
-    const verificationCountDoc = await DailyVerificationCount.findOne({
-      date: new Date().toISOString().slice(0, 10),
-    }).exec();
-    // NOTE: If we add other verification providers, we need to update the following line
-    const sessionCountToday =
-      (verificationCountDoc?.veriff?.sessionCount ?? 0) +
-      (verificationCountDoc?.idenfy?.sessionCount ?? 0) +
-      (verificationCountDoc?.onfido?.applicantCount ?? 0);
+    // const verificationCountDoc = await DailyVerificationCount.findOne({
+    //   date: new Date().toISOString().slice(0, 10),
+    // }).exec();
+    // // NOTE: If we add other verification providers, we need to update the following line
+    // const sessionCountToday =
+    //   (verificationCountDoc?.veriff?.sessionCount ?? 0) +
+    //   (verificationCountDoc?.idenfy?.sessionCount ?? 0) +
+    //   (verificationCountDoc?.onfido?.applicantCount ?? 0);
     const deletionCountDoc = await DailyVerificationDeletions.findOne({
       date: new Date().toISOString().slice(0, 10),
     }).exec();
     const deletionCountToday = deletionCountDoc?.deletionCount ?? 0;
-    if (deletionCountToday >= sessionCountToday * 0.02) {
+    // if (deletionCountToday >= sessionCountToday * 0.02) {
+    if (deletionCountToday > 2) {
       deleteEndpointLogger.info("Deletion limit reached for today. Exiting.");
       return res
         .status(429)
