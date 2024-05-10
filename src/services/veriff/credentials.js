@@ -114,7 +114,10 @@ function validateSession(session, metaSession) {
       },
     };
   }
-  if (countryCode != countryCodeToPrime[metaSession.ipCountry]) {
+  // if !metaSession.ipCountry, then the session was created before we added
+  // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets, 
+  // we can ignore this check for such sessions.
+  if (metaSession.ipCountry && (countryCode != countryCodeToPrime[metaSession.ipCountry])) {
     return {
       error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${session?.verification?.document?.country}'.`,
       log: {
