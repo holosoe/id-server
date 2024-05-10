@@ -483,6 +483,7 @@ export const countryCodeToPrime = {
   VN: 1129, // Viet Nam (ISO 3166-1 alpha-2)
   VNM: 1129, // Viet Nam (ISO 3166-1 alpha-3)
   YE: 1151, // Yemen (ISO 3166-1 alpha-2)
+  YEM: 1151, // Yemen (ISO 3166-1 alpha-3)
   ZM: 1153, // Zambia (ISO 3166-1 alpha-2)
   ZMB: 1153, // Zambia (ISO 3166-1 alpha-3)
   ZW: 1163, // Zimbabwe (ISO 3166-1 alpha-2)
