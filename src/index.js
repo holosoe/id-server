@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import veriff from "./routes/veriff.js";
+import veriff from "./routes/veriff-kyc.js";
 import idenfy from "./routes/idenfy.js";
 import onfido from "./routes/onfido.js";
 import credentials from "./routes/credentials.js";
