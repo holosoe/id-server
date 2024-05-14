@@ -4,13 +4,14 @@ import { ethers } from "ethers";
 import { Session, SessionRefundMutex } from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
+import { validateTxForSessionCreation } from "../../utils/transactions.js";
 import {
   supportedChainIds,
   sessionStatusEnum,
   payPalApiUrlBase,
+  idvSessionUSDPrice,
 } from "../../constants/misc.js";
 import {
-  validateTxForIDVSessionCreation,
   refundMintFeeOnChain,
   refundMintFeePayPal,
   capturePayPalOrder,
@@ -283,10 +284,11 @@ async function createIdvSession(req, res) {
         .json({ error: "Transaction has already been used to pay for a session" });
     }
 
-    const validationResult = await validateTxForIDVSessionCreation(
+    const validationResult = await validateTxForSessionCreation(
       session,
       chainId,
-      txHash
+      txHash,
+      idvSessionUSDPrice
     );
     if (validationResult.error) {
       createIdvSessionLogger.error(
@@ -497,10 +499,11 @@ async function createIdvSessionV3(req, res) {
         .json({ error: "Transaction has already been used to pay for a session" });
     }
 
-    const validationResult = await validateTxForIDVSessionCreation(
+    const validationResult = await validateTxForSessionCreation(
       session,
       chainId,
-      txHash
+      txHash,
+      idvSessionUSDPrice
     );
     if (
       validationResult.error &&
@@ -525,8 +528,8 @@ async function createIdvSessionV3(req, res) {
         }
       } else {
         return res
-        .status(validationResult.status)
-        .json({ error: validationResult.error });
+          .status(validationResult.status)
+          .json({ error: validationResult.error });
       }
     }
 
@@ -539,7 +542,7 @@ async function createIdvSessionV3(req, res) {
 
     return handleIdvSessionCreation(res, session, createIdvSessionLogger);
   } catch (err) {
-    console.log('err.message', err.message)
+    console.log("err.message", err.message);
     if (err.response) {
       createIdvSessionLogger.error(
         { error: err.response.data },

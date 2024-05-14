@@ -82,3 +82,7 @@ export const payPalApiUrlBase =
   process.env.NODE_ENV === "production"
     ? `https://api-m.paypal.com`
     : `https://api-m.sandbox.paypal.com`;
+
+export const idvSessionUSDPrice = 10.0;
+
+export const amlSessionUSDPrice = 2.5;
