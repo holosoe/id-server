@@ -1,7 +1,10 @@
 import express from "express";
-import { getCredentials, getCredentialsV2 } from "../services/veriff/credentials.js";
-import { v1CreateSession, v2CreateSession } from "../services/veriff/session.js";
-import { decisionWebhook } from "../services/veriff/webhooks.js";
+import {
+  getCredentials,
+  getCredentialsV2,
+} from "../services/veriff-kyc/credentials.js";
+import { v1CreateSession, v2CreateSession } from "../services/veriff-kyc/session.js";
+import { decisionWebhook } from "../services/veriff-kyc/webhooks.js";
 
 const router = express.Router();
 
