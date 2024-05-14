@@ -98,20 +98,22 @@ function validateReports(reports, metaSession) {
         };
       }
       // if !metaSession.ipCountry, then the session was created before we added
-      // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets, 
+      // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets,
       // we can ignore this check for such sessions.
-      if (metaSession.ipCountry && (countryCodeToPrime[report.properties.issuing_country] != countryCodeToPrime[metaSession.ipCountry])) {
-        return {
-          error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${report.properties.issuing_country}'.`,
-          log: {
-            msg: "Country code mismatch",
-            data: { 
-              expected: countryCodeToPrime[metaSession.ipCountry], 
-              got: countryCodeToPrime[report.properties.issuing_country] 
-            },
-          },
-        };
-      }
+      // NOTE: May 14, 2024: We are disablign the ipCountry check because it seems to be
+      // turning down honest users while being game-able by sybils.
+      // if (metaSession.ipCountry && (countryCodeToPrime[report.properties.issuing_country] != countryCodeToPrime[metaSession.ipCountry])) {
+      //   return {
+      //     error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${report.properties.issuing_country}'.`,
+      //     log: {
+      //       msg: "Country code mismatch",
+      //       data: {
+      //         expected: countryCodeToPrime[metaSession.ipCountry],
+      //         got: countryCodeToPrime[report.properties.issuing_country]
+      //       },
+      //     },
+      //   };
+      // }
     }
     if (report.name === "device_intelligence") {
       if (report?.properties?.device?.ip_reputation === "HIGH_RISK") {

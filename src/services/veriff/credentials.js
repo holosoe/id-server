@@ -115,17 +115,19 @@ function validateSession(session, metaSession) {
     };
   }
   // if !metaSession.ipCountry, then the session was created before we added
-  // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets, 
+  // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets,
   // we can ignore this check for such sessions.
-  if (metaSession.ipCountry && (countryCode != countryCodeToPrime[metaSession.ipCountry])) {
-    return {
-      error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${session?.verification?.document?.country}'.`,
-      log: {
-        msg: "Country code mismatch",
-        data: { expected: countryCodeToPrime[metaSession.ipCountry], got: countryCode },
-      },
-    };
-  }
+  // NOTE: May 14, 2024: We are disablign the ipCountry check because it seems to be
+  // turning down honest users while being game-able by sybils.
+  // if (metaSession.ipCountry && (countryCode != countryCodeToPrime[metaSession.ipCountry])) {
+  //   return {
+  //     error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${session?.verification?.document?.country}'.`,
+  //     log: {
+  //       msg: "Country code mismatch",
+  //       data: { expected: countryCodeToPrime[metaSession.ipCountry], got: countryCode },
+  //     },
+  //   };
+  // }
   return { success: true };
 }
 

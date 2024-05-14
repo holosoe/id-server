@@ -96,17 +96,26 @@ function validateSession(metaSession, statusData, verificationData, scanRef) {
     };
   }
   // if !metaSession.ipCountry, then the session was created before we added
-  // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets, 
+  // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets,
   // we can ignore this check for such sessions.
-  if (metaSession.ipCountry && (countryCode != countryCodeToPrime[metaSession.ipCountry])) {
-    return {
-      error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${country}'. scanRef: ${scanRef}`,
-      log: {
-        msg: "Country code mismatch",
-        data: { expected: countryCodeToPrime[metaSession.ipCountry], got: countryCode },
-      },
-    };
-  }
+  // NOTE: May 14, 2024: We are disablign the ipCountry check because it seems to be
+  // turning down honest users while being game-able by sybils.
+  // if (metaSession.ipCountry && (countryCode != countryCodeToPrime[metaSession.ipCountry])) {
+  // if (
+  //   metaSession.ipCountry &&
+  //   countryCode != countryCodeToPrime[metaSession.ipCountry]
+  // ) {
+  //   return {
+  //     error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${country}'. scanRef: ${scanRef}`,
+  //     log: {
+  //       msg: "Country code mismatch",
+  //       data: {
+  //         expected: countryCodeToPrime[metaSession.ipCountry],
+  //         got: countryCode,
+  //       },
+  //     },
+  //   };
+  // }
   return { success: true };
 }
 
@@ -358,7 +367,12 @@ async function getCredentials(req, res) {
       return res.status(400).json({ error: "Failed to retrieve iDenfy session." });
     }
 
-    const validationResult = validateSession(metaSession, statusData, verificationData, scanRef);
+    const validationResult = validateSession(
+      metaSession,
+      statusData,
+      verificationData,
+      scanRef
+    );
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
       await updateSessionStatus(scanRef, sessionStatusEnum.VERIFICATION_FAILED);
