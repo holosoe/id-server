@@ -11,7 +11,6 @@ const router = express.Router();
 router.get("/credentials", getCredentials);
 router.get("/credentials/v2/:nullifier", getCredentialsV2);
 
-// TODO: Remove the following 2 endpoints once pay-first frontend is live
 // router.post("/session", v1CreateSession);
 // router.post("/v2/session", v2CreateSession);
 
