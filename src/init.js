@@ -19,6 +19,7 @@ import {
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,
+  amlChecksSessionSchema,
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
 } from "./schemas.js";
@@ -210,6 +211,8 @@ async function initializeMongoDb() {
     VerificationCollisionMetadataSchema
   );
 
+  const AMLChecksSession = mongoose.model("AMLChecksSession", amlChecksSessionSchema);
+
   const GalxeCampaignZeroUser = mongoose.model(
     "GalxeCampaignZeroUser",
     GalxeCampaignZeroUserSchema
@@ -232,6 +235,7 @@ async function initializeMongoDb() {
     DailyVerificationCount,
     DailyVerificationDeletions,
     VerificationCollisionMetadata,
+    AMLChecksSession,
     GalxeCampaignZeroUser,
     SilkPeanutCampaignsMetadata,
   };
@@ -249,6 +253,7 @@ let UserVerifications,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
+  AMLChecksSession,
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata;
 initializeMongoDb().then((result) => {
@@ -264,6 +269,7 @@ initializeMongoDb().then((result) => {
     DailyVerificationCount = result.DailyVerificationCount;
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
+    AMLChecksSession = result.AMLChecksSession;
     GalxeCampaignZeroUser = result.GalxeCampaignZeroUser;
     SilkPeanutCampaignsMetadata = result.SilkPeanutCampaignsMetadata;
   } else {
@@ -289,6 +295,7 @@ export {
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
+  AMLChecksSession,
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata,
   zokProvider,

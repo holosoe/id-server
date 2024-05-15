@@ -157,6 +157,63 @@ const sessionSchema = new Schema({
   },
 });
 
+const amlChecksSessionSchema = new Schema({
+  sigDigest: String,
+  // Right now a session for AML checks only uses Veriff, so there
+  // is no reason to store idvProvider.
+  // idvProvider: String,
+  // status here is distinct from the status of the session with, e.g., Veriff.
+  // The possible values of status are:
+  // 'NEEDS_PAYMENT' | 'IN_PROGRESS' | 'ISSUED' | 'VERIFICATION_FAILED' | 'REFUNDED'
+  status: String,
+  // silkDiffWallet indicates whether the user is on silksecure.net/holonym/silk or
+  // silksecure.net/holonym/diff-wallet
+  silkDiffWallet: {
+    type: String,
+    required: false,
+  },
+  deletedFromIDVProvider: {
+    type: Boolean,
+    required: false,
+  },
+  // PayPal payment details
+  // payPal: {
+  //   type: {
+  //     orders: {
+  //       type: [
+  //         {
+  //           id: String,
+  //           createdAt: Date,
+  //         },
+  //       ],
+  //       required: false,
+  //     },
+  //   },
+  //   required: false,
+  // },
+  txHash: {
+    type: String,
+    required: false,
+  },
+  chainId: {
+    type: Number,
+    required: false,
+  },
+  // Transaction hash of the refund transaction
+  refundTxHash: {
+    type: String,
+    required: false,
+  },
+  veriffSessionId: {
+    type: String,
+    required: false,
+  },
+  verificationFailureReason: {
+    type: String,
+    required: false,
+  },
+});
+
 // TODO: Do not use MongoDB for mutex purposes. Use something like Redis instead.
 const sessionRefundMutexSchema = new Schema({
   // sessionId is NOT a Veriff sessionId. It is the _id of the associated Session.
@@ -327,6 +384,7 @@ export {
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,
+  amlChecksSessionSchema,
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
 };
