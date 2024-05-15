@@ -2,7 +2,10 @@ import { createHmac } from "crypto";
 import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 
-export async function createVeriffSession() {
+/**
+ * @param {any} [data]
+ */
+export async function createVeriffSession(data) {
   try {
     const frontendUrl =
       process.NODE_ENV === "development"
@@ -62,6 +65,29 @@ export async function getVeriffSessionDecision(sessionId) {
       err.message,
       err.response?.data
     );
+  }
+}
+
+export async function patchVeriffSession(sessionId, data) {
+  try {
+    const hmacSignature = createHmac("sha256", process.env.VERIFF_SECRET_API_KEY)
+      .update(Buffer.from(sessionId, "utf8"))
+      .digest("hex")
+      .toLowerCase();
+    const resp = await axios.patch(
+      `https://api.veriff.me/v1/sessions/${sessionId}`,
+      data,
+      {
+        headers: {
+          "X-AUTH-CLIENT": process.env.VERIFF_PUBLIC_API_KEY,
+          "X-HMAC-SIGNATURE": hmacSignature,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return resp.data;
+  } catch (err) {
+    console.error("Error deleting veriff session:", err.message, err.response?.data);
   }
 }
 
