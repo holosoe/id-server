@@ -1,6 +1,30 @@
 import { ethers } from "ethers";
-import { idServerPaymentAddress } from "../constants/misc.js";
+import {
+  idServerPaymentAddress,
+  ethereumProvider,
+  optimismProvider,
+  optimismGoerliProvider,
+  fantomProvider,
+  avalancheProvider,
+  auroraProvider,
+} from "../constants/misc.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "./cmc.js";
+
+function getTransaction(chainId, txHash) {
+  if (chainId === 1) {
+    return ethereumProvider.getTransaction(txHash);
+  } else if (chainId === 10) {
+    return optimismProvider.getTransaction(txHash);
+  } else if (chainId === 250) {
+    return fantomProvider.getTransaction(txHash);
+  } else if (chainId === 43114) {
+    return avalancheProvider.getTransaction(txHash);
+  } else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    return optimismGoerliProvider.getTransaction(txHash);
+  } else if (chainId === 1313161554) {
+    return auroraProvider.getTransaction(txHash);
+  }
+}
 
 /**
  * Check blockchain for tx.

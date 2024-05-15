@@ -26,22 +26,6 @@ import {
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
-function getTransaction(chainId, txHash) {
-  if (chainId === 1) {
-    return ethereumProvider.getTransaction(txHash);
-  } else if (chainId === 10) {
-    return optimismProvider.getTransaction(txHash);
-  } else if (chainId === 250) {
-    return fantomProvider.getTransaction(txHash);
-  } else if (chainId === 43114) {
-    return avalancheProvider.getTransaction(txHash);
-  } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-    return optimismGoerliProvider.getTransaction(txHash);
-  } else if (chainId === 1313161554) {
-    return auroraProvider.getTransaction(txHash);
-  }
-}
-
 async function refundMintFeePayPal(session) {
   const accessToken = await getPayPalAccessToken();
 
