@@ -4,7 +4,10 @@ import { ethers } from "ethers";
 import { Session, SessionRefundMutex } from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
-import { validateTxForSessionCreation } from "../../utils/transactions.js";
+import {
+  validateTxForSessionCreation,
+  refundMintFeeOnChain,
+} from "../../utils/transactions.js";
 import {
   supportedChainIds,
   sessionStatusEnum,
@@ -12,7 +15,6 @@ import {
   idvSessionUSDPrice,
 } from "../../constants/misc.js";
 import {
-  refundMintFeeOnChain,
   refundMintFeePayPal,
   capturePayPalOrder,
   handleIdvSessionCreation,
