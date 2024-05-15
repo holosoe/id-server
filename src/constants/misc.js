@@ -47,6 +47,15 @@ export const sessionStatusEnum = {
   REFUNDED: "REFUNDED",
 };
 
+export const amlChecksSessionStatusEnum = {
+  NEEDS_PAYMENT: "NEEDS_PAYMENT",
+  IN_PROGRESS_PAID: "IN_PROGRESS_PAID",
+  IN_PROGRESS_CHECK_CREATED: "IN_PROGRESS_CHECK_CREATED",
+  ISSUED: "ISSUED",
+  VERIFICATION_FAILED: "VERIFICATION_FAILED",
+  REFUNDED: "REFUNDED",
+};
+
 // export const ethereumProvider = new ethers.providers.AlchemyProvider(
 //   "homestead",
 //   process.env.ALCHEMY_APIKEY
