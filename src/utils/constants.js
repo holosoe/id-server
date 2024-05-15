@@ -171,6 +171,7 @@ export const countryCodeToPrime = {
   BH: 41, // Bahrain (ISO 3166-1 alpha-2)
   BHR: 41, // Bahrain (ISO 3166-1 alpha-3)
   BD: 43, // Bangladesh (ISO 3166-1 alpha-2)
+  BGD: 43, // Bangladesh (ISO 3166-1 alpha-3)
   BB: 47, // Barbados (ISO 3166-1 alpha-2)
   BRB: 47, // Barbados (ISO 3166-1 alpha-3)
   BY: 53, // Belarus (ISO 3166-1 alpha-2)
