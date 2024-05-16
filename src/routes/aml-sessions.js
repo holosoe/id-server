@@ -18,7 +18,7 @@ router.post("/:_id/pay", payForSession);
 // router.post("/:_id/paypal-order", createPayPalOrder);
 // router.post("/:_id/v2", createIdvSessionV2);
 // router.post("/:_id/v3", createIdvSessionV3);
-router.post("/:_id/refund", refund);
+// router.post("/:_id/refund", refund); // TODO: Uncomment
 // router.post("/:_id/refund/v2", refundV2);
 router.post("/:_id/veriff-session", createVeriffSessionFromZKP);
 router.get("/:_id/credentials/:nullifier", issueCreds);
