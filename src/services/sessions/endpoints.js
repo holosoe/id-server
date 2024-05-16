@@ -710,11 +710,11 @@ async function refund(req, res) {
     // before the first one is confirmed.
     // TODO: Do not use MongoDB for mutex purposes. Use something like
     // like Redis instead.
-    const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
+    const mutex = await SessionRefundMutex.findOne({ _id: objectId }).exec();
     if (mutex) {
       return res.status(400).json({ error: "Refund already in progress" });
     }
-    const newMutex = new SessionRefundMutex({ _id: _id });
+    const newMutex = new SessionRefundMutex({ _id: objectId });
     await newMutex.save();
 
     // Perform refund logic

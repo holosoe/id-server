@@ -200,11 +200,11 @@ async function refund(req, res) {
     // per session can be processed at a time. Otherwise, if the user
     // spams this refund endpoint, we could send multiple transactions
     // before the first one is confirmed.
-    const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
+    const mutex = await SessionRefundMutex.findOne({ _id: objectId }).exec();
     if (mutex) {
       return res.status(400).json({ error: "Refund already in progress" });
     }
-    const newMutex = new SessionRefundMutex({ _id: _id });
+    const newMutex = new SessionRefundMutex({ _id: objectId });
     await newMutex.save();
     // Perform refund logic
     const response = await refundMintFeeOnChain(session, to);
