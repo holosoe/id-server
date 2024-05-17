@@ -672,18 +672,18 @@ async function refund(req, res) {
   const _id = req.params._id;
   const to = req.body.to;
 
+  let objectId = null;
+  try {
+    objectId = new ObjectId(_id);
+  } catch (err) {
+    return res.status(400).json({ error: "Invalid _id" });
+  }
+
   try {
     if (!to || to.length !== 42) {
       return res.status(400).json({
         error: "to is required and must be a 42-character hexstring (including 0x)",
       });
-    }
-
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
     }
 
     const session = await Session.findOne({ _id: objectId }).exec();
@@ -721,14 +721,14 @@ async function refund(req, res) {
     const response = await refundMintFeeOnChain(session, to);
 
     // Delete mutex
-    await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+    await SessionRefundMutex.deleteOne({ _id: objectId }).exec();
 
     // Return response
     return res.status(response.status).json(response.data);
   } catch (err) {
     // Delete mutex. We have this here in case an unknown error occurs above.
     try {
-      await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+      await SessionRefundMutex.deleteOne({ _id: objectId }).exec();
     } catch (err) {
       console.log(
         "POST /sessions/:_id/idv-session/refund/v2: Error encountered while deleting mutex",
