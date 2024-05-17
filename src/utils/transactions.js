@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import {
+  sessionStatusEnum,
   idServerPaymentAddress,
   ethereumProvider,
   optimismProvider,
@@ -113,8 +114,8 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
 }
 
 /**
- * Refund 69.1% of the transaction denoted by session.txHash on
- * chain session.chainId.
+ * Refund 69.1% of the transaction denoted by session.txHash on chain session.chainId.
+ * Sets session.refundTxHash and session.status after successful refund.
  */
 async function refundMintFeeOnChain(session, to) {
   let provider;
