@@ -13,7 +13,7 @@ export const newDummyUserCreds = {
     lastName: "Nakamoto",
     streetName: "Main St",
     streetNumber: 123,
-    streetUnit: "",
+    streetUnit: 0,
     subdivision: "NY",
     zipCode: 12345,
     expirationDate: "2023-09-16",
