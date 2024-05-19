@@ -323,12 +323,12 @@ async function getSession(veriffSessionId) {
   return amlChecksSession;
 }
 
-async function parsePublicSignals(publicSignals) {
+function parsePublicSignals(publicSignals) {
   return {
-    firstName: Buffer.from(BigInt(publicSignals[1]).toString(16), 'hex').toString(),
-    lastName: Buffer.from(BigInt(publicSignals[2]).toString(16), 'hex').toString(),
-    dateOfBirth: new Date((Number(publicSignals[3]) - 2208988800) * 1000),
-    credsExpirationDate: new Date((Number(publicSignals[4]) - 2208988800) * 1000),
+    expiry: new Date(Number(publicSignals[1]) * 1000),
+    firstName: Buffer.from(BigInt(publicSignals[2]).toString(16), 'hex').toString(),
+    lastName: Buffer.from(BigInt(publicSignals[3]).toString(16), 'hex').toString(),
+    dateOfBirth: new Date((Number(publicSignals[4]) - 2208988800) * 1000),
   };
 }
 
@@ -371,13 +371,13 @@ async function createVeriffSessionFromZKP(req, res) {
   }
 
   const { 
+    expiry,
     firstName, 
     lastName, 
     dateOfBirth, 
-    credsExpirationDate
   } = parsePublicSignals(zkp.publicSignals);
 
-  if (credsExpirationDate < new Date()) {
+  if (expiry < new Date()) {
     return res.status(400).json({ error: "Credentials have expired" });
   }
 
