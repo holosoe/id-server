@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
+import { groth16 } from "snarkjs";
 import { AMLChecksSession, SessionRefundMutex } from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import {
@@ -17,6 +18,7 @@ import {
   amlChecksSessionStatusEnum,
   amlSessionUSDPrice,
 } from "../../constants/misc.js";
+import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
 // import {
 //   refundMintFeePayPal,
 //   capturePayPalOrder,
@@ -322,11 +324,11 @@ async function getSession(veriffSessionId) {
 }
 
 async function parsePublicSignals(publicSignals) {
-  // TODO: Implement. Extract these values from publicSignals
   return {
-    firstName: "John",
-    lastName: "Doe",
-    dateOfBirth: "YYYY-MM-DD",
+    firstName: Buffer.from(BigInt(publicSignals[1]).toString(16), 'hex').toString(),
+    lastName: Buffer.from(BigInt(publicSignals[2]).toString(16), 'hex').toString(),
+    dateOfBirth: new Date((Number(publicSignals[3]) - 2208988800) * 1000),
+    credsExpirationDate: new Date((Number(publicSignals[4]) - 2208988800) * 1000),
   };
 }
 
@@ -363,9 +365,21 @@ async function createVeriffSessionFromZKP(req, res) {
     });
   }
 
-  // TODO: Verify ZKP that proves user's first name, last name, date of birth
+  const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
+  if (!zkpVerified) {
+    return res.status(400).json({ error: "ZKP verification failed" });
+  }
 
-  const { firstName, lastName, dateOfBirth } = parsePublicSignals(zkp.publicSignals);
+  const { 
+    firstName, 
+    lastName, 
+    dateOfBirth, 
+    credsExpirationDate
+  } = parsePublicSignals(zkp.publicSignals);
+
+  if (credsExpirationDate < new Date()) {
+    return res.status(400).json({ error: "Credentials have expired" });
+  }
 
   const veriffSession = await createVeriffSession({
     verification: {
