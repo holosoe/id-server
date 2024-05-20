@@ -259,6 +259,13 @@ const userCredentialsV2Schema = new Schema({
     },
     required: false,
   },
+  encryptedCleanHandsCreds: {
+    type: {
+      ciphertext: String,
+      iv: String,
+    },
+    required: false,
+  },
 });
 
 const userProofMetadataSchema = new Schema({

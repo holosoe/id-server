@@ -4,6 +4,7 @@ import {
   getCredentials as getCredentialsV2,
   putPhoneCredentials,
   putGovIdCredentials,
+  putCleanHandsCredentials,
 } from "../services/credentials-v2.js";
 
 const router = express.Router();
@@ -14,5 +15,6 @@ router.post("/", postCredentials);
 router.get("/v2", getCredentialsV2);
 router.put("/v2/phone", putPhoneCredentials);
 router.put("/v2/gov-id", putGovIdCredentials);
+router.put("/v2/clean-hands", putCleanHandsCredentials)
 
 export default router;
