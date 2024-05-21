@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { ethers } from "ethers";
-import { Session } from "../../init.js";
+import { Session, SessionRefundMutex } from "../../init.js";
 import {
   idServerPaymentAddress,
   sessionStatusEnum,
