@@ -313,7 +313,7 @@ async function refundV2(req, res) {
   // }
 }
 
-async function getSession(veriffSessionId) {
+async function getSessionByVeriffSessionId(veriffSessionId) {
   const amlChecksSession = await AMLChecksSession.findOne({ veriffSessionId }).exec();
 
   if (!amlChecksSession) {
@@ -453,8 +453,8 @@ function validateScreeningResult(result) {
 function extractCreds(screeningResult) {
   return {
     rawCreds: {
-      totalHits: screeningResult.data.totalHits,
-      customField1: 0,
+      totalHits: screeningResult.data.totalHits.toString(),
+      customField1: '0',
     },
     fieldsInLeaf: [
       "issuer",
@@ -497,7 +497,7 @@ async function issueCreds(req, res) {
     return res.status(400).json({ error: "No sessionId specified" });
   }
 
-  const amlChecksSession = await getSession(sessionId);
+  const amlChecksSession = await getSessionByVeriffSessionId(sessionId);
   if (
     amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED
   ) {
@@ -537,8 +537,7 @@ async function issueCreds(req, res) {
 
   const response = JSON.parse(
     issuev2(
-      // TODO: Use new issuer private key, one specifically for AML screening
-      process.env.HOLONYM_ISSUER_PRIVKEY,
+      process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
       issuanceNullifier,
       creds.rawCreds.totalHits,
       creds.rawCreds.customField1
