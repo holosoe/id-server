@@ -37,20 +37,9 @@ export async function refundFailedSession(req, res) {
     }
 
     const txHash = req.body.txHash;
-    const chainId = Number(req.body.chainId);
 
     if (!txHash) {
       return res.status(400).json({ error: "No txHash specified." });
-    }
-
-    if (!chainId) {
-      return res.status(400).json({ error: "No chainId specified." });
-    }
-
-    if (supportedChainIds.indexOf(chainId) === -1) {
-      return res.status(400).json({
-        error: `chainId must be one of ${supportedChainIds.join(", ")}`,
-      });
     }
 
     const session = await Session.findOne({ txHash }).exec();
@@ -69,17 +58,17 @@ export async function refundFailedSession(req, res) {
 
     // ------------ begin tx validation ------------
     let provider;
-    if (chainId === 1) {
+    if (session.chainId === 1) {
       provider = ethereumProvider;
-    } else if (chainId === 10) {
+    } else if (session.chainId === 10) {
       provider = optimismProvider;
-    } else if (chainId === 250) {
+    } else if (session.chainId === 250) {
       provider = fantomProvider;
-    } else if (chainId === 43114) {
+    } else if (session.chainId === 43114) {
       provider = avalancheProvider;
-    } else if (chainId === 1313161554) {
+    } else if (session.chainId === 1313161554) {
       provider = auroraProvider;
-    } else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    } else if (process.env.NODE_ENV === "development" && session.chainId === 420) {
       provider = optimismGoerliProvider;
     }
 
@@ -87,7 +76,7 @@ export async function refundFailedSession(req, res) {
 
     if (!tx) {
       return res.status(404).json({
-        error: `Could not find ${txHash} on chain ${chainId}.`,
+        error: `Could not find ${txHash} on chain ${session.chainId}.`,
       });
     }
 
@@ -157,7 +146,7 @@ export async function refundFailedSession(req, res) {
     await session.save();
 
     return res.status(200).json({
-      message: `Successfully refunded user ${tx.from} for transaction ${txHash} on chain ${chainId}.`,
+      message: `Successfully refunded user ${tx.from} for transaction ${txHash} on chain ${session.chainId}.`,
       refundTxHash: txResponse.hash,
     });
 
