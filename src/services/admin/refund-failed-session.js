@@ -17,7 +17,7 @@ import { refundMintFeeOnChain } from "../../utils/transactions.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
 const postEndpointLogger = logger.child({
-  msgPrefix: "[POST /admin/refund-unused-transaction] ",
+  msgPrefix: "[POST /admin/refund-failed-session] ",
 });
 
 
