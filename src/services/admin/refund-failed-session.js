@@ -44,12 +44,6 @@ export async function refundFailedSession(req, res) {
 
     const session = await Session.findOne({ txHash }).exec();
 
-    if (session) {
-      return res.status(404).json({
-        error: `Transaction ${txHash} is already associated with a session.`,
-      });
-    }
-
     if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
       return res.status(400).json({
         error: `Transaction ${txHash} is not associated with a failed session.`,
