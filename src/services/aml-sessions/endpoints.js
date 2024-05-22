@@ -450,17 +450,40 @@ function validateScreeningResult(result) {
   return { success: true };
 }
 
-function extractCreds(screeningResult) {
+function extractCreds(personData) {
+  const person = personData.person;
+  const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
+  // const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
+  const firstNameStr = person.firstName ? person.firstName : "";
+  const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
+  const lastNameStr = person.lastName ? person.lastName : "";
+  const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
+  const nameArgs = [firstNameBuffer, lastNameBuffer].map((x) =>
+    ethers.BigNumber.from(x).toString()
+  );
+  const nameHash = ethers.BigNumber.from(poseidon(nameArgs)).toString();
+
   return {
     rawCreds: {
-      totalHits: screeningResult.data.totalHits.toString(),
-      customField1: '0',
+      birthdate,
+      firstName: firstNameStr,
+      lastName: lastNameStr
+    },
+    derivedCreds: {
+      nameHash: {
+        value: nameHash,
+        derivationFunction: "poseidon",
+        inputFields: [
+          "rawCreds.firstName",
+          "rawCreds.lastName",
+        ],
+      },
     },
     fieldsInLeaf: [
       "issuer",
       "secret",
-      "rawCreds.totalHits",
-      "rawCreds.customField1",
+      "rawCreds.birthdate",
+      "derivedCreds.nameHash",
       "iat", // TODO: Is this correct?
       "scope",
     ],
@@ -520,6 +543,15 @@ async function issueCreds(req, res) {
     });
   }
 
+  // TODO: Call Veriff API to get veriff person. Extract name and dob from this response
+  const personResp = {
+    person: {
+      firstName: 'John',
+      lastName: 'Doe',
+      dateOfBirth: '1990-01-01',
+    }
+  }
+
   const screeningResult = await getVeriffSessionWatchlistScreening(sessionId);
 
   const validationResult = validateScreeningResult(screeningResult);
@@ -533,7 +565,7 @@ async function issueCreds(req, res) {
     return res.status(400).json({ error: validationResult.error });
   }
 
-  const creds = extractCreds(screeningResult);
+  const creds = extractCreds(personResp);
 
   const response = JSON.parse(
     issuev2(
