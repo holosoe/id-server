@@ -85,7 +85,7 @@ export async function sendEmail(to, subject, text, html) {
   // }
 }
 
-export function hash(data) {
+export function sha256(data) {
   // returns Buffer
   return createHash("sha256").update(data).digest();
 }

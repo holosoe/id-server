@@ -9,7 +9,7 @@ import {
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, hash } from "../../utils/utils.js";
+import { getDateAsInt, sha256 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -402,7 +402,7 @@ async function getCredentials(req, res) {
       (session.verification.person.lastName || "") +
       (session.verification.person.addresses?.[0]?.postcode || "") +
       (session.verification.person.dateOfBirth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
@@ -530,7 +530,7 @@ async function getCredentialsV2(req, res) {
       (session.verification.person.lastName || "") +
       (session.verification.person.addresses?.[0]?.postcode || "") +
       (session.verification.person.dateOfBirth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();

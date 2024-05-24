@@ -1,10 +1,10 @@
 import axios from "axios";
-import { hash } from "./utils.js";
+import { sha256 } from "./utils.js";
 
 export async function createIdenfyToken(sigDigest) {
   try {
     const reqBody = {
-      clientId: hash(Buffer.from(sigDigest)).toString("hex"),
+      clientId: sha256(Buffer.from(sigDigest)).toString("hex"),
       // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
       // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
     };

@@ -8,7 +8,7 @@ import {
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, hash } from "../../utils/utils.js";
+import { getDateAsInt, sha256 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -461,7 +461,7 @@ async function getCredentials(req, res) {
       // See: https://documentation.onfido.com/#document-with-address-information-beta
       // (documentReport.properties.addresses?.[0]?.postcode || "") +
       (documentReport.properties.date_of_birth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
@@ -587,7 +587,7 @@ async function getCredentialsV2(req, res) {
       // See: https://documentation.onfido.com/#document-with-address-information-beta
       // (documentReport.properties.addresses?.[0]?.postcode || "") +
       (documentReport.properties.date_of_birth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();

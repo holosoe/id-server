@@ -7,7 +7,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { createLeaf, getDateAsInt, hash } from "../../utils/utils.js";
+import { createLeaf, getDateAsInt, sha256 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -387,7 +387,7 @@ async function getCredentials(req, res) {
       // iDenfy doesn't parse postal code from address, so we use the whole address for now
       (verificationData.address || "") +
       (verificationData.docDob || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
