@@ -85,7 +85,17 @@ export async function sendEmail(to, subject, text, html) {
   // }
 }
 
-export function hash(data) {
+export function sha256(data) {
   // returns Buffer
   return createHash("sha256").update(data).digest();
+}
+
+export function govIdUUID(firstName, lastName, dob) {
+  const uuidConstituents =
+    (firstName || "") +
+    (lastName || "") +
+    // TODO: Maybe include address or zip code in the UUID. Not all
+    // IDV providers provide this info under default settings though.
+    (dob || "");
+  return sha256(Buffer.from(uuidConstituents)).toString("hex");
 }

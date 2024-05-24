@@ -2,7 +2,7 @@ import axios from "axios";
 import { v4 as uuidV4 } from "uuid";
 import { DailyVerificationCount, IDVSessions } from "../../init.js";
 import { sendEmail } from "../../utils/utils.js";
-import { hash } from "../../utils/utils.js";
+import { sha256 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 const v1EndpointLogger = logger.child({
@@ -59,7 +59,7 @@ async function v1CreateSession(req, res) {
 
     // Prepare request and create session
     const reqBody = {
-      clientId: hash(Buffer.from(sigDigest)).toString("hex"),
+      clientId: sha256(Buffer.from(sigDigest)).toString("hex"),
       // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
       // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
     };
@@ -127,7 +127,7 @@ async function v2CreateSession(req, res) {
 
     // Prepare request and create session
     const reqBody = {
-      clientId: hash(Buffer.from(sigDigest)).toString("hex"),
+      clientId: sha256(Buffer.from(sigDigest)).toString("hex"),
       // Getting 'You are not allowed to use a custom callback url.' when specifying callbackUrl
       // callbackUrl: "https://id-server.holonym.io/idenfy/webhook",
     };

@@ -8,7 +8,7 @@ import {
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, hash } from "../../utils/utils.js";
+import { getDateAsInt, sha256, govIdUUID } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -310,26 +310,27 @@ function extractCreds(documentReport) {
   };
 }
 
-async function saveCollisionMetadata(uuid, check_id, documentReport) {
+async function saveCollisionMetadata(uuid, uuidV2, check_id, documentReport) {
   try {
     const collisionMetadataDoc = new VerificationCollisionMetadata({
       uuid: uuid,
+      uuidV2: uuidV2,
       timestamp: new Date(),
       check_id: check_id,
-      uuidConstituents: {
-        firstName: {
-          populated: !!documentReport.properties.first_name,
-        },
-        lastName: {
-          populated: !!documentReport.properties.last_name,
-        },
-        postcode: {
-          populated: false,
-        },
-        dateOfBirth: {
-          populated: !!documentReport.properties.date_of_birth,
-        },
-      },
+      // uuidConstituents: {
+      //   firstName: {
+      //     populated: !!documentReport.properties.first_name,
+      //   },
+      //   lastName: {
+      //     populated: !!documentReport.properties.last_name,
+      //   },
+      //   postcode: {
+      //     populated: false,
+      //   },
+      //   dateOfBirth: {
+      //     populated: !!documentReport.properties.date_of_birth,
+      //   },
+      // },
     });
 
     await collisionMetadataDoc.save();
@@ -338,10 +339,10 @@ async function saveCollisionMetadata(uuid, check_id, documentReport) {
   }
 }
 
-async function saveUserToDb(uuid, check_id) {
+async function saveUserToDb(uuidV2, check_id) {
   const userVerificationsDoc = new UserVerifications({
     govId: {
-      uuid: uuid,
+      uuidV2: uuidV2,
       sessionId: check_id,
       issuedAt: new Date(),
     },
@@ -461,14 +462,28 @@ async function getCredentials(req, res) {
       // See: https://documentation.onfido.com/#document-with-address-information-beta
       // (documentReport.properties.addresses?.[0]?.postcode || "") +
       (documentReport.properties.date_of_birth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      documentReport.properties.first_name,
+      documentReport.properties.last_name,
+      documentReport.properties.date_of_birth
+    )
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    const user = await UserVerifications.findOne({ 
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ]
+    }).exec();
     if (user) {
-      await saveCollisionMetadata(uuid, check_id, documentReport);
+      await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 
-      endpointLogger.error({ uuid }, "User has already registered");
+      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered");
       await updateSessionStatus(
         check_id,
         sessionStatusEnum.VERIFICATION_FAILED,
@@ -480,7 +495,7 @@ async function getCredentials(req, res) {
     }
 
     // Store UUID for Sybil resistance
-    const dbResponse = await saveUserToDb(uuid, check_id);
+    const dbResponse = await saveUserToDb(uuidNew, check_id);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(documentReport);
@@ -494,7 +509,7 @@ async function getCredentials(req, res) {
 
     await deleteOnfidoApplicant(check.applicant_id);
 
-    endpointLogger.info({ uuid, check_id }, "Issuing credentials");
+    endpointLogger.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");
 
     await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
 
@@ -587,14 +602,28 @@ async function getCredentialsV2(req, res) {
       // See: https://documentation.onfido.com/#document-with-address-information-beta
       // (documentReport.properties.addresses?.[0]?.postcode || "") +
       (documentReport.properties.date_of_birth || "");
-    const uuid = hash(Buffer.from(uuidConstituents)).toString("hex");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      documentReport.properties.first_name,
+      documentReport.properties.last_name,
+      documentReport.properties.date_of_birth
+    )
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    const user = await UserVerifications.findOne({ 
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ]
+    }).exec();
     if (user) {
-      await saveCollisionMetadata(uuid, check_id, documentReport);
+      await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 
-      endpointLogger.error({ uuid }, "User has already registered");
+      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered");
       await updateSessionStatus(
         check_id,
         sessionStatusEnum.VERIFICATION_FAILED,
@@ -606,7 +635,7 @@ async function getCredentialsV2(req, res) {
     }
 
     // Store UUID for Sybil resistance
-    const dbResponse = await saveUserToDb(uuid, check_id);
+    const dbResponse = await saveUserToDb(uuidNew, check_id);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(documentReport);
@@ -623,7 +652,7 @@ async function getCredentialsV2(req, res) {
 
     await deleteOnfidoApplicant(check.applicant_id);
 
-    endpointLogger.info({ uuid, check_id }, "Issuing credentials");
+    endpointLogger.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");
 
     await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
 
