@@ -7,7 +7,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { createLeaf, getDateAsInt, sha256 } from "../../utils/utils.js";
+import { createLeaf, getDateAsInt, sha256, govIdUUID } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -253,29 +253,30 @@ function extractCreds(verificationData) {
   };
 }
 
-async function saveCollisionMetadata(uuid, scanRef, verificationData) {
+async function saveCollisionMetadata(uuid, uuidV2, scanRef, verificationData) {
   try {
     const collisionMetadataDoc = new VerificationCollisionMetadata({
       uuid: uuid,
+      uuidV2: uuidV2,
       timestamp: new Date(),
       scanRef: scanRef,
-      uuidConstituents: {
-        firstName: {
-          populated: !!verificationData.docFirstName,
-        },
-        lastName: {
-          populated: !!verificationData.docLastName,
-        },
-        // postcode: {
-        //   populated: !!verificationData.addresses?.[0]?.postcode,
-        // },
-        address: {
-          populated: !!verificationData.address,
-        },
-        dateOfBirth: {
-          populated: !!verificationData.docDob,
-        },
-      },
+      // uuidConstituents: {
+      //   firstName: {
+      //     populated: !!verificationData.docFirstName,
+      //   },
+      //   lastName: {
+      //     populated: !!verificationData.docLastName,
+      //   },
+      //   // postcode: {
+      //   //   populated: !!verificationData.addresses?.[0]?.postcode,
+      //   // },
+      //   address: {
+      //     populated: !!verificationData.address,
+      //   },
+      //   dateOfBirth: {
+      //     populated: !!verificationData.docDob,
+      //   },
+      // },
     });
 
     await collisionMetadataDoc.save();
@@ -284,10 +285,10 @@ async function saveCollisionMetadata(uuid, scanRef, verificationData) {
   }
 }
 
-async function saveUserToDb(uuid, scanRef) {
+async function saveUserToDb(uuidNew, scanRef) {
   const userVerificationsDoc = new UserVerifications({
     govId: {
-      uuid: uuid,
+      uuidV2: uuidNew,
       sessionId: scanRef,
       issuedAt: new Date(),
     },
@@ -387,14 +388,28 @@ async function getCredentials(req, res) {
       // iDenfy doesn't parse postal code from address, so we use the whole address for now
       (verificationData.address || "") +
       (verificationData.docDob || "");
-    const uuid = sha256(Buffer.from(uuidConstituents)).toString("hex");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      verificationData.docFirstName,
+      verificationData.docLastName,
+      verificationData.docDob
+    )
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ "govId.uuid": uuid }).exec();
+    const user = await UserVerifications.findOne({ 
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ]
+    }).exec();
     if (user) {
-      await saveCollisionMetadata(uuid, scanRef, verificationData);
+      await saveCollisionMetadata(uuidOld, uuidNew, scanRef, verificationData);
 
-      endpointLogger.error({ uuid }, "User has already registered.");
+      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
       await updateSessionStatus(scanRef, sessionStatusEnum.VERIFICATION_FAILED);
       return res
         .status(400)
@@ -402,7 +417,7 @@ async function getCredentials(req, res) {
     }
 
     // Store UUID for Sybil resistance
-    const dbResponse = await saveUserToDb(uuid, scanRef);
+    const dbResponse = await saveUserToDb(uuidNew, scanRef);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(verificationData);
@@ -416,7 +431,7 @@ async function getCredentials(req, res) {
 
     await deleteIdenfySession(scanRef);
 
-    endpointLogger.info({ uuid, scanRef }, "Issuing credentials");
+    endpointLogger.info({ uuidV2: uuidNew, scanRef }, "Issuing credentials");
 
     await updateSessionStatus(scanRef, sessionStatusEnum.ISSUED);
 

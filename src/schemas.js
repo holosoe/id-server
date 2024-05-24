@@ -7,7 +7,16 @@ if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
 const userVerificationsSchema = new Schema({
   govId: {
-    uuid: String,
+    // uuid is a hash of data from the user's ID document. We stopped
+    // using it on May 24, 2024 in favor of uuidV2 because we were
+    // calculating uuid differently depending on which IDV provider was used.
+    uuid: {
+      type: String,
+      required: false,
+    },
+    // We include a separate uuidV2 field, which should be calculated the
+    // same way regardless of which IDV provider is used.
+    uuidV2: String,
     sessionId: String,
     issuedAt: Date,
   },
@@ -322,6 +331,10 @@ const DailyVerificationDeletionsSchema = new Schema({
 
 const VerificationCollisionMetadataSchema = new Schema({
   uuid: String,
+  uuidV2: {
+    type: String,
+    required: false,
+  },
   timestamp: Date,
   sessionId: {
     type: String,
@@ -336,27 +349,39 @@ const VerificationCollisionMetadataSchema = new Schema({
     required: false,
   },
   uuidConstituents: {
-    firstName: {
-      populated: Boolean,
-    },
-    lastName: {
-      populated: Boolean,
-    },
-    postcode: {
-      populated: {
-        type: Boolean,
-        required: false,
+    required: false,
+    type: {
+      firstName: {
+        populated: {
+          type: Boolean,
+          required: false,
+        },
       },
-    },
-    address: {
-      populated: {
-        type: Boolean,
-        required: false,
+      lastName: {
+        populated: {
+          type: Boolean,
+          required: false,
+        }
       },
-    },
-    dateOfBirth: {
-      populated: Boolean,
-    },
+      postcode: {
+        populated: {
+          type: Boolean,
+          required: false,
+        },
+      },
+      address: {
+        populated: {
+          type: Boolean,
+          required: false,
+        },
+      },
+      dateOfBirth: {
+        populated: {
+          type: Boolean,
+          required: false,
+        }
+      },
+    }
   },
 });
 
