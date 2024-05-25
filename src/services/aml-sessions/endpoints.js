@@ -14,6 +14,7 @@ import {
   refundMintFeeOnChain,
 } from "../../utils/transactions.js";
 import { cleanHandsDummyUserCreds } from "../../utils/constants.js";
+import { getDateAsInt } from "../../utils/utils.js";
 import {
   supportedChainIds,
   amlChecksSessionStatusEnum,
@@ -343,74 +344,79 @@ function parsePublicSignals(publicSignals) {
  * ENDPOINT.
  */
 async function createVeriffSessionFromZKP(req, res) {
-  // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
-  const { zkp } = req.body;
-  const _id = req.params._id;
-
-  if (!zkp?.proof || !zkp?.publicSignals) {
-    return res.status(400).json({ error: "No zkp found" });
-  }
-
-  let objectId = null;
   try {
-    objectId = new ObjectId(_id);
-  } catch (err) {
-    return res.status(400).json({ error: "Invalid _id" });
-  }
+    // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
+    const { zkp } = req.body;
+    const _id = req.params._id;
   
-  const amlChecksSession = await AMLChecksSession.findOne({ _id: objectId }).exec();
-
-  if (!amlChecksSession) {
-    return res.status(404).json({ error: "Session not found" });
-  }
-
-  if (amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_PAID) {
-    if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+    if (!zkp?.proof || !zkp?.publicSignals) {
+      return res.status(400).json({ error: "No zkp found" });
+    }
+  
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+    
+    const amlChecksSession = await AMLChecksSession.findOne({ _id: objectId }).exec();
+  
+    if (!amlChecksSession) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+  
+    if (amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_PAID) {
+      if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
+        });
+      }
       return res.status(400).json({
-        error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
+        error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_PAID}'`,
       });
     }
-    return res.status(400).json({
-      error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_PAID}'`,
-    });
-  }
-
-  const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
-  if (!zkpVerified) {
-    return res.status(400).json({ error: "ZKP verification failed" });
-  }
-
-  const { 
-    expiry,
-    firstName, 
-    lastName, 
-    dateOfBirth, 
-  } = parsePublicSignals(zkp.publicSignals);
-
-  if (expiry < new Date()) {
-    return res.status(400).json({ error: "Credentials have expired" });
-  }
-
-  const veriffSession = await createVeriffSession({
-    verification: {
-      person: {
-        firstName,
-        lastName,
-        dateOfBirth,
+  
+    const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
+    if (!zkpVerified) {
+      return res.status(400).json({ error: "ZKP verification failed" });
+    }
+  
+    const { 
+      expiry,
+      firstName, 
+      lastName, 
+      dateOfBirth, 
+    } = parsePublicSignals(zkp.publicSignals);
+  
+    if (expiry < new Date()) {
+      return res.status(400).json({ error: "Credentials have expired" });
+    }
+  
+    const veriffSession = await createVeriffSession({
+      verification: {
+        person: {
+          firstName,
+          lastName,
+          dateOfBirth,
+        },
       },
-    },
-  });
-  if (!veriffSession) {
-    return res.status(500).json({ error: "Error creating Veriff session" });
+    });
+    if (!veriffSession) {
+      return res.status(500).json({ error: "Error creating Veriff session" });
+    }
+  
+    amlChecksSession.status = amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED;
+    amlChecksSession.veriffSessionId = veriffSession.verification.id;
+    await amlChecksSession.save();
+  
+    return res.status(200).json({
+      message: "success",
+    });
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: "An unknown error occurred" });
   }
-
-  amlChecksSession.status = amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED;
-  amlChecksSession.veriffSessionId = veriffSession.verification.id;
-  await amlChecksSession.save();
-
-  return res.status(200).json({
-    message: "success",
-  });
 }
 
 function validateScreeningResult(result) {
@@ -499,106 +505,113 @@ async function updateSessionStatus(veriffSessionId, status, failureReason) {
 }
 
 async function issueCreds(req, res) {
-  const issuanceNullifier = req.params.nullifier;
-  const _id = req.params._id;
+  try {
+    const issuanceNullifier = req.params.nullifier;
+    const _id = req.params._id;
+  
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = cleanHandsDummyUserCreds;
 
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = cleanHandsDummyUserCreds;
-
+      const response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
+          issuanceNullifier,
+          getDateAsInt(creds.rawCreds.birthdate).toString(),
+          creds.derivedCreds.nameHash.value,
+        )
+      );
+      response.metadata = cleanHandsDummyUserCreds;
+  
+      return res.status(200).json(response);
+    }
+  
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+  
+    const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
+  
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+  
+    const sessionId = session.veriffSessionId;
+  
+    if (!sessionId) {
+      return res.status(400).json({ error: "No sessionId specified" });
+    }
+  
+    const amlChecksSession = await getSessionByVeriffSessionId(sessionId);
+    if (
+      amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED
+    ) {
+      if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
+        });
+      }
+      return res.status(400).json({
+        error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED}'`,
+      });
+    }
+  
+    const patchResult = await patchVeriffSession(sessionId, {
+      status: "submitted",
+    });
+    if (patchResult?.status != "success") {
+      return res.status(400).json({
+        error: "Failed to PATCH Veriff session",
+      });
+    }
+  
+    // TODO: Call Veriff API to get veriff person. Extract name and dob from this response
+    const personResp = {
+      person: {
+        firstName: 'John',
+        lastName: 'Doe',
+        dateOfBirth: '1990-01-01',
+      }
+    }
+  
+    const screeningResult = await getVeriffSessionWatchlistScreening(sessionId);
+  
+    const validationResult = validateScreeningResult(screeningResult);
+    if (validationResult.error) {
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(
+        sessionId,
+        amlChecksSessionStatusEnum.VERIFICATION_FAILED,
+        validationResult.error
+      );
+      return res.status(400).json({ error: validationResult.error });
+    }
+  
+    // TODO: UUID stuff. Make sure the user hasn't registered before.
+  
+    const creds = extractCreds(personResp);
+  
     const response = JSON.parse(
       issuev2(
         process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
         issuanceNullifier,
-        creds.rawCreds.birthdate,
+        getDateAsInt(creds.rawCreds.birthdate).toString(),
         creds.derivedCreds.nameHash.value,
       )
     );
-    response.metadata = newDummyUserCreds;
-
+    response.metadata = creds;
+  
+    await deleteVeriffSession(sessionId);
+  
+    await updateSessionStatus(sessionId, amlChecksSessionStatusEnum.ISSUED);
+  
     return res.status(200).json(response);
-  }
-
-  let objectId = null;
-  try {
-    objectId = new ObjectId(_id);
   } catch (err) {
-    return res.status(400).json({ error: "Invalid _id" });
+    console.error(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
   }
-
-  const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
-
-  if (!session) {
-    return res.status(404).json({ error: "Session not found" });
-  }
-
-  const sessionId = session.veriffSessionId;
-
-  if (!sessionId) {
-    return res.status(400).json({ error: "No sessionId specified" });
-  }
-
-  const amlChecksSession = await getSessionByVeriffSessionId(sessionId);
-  if (
-    amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED
-  ) {
-    if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
-      return res.status(400).json({
-        error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
-      });
-    }
-    return res.status(400).json({
-      error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED}'`,
-    });
-  }
-
-  const patchResult = await patchVeriffSession(sessionId, {
-    status: "submitted",
-  });
-  if (patchResult?.status != "success") {
-    return res.status(400).json({
-      error: "Failed to PATCH Veriff session",
-    });
-  }
-
-  // TODO: Call Veriff API to get veriff person. Extract name and dob from this response
-  const personResp = {
-    person: {
-      firstName: 'John',
-      lastName: 'Doe',
-      dateOfBirth: '1990-01-01',
-    }
-  }
-
-  const screeningResult = await getVeriffSessionWatchlistScreening(sessionId);
-
-  const validationResult = validateScreeningResult(screeningResult);
-  if (validationResult.error) {
-    endpointLogger.error(validationResult.log.data, validationResult.log.msg);
-    await updateSessionStatus(
-      sessionId,
-      amlChecksSessionStatusEnum.VERIFICATION_FAILED,
-      validationResult.error
-    );
-    return res.status(400).json({ error: validationResult.error });
-  }
-
-  const creds = extractCreds(personResp);
-
-  const response = JSON.parse(
-    issuev2(
-      process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
-      issuanceNullifier,
-      creds.rawCreds.birthdate,
-      creds.derivedCreds.nameHash.value,
-    )
-  );
-  response.metadata = creds;
-
-  await deleteVeriffSession(sessionId);
-
-  await updateSessionStatus(sessionId, amlChecksSessionStatusEnum.ISSUED);
-
-  return res.status(200).json(response);
 }
 
 /**
