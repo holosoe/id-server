@@ -13,6 +13,7 @@ import {
   validateTxForSessionCreation,
   refundMintFeeOnChain,
 } from "../../utils/transactions.js";
+import { cleanHandsDummyUserCreds } from "../../utils/constants.js";
 import {
   supportedChainIds,
   amlChecksSessionStatusEnum,
@@ -501,6 +502,22 @@ async function issueCreds(req, res) {
   const issuanceNullifier = req.params.nullifier;
   const _id = req.params._id;
 
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = cleanHandsDummyUserCreds;
+
+    const response = JSON.parse(
+      issuev2(
+        process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.birthdate,
+        creds.derivedCreds.nameHash.value,
+      )
+    );
+    response.metadata = newDummyUserCreds;
+
+    return res.status(200).json(response);
+  }
+
   let objectId = null;
   try {
     objectId = new ObjectId(_id);
@@ -571,8 +588,8 @@ async function issueCreds(req, res) {
     issuev2(
       process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
       issuanceNullifier,
-      creds.rawCreds.totalHits,
-      creds.rawCreds.customField1
+      creds.rawCreds.birthdate,
+      creds.derivedCreds.nameHash.value,
     )
   );
   response.metadata = creds;
