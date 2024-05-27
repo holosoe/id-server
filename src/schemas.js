@@ -7,19 +7,29 @@ if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
 const userVerificationsSchema = new Schema({
   govId: {
-    // uuid is a hash of data from the user's ID document. We stopped
-    // using it on May 24, 2024 in favor of uuidV2 because we were
-    // calculating uuid differently depending on which IDV provider was used.
-    uuid: {
-      type: String,
-      required: false,
+    type: {
+      // uuid is a hash of data from the user's ID document. We stopped
+      // using it on May 24, 2024 in favor of uuidV2 because we were
+      // calculating uuid differently depending on which IDV provider was used.
+      uuid: {
+        type: String,
+        required: false,
+      },
+      // We include a separate uuidV2 field, which should be calculated the
+      // same way regardless of which IDV provider is used.
+      uuidV2: String,
+      sessionId: String,
+      issuedAt: Date,
     },
-    // We include a separate uuidV2 field, which should be calculated the
-    // same way regardless of which IDV provider is used.
-    uuidV2: String,
-    sessionId: String,
-    issuedAt: Date,
+    required: false,
   },
+  aml: {
+    type: {
+      uuid: String,
+      issuedAt: Date,
+    },
+    required: false,
+  }
 });
 // By keeping track of a user's sessions, we can let them start verification
 // and finish issuance in separate browsing sessions, which is useful for

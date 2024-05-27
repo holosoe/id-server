@@ -68,6 +68,32 @@ export const newDummyUserCreds = {
   ],
 };
 
+export const cleanHandsDummyUserCreds = {
+  rawCreds: {
+    birthdate: "1950-01-01",
+    firstName: "Satoshi",
+    lastName: "Nakamoto"
+  },
+  derivedCreds: {
+    nameHash: {
+      value: "16915550794603762685249398654174029170499664310588415409737148304879240042377",
+      derivationFunction: "poseidon",
+      inputFields: [
+        "rawCreds.firstName",
+        "rawCreds.lastName",
+      ],
+    },
+  },
+  fieldsInLeaf: [
+    "issuer",
+    "secret",
+    "rawCreds.birthdate",
+    "derivedCreds.nameHash",
+    "iat", // TODO: Is this correct?
+    "scope",
+  ],
+};
+
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",

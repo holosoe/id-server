@@ -1,7 +1,11 @@
 import { ObjectId } from "mongodb";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
 import { groth16 } from "snarkjs";
-import { AMLChecksSession, SessionRefundMutex } from "../../init.js";
+import { 
+  UserVerifications, 
+  AMLChecksSession, 
+  SessionRefundMutex 
+} from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import {
   createVeriffSession,
@@ -14,7 +18,7 @@ import {
   refundMintFeeOnChain,
 } from "../../utils/transactions.js";
 import { cleanHandsDummyUserCreds } from "../../utils/constants.js";
-import { getDateAsInt } from "../../utils/utils.js";
+import { getDateAsInt, govIdUUID } from "../../utils/utils.js";
 import {
   supportedChainIds,
   amlChecksSessionStatusEnum,
@@ -504,6 +508,28 @@ async function updateSessionStatus(veriffSessionId, status, failureReason) {
   await metaSession.save();
 }
 
+async function saveUserToDb(uuid) {
+  const userVerificationsDoc = new UserVerifications({
+    aml: {
+      uuid: uuid,
+      issuedAt: new Date(),
+    },
+  });
+  try {
+    await userVerificationsDoc.save();
+  } catch (err) {
+    endpointLogger.error(
+      { error: err },
+      "An error occurred while saving user verification to database"
+    );
+    return {
+      error:
+        "An error occurred while trying to save object to database. Please try again.",
+    };
+  }
+  return { success: true };
+}
+
 async function issueCreds(req, res) {
   try {
     const issuanceNullifier = req.params.nullifier;
@@ -589,8 +615,15 @@ async function issueCreds(req, res) {
       return res.status(400).json({ error: validationResult.error });
     }
   
-    // TODO: UUID stuff. Make sure the user hasn't registered before.
-  
+    const uuid = govIdUUID(
+      personResp.person.firstName, 
+      personResp.person.lastName, 
+      personResp.person.dateOfBirth
+    );
+
+    const dbResponse = await saveUserToDb(uuid);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
     const creds = extractCreds(personResp);
   
     const response = JSON.parse(
