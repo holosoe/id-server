@@ -1,4 +1,7 @@
 import { ObjectId } from "mongodb";
+import { poseidon } from "circomlibjs-old";
+import ethersPkg from "ethers";
+const { ethers } = ethersPkg;
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
 import { groth16 } from "snarkjs";
 import { 
@@ -15,8 +18,8 @@ import { cleanHandsDummyUserCreds } from "../../utils/constants.js";
 import { getDateAsInt, govIdUUID } from "../../utils/utils.js";
 import {
   supportedChainIds,
-  amlChecksSessionStatusEnum,
   amlSessionUSDPrice,
+  sessionStatusEnum,
 } from "../../constants/misc.js";
 import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
 // import {
@@ -53,7 +56,7 @@ async function postSession(req, res) {
 
     const session = new AMLChecksSession({
       sigDigest: sigDigest,
-      status: amlChecksSessionStatusEnum.NEEDS_PAYMENT,
+      status: sessionStatusEnum.NEEDS_PAYMENT,
       silkDiffWallet,
     });
     await session.save();
@@ -105,9 +108,9 @@ async function payForSession(req, res) {
       return res.status(404).json({ error: "Session not found" });
     }
 
-    if (session.status !== amlChecksSessionStatusEnum.NEEDS_PAYMENT) {
+    if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
       return res.status(400).json({
-        error: `Session status is '${session.status}'. Expected '${amlChecksSessionStatusEnum.NEEDS_PAYMENT}'`,
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.NEEDS_PAYMENT}'`,
       });
     }
 
@@ -136,7 +139,7 @@ async function payForSession(req, res) {
         .json({ error: validationResult.error });
     }
 
-    session.status = amlChecksSessionStatusEnum.IN_PROGRESS_PAID;
+    session.status = sessionStatusEnum.IN_PROGRESS;
     session.chainId = chainId;
     session.txHash = txHash;
     await session.save();
@@ -188,7 +191,7 @@ async function refund(req, res) {
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
     }
-    if (session.status !== amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+    if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
       return res
         .status(400)
         .json({ error: "Only failed verifications can be refunded." });
@@ -256,7 +259,7 @@ async function refundV2(req, res) {
   //   if (!session) {
   //     return res.status(404).json({ error: "Session not found" });
   //   }
-  //   if (session.status !== amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+  //   if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
   //     return res
   //       .status(400)
   //       .json({ error: "Only failed verifications can be refunded." });
@@ -318,7 +321,7 @@ function parsePublicSignals(publicSignals) {
     expiry: new Date(Number(publicSignals[1]) * 1000),
     firstName: Buffer.from(BigInt(publicSignals[2]).toString(16), 'hex').toString(),
     lastName: Buffer.from(BigInt(publicSignals[3]).toString(16), 'hex').toString(),
-    dateOfBirth: new Date((Number(publicSignals[4]) - 2208988800) * 1000),
+    dateOfBirth: (new Date((Number(publicSignals[4]) - 2208988800) * 1000)).toISOString().slice(0, 10)
   };
 }
 
@@ -345,8 +348,7 @@ function validateScreeningResult(result) {
   return { success: true };
 }
 
-function extractCreds(personData) {
-  const person = personData.person;
+function extractCreds(person) {
   const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
   // const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = person.firstName ? person.firstName : "";
@@ -412,21 +414,21 @@ async function issueCreds(req, res) {
     const issuanceNullifier = req.params.nullifier;
     const _id = req.params._id;
 
-    if (process.env.ENVIRONMENT == "dev") {
-      const creds = cleanHandsDummyUserCreds;
+    // if (process.env.ENVIRONMENT == "dev") {
+    //   const creds = cleanHandsDummyUserCreds;
 
-      const response = JSON.parse(
-        issuev2(
-          process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
-          issuanceNullifier,
-          getDateAsInt(creds.rawCreds.birthdate).toString(),
-          creds.derivedCreds.nameHash.value,
-        )
-      );
-      response.metadata = cleanHandsDummyUserCreds;
+    //   const response = JSON.parse(
+    //     issuev2(
+    //       process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
+    //       issuanceNullifier,
+    //       getDateAsInt(creds.rawCreds.birthdate).toString(),
+    //       creds.derivedCreds.nameHash.value,
+    //     )
+    //   );
+    //   response.metadata = cleanHandsDummyUserCreds;
   
-      return res.status(200).json(response);
-    }
+    //   return res.status(200).json(response);
+    // }
   
     // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
     // it should be stringified
@@ -454,14 +456,14 @@ async function issueCreds(req, res) {
       return res.status(404).json({ error: "Session not found" });
     }
 
-    if (session.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED) {
-      if (session.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+    if (session.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
         return res.status(400).json({
           error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
         });
       }
       return res.status(400).json({
-        error: `Session status is '${session.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED}'`,
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
       });
     }
   
@@ -486,7 +488,7 @@ async function issueCreds(req, res) {
     // TODO: Create a constant for the data sources
     sanctionsUrl.searchParams.append('data_source', 'PEP,SDN,HM Treasury,CCMC,CFSP,FATF,FBI,FINCEN,INTERPOL,MEU')
     sanctionsUrl.searchParams.append('name', `${firstName} ${lastName}`)
-    sanctionsUrl.searchParams.append('date_of_birth', dateOfBirth.toISOString().slice(0, 10))
+    sanctionsUrl.searchParams.append('date_of_birth', dateOfBirth)
     sanctionsUrl.searchParams.append('entity_type', 'individual')
     sanctionsUrl.searchParams.append('country_residence', 'us')
     const config = {
@@ -506,7 +508,7 @@ async function issueCreds(req, res) {
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
 
-      session.status = amlChecksSessionStatusEnum.VERIFICATION_FAILED;
+      session.status = sessionStatusEnum.VERIFICATION_FAILED;
       session.verificationFailureReason = validationResult.error;
       await session.save()
 
@@ -514,15 +516,19 @@ async function issueCreds(req, res) {
     }
   
     const uuid = govIdUUID(
-      personResp.person.firstName, 
-      personResp.person.lastName, 
-      personResp.person.dateOfBirth
+      firstName, 
+      lastName, 
+      dateOfBirth, 
     );
 
     const dbResponse = await saveUserToDb(uuid);
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
-    const creds = extractCreds(personResp);
+    const creds = extractCreds({
+      firstName, 
+      lastName, 
+      dateOfBirth,
+    });
   
     const response = JSON.parse(
       issuev2(
@@ -534,7 +540,7 @@ async function issueCreds(req, res) {
     );
     response.metadata = creds;
     
-    session.status = amlChecksSessionStatusEnum.ISSUED;
+    session.status = sessionStatusEnum.ISSUED;
     await session.save()
   
     return res.status(200).json(response);
