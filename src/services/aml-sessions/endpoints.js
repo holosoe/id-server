@@ -8,12 +8,6 @@ import {
 } from "../../init.js";
 import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
 import {
-  createVeriffSession,
-  patchVeriffSession,
-  getVeriffSessionWatchlistScreening,
-  deleteVeriffSession,
-} from "../../utils/veriff.js";
-import {
   validateTxForSessionCreation,
   refundMintFeeOnChain,
 } from "../../utils/transactions.js";
@@ -319,16 +313,6 @@ async function refundV2(req, res) {
   // }
 }
 
-async function getSessionByVeriffSessionId(veriffSessionId) {
-  const amlChecksSession = await AMLChecksSession.findOne({ veriffSessionId }).exec();
-
-  if (!amlChecksSession) {
-    throw new Error("Session not found");
-  }
-
-  return amlChecksSession;
-}
-
 function parsePublicSignals(publicSignals) {
   return {
     expiry: new Date(Number(publicSignals[1]) * 1000),
@@ -344,115 +328,15 @@ function parsePublicSignals(publicSignals) {
  * @property {array} publicSignals
  */
 
-/**
- * ENDPOINT.
- */
-async function createVeriffSessionFromZKP(req, res) {
-  try {
-    // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
-    const { zkp } = req.body;
-    const _id = req.params._id;
-  
-    if (!zkp?.proof || !zkp?.publicSignals) {
-      return res.status(400).json({ error: "No zkp found" });
-    }
-  
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-    
-    const amlChecksSession = await AMLChecksSession.findOne({ _id: objectId }).exec();
-  
-    if (!amlChecksSession) {
-      return res.status(404).json({ error: "Session not found" });
-    }
-  
-    if (amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_PAID) {
-      if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
-        return res.status(400).json({
-          error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
-        });
-      }
-      return res.status(400).json({
-        error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_PAID}'`,
-      });
-    }
-  
-    const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
-    if (!zkpVerified) {
-      return res.status(400).json({ error: "ZKP verification failed" });
-    }
-  
-    const { 
-      expiry,
-      firstName, 
-      lastName, 
-      dateOfBirth, 
-    } = parsePublicSignals(zkp.publicSignals);
-  
-    if (expiry < new Date()) {
-      return res.status(400).json({ error: "Credentials have expired" });
-    }
-  
-    const veriffSession = await createVeriffSession({
-      verification: {
-        person: {
-          firstName,
-          lastName,
-          dateOfBirth,
-        },
-      },
-    });
-    if (!veriffSession) {
-      return res.status(500).json({ error: "Error creating Veriff session" });
-    }
-  
-    amlChecksSession.status = amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED;
-    amlChecksSession.veriffSessionId = veriffSession.verification.id;
-    await amlChecksSession.save();
-  
-    return res.status(200).json({
-      message: "success",
-    });
-  } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: "An unknown error occurred" });
-  }
-}
 
 function validateScreeningResult(result) {
-  if (result.status !== "success") {
+  if (result.count > 0) {
     return {
-      error: `Verification failed. Status is '${result.status}'. Expected 'success'.`,
+      error: `Verification failed. count is '${result.count}'. Expected '0'.`,
       log: {
-        msg: "Verification failed. status !== 'success'",
+        msg: "Verification failed. count > 0",
         data: {
           status: result.status,
-        },
-      },
-    };
-  }
-  if (result.data.matchStatus == "possible_match") {
-    return {
-      error: `Verification failed. matchStatus is '${result.data.matchStatus}'. Expected 'no_match'.`,
-      log: {
-        msg: "Verification failed. matchStatus == 'possible_match'",
-        data: {
-          matchStatus: result.data.matchStatus,
-        },
-      },
-    };
-  }
-  if (result.data.totalHits > 0) {
-    return {
-      error: `Verification failed. totalHits is '${result.data.totalHits}'. Expected '0'.`,
-      log: {
-        msg: "Verification failed. totalHits > 0",
-        data: {
-          totalHits: result.data.totalHits,
         },
       },
     };
@@ -501,13 +385,6 @@ function extractCreds(personData) {
   };
 }
 
-async function updateSessionStatus(veriffSessionId, status, failureReason) {
-  const metaSession = await AMLChecksSession.findOne({ veriffSessionId }).exec();
-  metaSession.status = status;
-  if (failureReason) metaSession.verificationFailureReason = failureReason;
-  await metaSession.save();
-}
-
 async function saveUserToDb(uuid) {
   const userVerificationsDoc = new UserVerifications({
     aml: {
@@ -534,7 +411,7 @@ async function issueCreds(req, res) {
   try {
     const issuanceNullifier = req.params.nullifier;
     const _id = req.params._id;
-  
+
     if (process.env.ENVIRONMENT == "dev") {
       const creds = cleanHandsDummyUserCreds;
 
@@ -551,6 +428,19 @@ async function issueCreds(req, res) {
       return res.status(200).json(response);
     }
   
+    // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
+    // it should be stringified
+    let zkp = null;
+    try {
+      zkp = JSON.parse(req.query.zkp);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid zkp" });
+    }
+    
+    if (!zkp?.proof || !zkp?.publicSignals) {
+      return res.status(400).json({ error: "No zkp found" });
+    }
+
     let objectId = null;
     try {
       objectId = new ObjectId(_id);
@@ -563,55 +453,63 @@ async function issueCreds(req, res) {
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
     }
-  
-    const sessionId = session.veriffSessionId;
-  
-    if (!sessionId) {
-      return res.status(400).json({ error: "No sessionId specified" });
-    }
-  
-    const amlChecksSession = await getSessionByVeriffSessionId(sessionId);
-    if (
-      amlChecksSession.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED
-    ) {
-      if (amlChecksSession.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
+
+    if (session.status !== amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED) {
+      if (session.status === amlChecksSessionStatusEnum.VERIFICATION_FAILED) {
         return res.status(400).json({
-          error: `Verification failed. Reason(s): ${amlChecksSession.verificationFailureReason}`,
+          error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
         });
       }
       return res.status(400).json({
-        error: `Session status is '${amlChecksSession.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED}'`,
+        error: `Session status is '${session.status}'. Expected '${amlChecksSessionStatusEnum.IN_PROGRESS_CHECK_CREATED}'`,
       });
     }
   
-    const patchResult = await patchVeriffSession(sessionId, {
-      status: "submitted",
-    });
-    if (patchResult?.status != "success") {
-      return res.status(400).json({
-        error: "Failed to PATCH Veriff session",
-      });
+    const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
+    if (!zkpVerified) {
+      return res.status(400).json({ error: "ZKP verification failed" });
     }
   
-    // TODO: Call Veriff API to get veriff person. Extract name and dob from this response
-    const personResp = {
-      person: {
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: '1990-01-01',
+    const { 
+      expiry,
+      firstName, 
+      lastName, 
+      dateOfBirth, 
+    } = parsePublicSignals(zkp.publicSignals);
+  
+    if (expiry < new Date()) {
+      return res.status(400).json({ error: "Credentials have expired" });
+    }
+
+    const sanctionsUrl = new URL('https://api.sanctions.io/search')
+    sanctionsUrl.searchParams.append('min_score', '0.85')
+    // TODO: Create a constant for the data sources
+    sanctionsUrl.searchParams.append('data_source', 'PEP,SDN,HM Treasury,CCMC,CFSP,FATF,FBI,FINCEN,INTERPOL,MEU')
+    sanctionsUrl.searchParams.append('name', `${firstName} ${lastName}`)
+    sanctionsUrl.searchParams.append('date_of_birth', dateOfBirth.toISOString().slice(0, 10))
+    sanctionsUrl.searchParams.append('entity_type', 'individual')
+    sanctionsUrl.searchParams.append('country_residence', 'us')
+    const config = {
+      headers: {
+        'Accept': 'application/json; version=2.2',
+        'Authorization': 'Bearer ' + process.env.SANCTIONS_API_KEY
       }
     }
+    const resp = await fetch(sanctionsUrl, config)
+    const data = await resp.json()
+
+    if (data.count > 0) {
+      return res.status(400).json({ error: 'Sanctions match found' });
+    }
   
-    const screeningResult = await getVeriffSessionWatchlistScreening(sessionId);
-  
-    const validationResult = validateScreeningResult(screeningResult);
+    const validationResult = validateScreeningResult(data);
     if (validationResult.error) {
       endpointLogger.error(validationResult.log.data, validationResult.log.msg);
-      await updateSessionStatus(
-        sessionId,
-        amlChecksSessionStatusEnum.VERIFICATION_FAILED,
-        validationResult.error
-      );
+
+      session.status = amlChecksSessionStatusEnum.VERIFICATION_FAILED;
+      session.verificationFailureReason = validationResult.error;
+      await session.save()
+
       return res.status(400).json({ error: validationResult.error });
     }
   
@@ -635,10 +533,9 @@ async function issueCreds(req, res) {
       )
     );
     response.metadata = creds;
-  
-    await deleteVeriffSession(sessionId);
-  
-    await updateSessionStatus(sessionId, amlChecksSessionStatusEnum.ISSUED);
+    
+    session.status = amlChecksSessionStatusEnum.ISSUED;
+    await session.save()
   
     return res.status(200).json(response);
   } catch (err) {
@@ -685,7 +582,6 @@ export {
   payForSession,
   refund,
   // refundV2,
-  createVeriffSessionFromZKP,
   issueCreds,
   getSessions,
 };
