@@ -182,8 +182,7 @@ const amlChecksSessionSchema = new Schema({
   // is no reason to store idvProvider.
   // idvProvider: String,
   // status here is distinct from the status of the session with, e.g., Veriff.
-  // The possible values of status are:
-  // 'NEEDS_PAYMENT' | 'IN_PROGRESS_PAID' | 'IN_PROGRESS_CHECK_CREATED' | 'ISSUED' | 'VERIFICATION_FAILED' | 'REFUNDED'
+  // The possible values of status are the same as for the sessions above
   status: String,
   // silkDiffWallet indicates whether the user is on silksecure.net/holonym/silk or
   // silksecure.net/holonym/diff-wallet
