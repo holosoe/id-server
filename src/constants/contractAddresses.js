@@ -28,4 +28,9 @@ export default {
       "optimism-goerli": "0xBA8a4C5c1f36Dc802d51FEEfF3aa4ef97Dae4B10",
     },
   },
+  HubV3: {
+    mainnet: {
+      optimism: "0x2AA822e264F8cc31A2b9C22f39e5551241e94DfB",
+    }
+  }
 };

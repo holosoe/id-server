@@ -13,6 +13,7 @@
     "@holonym-foundation/utils": "^1.0.1",
     "@sendgrid/mail": "^7.7.0",
     "@squirrel-labs/peanut-sdk": "^0.3.34",
+    "@verax-attestation-registry/verax-sdk": "^1.8.1",
     "axios": "^0.27.2",
     "big-integer": "^1.6.51",
     "circomlibjs-old": "npm:circomlibjs@^0.0.8",
