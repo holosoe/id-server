@@ -31,8 +31,8 @@ const { Schema } = mongoose;
 if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
 function validateEnv() {
-  assert.ok(process.env.PRIVATE_KEY, "PRIVATE_KEY environment variable is not set");
-  assert.ok(process.env.ADDRESS, "ADDRESS environment variable is not set");
+  // assert.ok(process.env.PRIVATE_KEY, "PRIVATE_KEY environment variable is not set");
+  // assert.ok(process.env.ADDRESS, "ADDRESS environment variable is not set");
 
   assert.ok(
     process.env.HOLONYM_ISSUER_PRIVKEY,
