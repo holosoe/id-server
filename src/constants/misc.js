@@ -85,7 +85,7 @@ export const payPalApiUrlBase =
 
 export const idvSessionUSDPrice = 10.0;
 
-export const amlSessionUSDPrice = 2.5;
+export const amlSessionUSDPrice = 1;
 
 export const defaultActionId = 123456789;
 
