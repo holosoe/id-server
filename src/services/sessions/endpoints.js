@@ -129,7 +129,7 @@ async function postSession(req, res) {
     );
     const ipCountry = resp?.data?.country;
 
-    if (!ipCountry) {
+    if (!ipCountry && process.env.NODE_ENV != 'development') {
       return res.status(500).json({ error: "Could not determine country from IP" });
     }
 
