@@ -11,6 +11,7 @@ import {
 } from "../../init.js";
 import { 
   getAccessToken as getPayPalAccessToken,
+  capturePayPalOrder,
   refundMintFeePayPal
 } from "../../utils/paypal.js";
 import {
@@ -22,11 +23,11 @@ import { getDateAsInt, govIdUUID } from "../../utils/utils.js";
 import {
   supportedChainIds,
   amlSessionUSDPrice,
+  payPalApiUrlBase,
   sessionStatusEnum,
 } from "../../constants/misc.js";
 import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
 // import {
-//   capturePayPalOrder,
 //   handleIdvSessionCreation,
 // } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
@@ -74,7 +75,82 @@ async function postSession(req, res) {
  * ENDPOINT.
  */
 async function createPayPalOrder(req, res) {
-  // Implement this. See sessions/endpoints.js for reference implementation.
+  try {
+    const _id = req.params._id;
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    const accessToken = await getPayPalAccessToken();
+
+    const url = `${payPalApiUrlBase}/v2/checkout/orders`;
+    const body = {
+      intent: "CAPTURE",
+      purchase_units: [
+        {
+          amount: {
+            currency_code: "USD",
+            value: "1.00",
+          },
+        },
+      ],
+      // payment_source: {
+      //   paypal: {
+      //     experience_context: {
+      //       payment_method_preference: "IMMEDIATE_PAYMENT_REQUIRED",
+      //       brand_name: "EXAMPLE INC",
+      //       locale: "en-US",
+      //       landing_page: "LOGIN",
+      //       shipping_preference: "SET_PROVIDED_ADDRESS",
+      //       user_action: "PAY_NOW",
+      //       return_url: "https://example.com/returnUrl",
+      //       cancel_url: "https://example.com/cancelUrl",
+      //     },
+      //   },
+      // },
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    };
+
+    const resp = await axios.post(url, body, config);
+
+    const order = resp.data;
+
+    if ((session.payPal?.orders ?? []).length > 0) {
+      session.payPal.orders.push({ id: order.id, createdAt: new Date() });
+    } else {
+      session.payPal = {
+        orders: [{ id: order.id, createdAt: new Date() }],
+      };
+    }
+
+    await session.save();
+
+    return res.status(201).json(order);
+  } catch (err) {
+    if (err.response) {
+      console.error("Error creating PayPal order", err.response.data);
+    } else if (err.request) {
+      console.error("Error creating PayPal order", err.request.data);
+    } else {
+      console.error("Error creating PayPal order", err);
+    }
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
 }
 
 /**
@@ -158,7 +234,106 @@ async function payForSession(req, res) {
  * ENDPOINT.
  */
 async function payForSessionV2(req, res) {
-  // Implement this. See sessions/endpoints.js for reference implementation.
+  try {
+    if (req.body.chainId && req.body.txHash) {
+      return payForSession(req, res);
+    }
+
+    const _id = req.params._id;
+    const orderId = req.body.orderId;
+
+    if (!orderId) {
+      return res.status(400).json({ error: "orderId is required" });
+    }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.NEEDS_PAYMENT}'`,
+      });
+    }
+
+    const filteredOrders = (session.payPal?.orders ?? []).filter(
+      (order) => order.id === orderId
+    );
+    if (filteredOrders.length === 0) {
+      return res.status(400).json({
+        error: `Order ${orderId} is not associated with session ${_id}`,
+      });
+    }
+
+    const sessions = await AMLChecksSession.find({
+      _id: { $ne: objectId },
+      "payPal.orders": {
+        $elemMatch: {
+          id: orderId,
+        },
+      },
+    }).exec();
+
+    if (sessions.length > 0) {
+      return res.status(400).json({
+        error: `Order ${orderId} is already associated with session ${sessions[0]._id}`,
+      });
+    }
+
+    const order = await capturePayPalOrder(orderId);
+
+    if (order.status !== "COMPLETED") {
+      return res.status(400).json({
+        error: `Order ${orderId} has status ${order.status}. Must be COMPLETED`,
+      });
+    }
+
+    const expectedAmountInUSD = 1;
+
+    let successfulOrder;
+    for (const pu of order.purchase_units) {
+      for (const payment of pu.payments.captures) {
+        if (payment.status === "COMPLETED") {
+          if (Number(payment.amount.value) >= expectedAmountInUSD) {
+            successfulOrder = order;
+          }
+          break;
+        }
+      }
+    }
+
+    if (!successfulOrder) {
+      return res.status(400).json({
+        error: `Order ${orderId} does not have a successful payment capture with amount >= ${expectedAmountInUSD}`,
+      });
+    }
+
+    session.status = sessionStatusEnum.IN_PROGRESS;
+    await session.save();
+
+    return res.status(200).json({
+      message: "success",
+    });
+  } catch (err) {
+    if (err.response) {
+      console.error('error paying for aml session', err.response.data);
+    } else if (err.request) {
+      console.error('error paying for aml session', err.request.data);
+    } else {
+      console.error('error paying for aml session', err);
+    }
+
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
 }
 
 /**
@@ -585,8 +760,9 @@ async function getSessions(req, res) {
 
 export {
   postSession,
-  // createPayPalOrder,
+  createPayPalOrder,
   payForSession,
+  payForSessionV2,
   refund,
   refundV2,
   issueCreds,

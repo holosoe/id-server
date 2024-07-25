@@ -26,21 +26,6 @@ import {
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
-async function capturePayPalOrder(orderId) {
-  const accessToken = await getPayPalAccessToken();
-
-  const url = `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`;
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-  };
-  const resp = await axios.post(url, {}, config);
-
-  return resp.data;
-}
-
 async function handleIdvSessionCreation(res, session, logger) {
   if (session.idvProvider === "veriff") {
     const veriffSession = await createVeriffSession();
@@ -110,4 +95,4 @@ async function handleIdvSessionCreation(res, session, logger) {
   }
 }
 
-export { capturePayPalOrder, handleIdvSessionCreation };
+export { handleIdvSessionCreation };

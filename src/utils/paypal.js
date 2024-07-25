@@ -42,6 +42,21 @@ async function getRefundDetails(id, accessToken) {
   return resp.data;
 }
 
+async function capturePayPalOrder(orderId) {
+  const accessToken = await getAccessToken();
+
+  const url = `${payPalApiUrlBase}/v2/checkout/orders/${orderId}/capture`;
+  const config = {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  };
+  const resp = await axios.post(url, {}, config);
+
+  return resp.data;
+}
+
 // ------------------- END Simple API calls -------------------
 
 /**
@@ -157,5 +172,6 @@ export {
   getAccessToken,
   getOrder,
   getRefundDetails,
+  capturePayPalOrder,
   refundMintFeePayPal,
 };

@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { Session, SessionRefundMutex } from "../../init.js";
 import {
   getAccessToken as getPayPalAccessToken,
+  capturePayPalOrder,
   refundMintFeePayPal
 } from "../../utils/paypal.js";
 import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
@@ -18,7 +19,6 @@ import {
   idvSessionUSDPrice,
 } from "../../constants/misc.js";
 import {
-  capturePayPalOrder,
   handleIdvSessionCreation,
 } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
@@ -876,7 +876,6 @@ async function getSessions(req, res) {
 export {
   postSession,
   createPayPalOrder,
-  // capturePayPalOrder,
   createIdvSession,
   createIdvSessionV2,
   createIdvSessionV3,

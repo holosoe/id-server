@@ -1,8 +1,9 @@
 import express from "express";
 import {
   postSession,
-  // createPayPalOrder,
+  createPayPalOrder,
   payForSession,
+  payForSessionV2,
   refund,
   refundV2,
   issueCreds,
@@ -14,7 +15,8 @@ const router = express.Router();
 router.post("/", postSession);
 router.get("/", getSessions);
 router.post("/:_id/pay", payForSession);
-// router.post("/:_id/paypal-order", createPayPalOrder);
+router.post("/:_id/pay/v2", payForSessionV2);
+router.post("/:_id/paypal-order", createPayPalOrder);
 // router.post("/:_id/v2", createIdvSessionV2);
 // router.post("/:_id/v3", createIdvSessionV3);
 // router.post("/:_id/refund", refund); // TODO: Uncomment
