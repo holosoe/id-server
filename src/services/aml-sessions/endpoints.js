@@ -9,7 +9,10 @@ import {
   AMLChecksSession, 
   SessionRefundMutex 
 } from "../../init.js";
-import { getAccessToken as getPayPalAccessToken } from "../../utils/paypal.js";
+import { 
+  getAccessToken as getPayPalAccessToken,
+  refundMintFeePayPal
+} from "../../utils/paypal.js";
 import {
   validateTxForSessionCreation,
   refundMintFeeOnChain,
@@ -23,7 +26,6 @@ import {
 } from "../../constants/misc.js";
 import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
 // import {
-//   refundMintFeePayPal,
 //   capturePayPalOrder,
 //   handleIdvSessionCreation,
 // } from "./functions.js";
@@ -243,77 +245,76 @@ async function refund(req, res) {
  * ENDPOINT.
  */
 async function refundV2(req, res) {
-  // Implement this, but for AMLChecksSession.
-  // if (req.body.to) {
-  //   return refund(req, res);
-  // }
-  // const _id = req.params._id;
-  // try {
-  //   let objectId = null;
-  //   try {
-  //     objectId = new ObjectId(_id);
-  //   } catch (err) {
-  //     return res.status(400).json({ error: "Invalid _id" });
-  //   }
-  //   const session = await Session.findOne({ _id: objectId }).exec();
-  //   if (!session) {
-  //     return res.status(404).json({ error: "Session not found" });
-  //   }
-  //   if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
-  //     return res
-  //       .status(400)
-  //       .json({ error: "Only failed verifications can be refunded." });
-  //   }
-  //   if (session.refundTxHash) {
-  //     return res
-  //       .status(400)
-  //       .json({ error: "This session has already been refunded." });
-  //   }
-  //   // Create mutex. We use mutex here so that only one refund request
-  //   // per session can be processed at a time. Otherwise, if the user
-  //   // spams this refund endpoint, we could send multiple transactions
-  //   // before the first one is confirmed.
-  //   const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
-  //   if (mutex) {
-  //     return res.status(400).json({ error: "Refund already in progress" });
-  //   }
-  //   const newMutex = new SessionRefundMutex({ _id: _id });
-  //   await newMutex.save();
-  //   // Perform refund logic
-  //   const response = await refundMintFeePayPal(session);
-  //   // Delete mutex
-  //   await SessionRefundMutex.deleteOne({ _id: _id }).exec();
-  //   // Return response
-  //   return res.status(response.status).json(response.data);
-  // } catch (err) {
-  //   // Delete mutex. We have this here in case an unknown error occurs above.
-  //   try {
-  //     await SessionRefundMutex.deleteOne({ _id: _id }).exec();
-  //   } catch (err) {
-  //     console.log(
-  //       "POST /sessions/:_id/idv-session/refund: Error encountered while deleting mutex",
-  //       err.message
-  //     );
-  //   }
-  //   if (err.response) {
-  //     console.error(
-  //       { error: JSON.stringify(err.response.data, null, 2) },
-  //       "Error during refund"
-  //     );
-  //   } else if (err.request) {
-  //     console.error(
-  //       { error: JSON.stringify(err.request.data, null, 2) },
-  //       "Error during refund"
-  //     );
-  //   } else {
-  //     console.error({ error: err }, "Error during refund");
-  //   }
-  //   console.log(
-  //     "POST /sessions/:_id/idv-session/refund: Error encountered",
-  //     err.message
-  //   );
-  //   return res.status(500).json({ error: "An unknown error occurred" });
-  // }
+  if (req.body.to) {
+    return refund(req, res);
+  }
+  const _id = req.params._id;
+  try {
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+    const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
+      return res
+        .status(400)
+        .json({ error: "Only failed verifications can be refunded." });
+    }
+    if (session.refundTxHash) {
+      return res
+        .status(400)
+        .json({ error: "This session has already been refunded." });
+    }
+    // Create mutex. We use mutex here so that only one refund request
+    // per session can be processed at a time. Otherwise, if the user
+    // spams this refund endpoint, we could send multiple transactions
+    // before the first one is confirmed.
+    const mutex = await SessionRefundMutex.findOne({ _id: _id }).exec();
+    if (mutex) {
+      return res.status(400).json({ error: "Refund already in progress" });
+    }
+    const newMutex = new SessionRefundMutex({ _id: _id });
+    await newMutex.save();
+    // Perform refund logic
+    const response = await refundMintFeePayPal(session);
+    // Delete mutex
+    await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+    // Return response
+    return res.status(response.status).json(response.data);
+  } catch (err) {
+    // Delete mutex. We have this here in case an unknown error occurs above.
+    try {
+      await SessionRefundMutex.deleteOne({ _id: _id }).exec();
+    } catch (err) {
+      console.log(
+        "POST /aml-sessions/:_id/refund/v2: Error encountered while deleting mutex",
+        err.message
+      );
+    }
+    if (err.response) {
+      console.error(
+        { error: JSON.stringify(err.response.data, null, 2) },
+        "Error during refund"
+      );
+    } else if (err.request) {
+      console.error(
+        { error: JSON.stringify(err.request.data, null, 2) },
+        "Error during refund"
+      );
+    } else {
+      console.error({ error: err }, "Error during refund");
+    }
+    console.log(
+      "POST /aml-sessions/:_id/refund/v2: Error encountered",
+      err.message
+    );
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
 }
 
 function parsePublicSignals(publicSignals) {
@@ -414,21 +415,21 @@ async function issueCreds(req, res) {
     const issuanceNullifier = req.params.nullifier;
     const _id = req.params._id;
 
-    // if (process.env.ENVIRONMENT == "dev") {
-    //   const creds = cleanHandsDummyUserCreds;
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = cleanHandsDummyUserCreds;
 
-    //   const response = JSON.parse(
-    //     issuev2(
-    //       process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
-    //       issuanceNullifier,
-    //       getDateAsInt(creds.rawCreds.birthdate).toString(),
-    //       creds.derivedCreds.nameHash.value,
-    //     )
-    //   );
-    //   response.metadata = cleanHandsDummyUserCreds;
+      const response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
+          issuanceNullifier,
+          getDateAsInt(creds.rawCreds.birthdate).toString(),
+          creds.derivedCreds.nameHash.value,
+        )
+      );
+      response.metadata = cleanHandsDummyUserCreds;
   
-    //   return res.status(200).json(response);
-    // }
+      return res.status(200).json(response);
+    }
   
     // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
     // it should be stringified
@@ -587,7 +588,7 @@ export {
   // createPayPalOrder,
   payForSession,
   refund,
-  // refundV2,
+  refundV2,
   issueCreds,
   getSessions,
 };

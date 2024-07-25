@@ -195,20 +195,20 @@ const amlChecksSessionSchema = new Schema({
     required: false,
   },
   // PayPal payment details
-  // payPal: {
-  //   type: {
-  //     orders: {
-  //       type: [
-  //         {
-  //           id: String,
-  //           createdAt: Date,
-  //         },
-  //       ],
-  //       required: false,
-  //     },
-  //   },
-  //   required: false,
-  // },
+  payPal: {
+    type: {
+      orders: {
+        type: [
+          {
+            id: String,
+            createdAt: Date,
+          },
+        ],
+        required: false,
+      },
+    },
+    required: false,
+  },
   txHash: {
     type: String,
     required: false,

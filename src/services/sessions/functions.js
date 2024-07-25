@@ -26,110 +26,6 @@ import {
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
-async function refundMintFeePayPal(session) {
-  const accessToken = await getPayPalAccessToken();
-
-  const orders = session.payPal?.orders ?? [];
-
-  if (orders.length === 0) {
-    return {
-      status: 404,
-      data: {
-        error: "No PayPal orders found for session",
-      },
-    };
-  }
-
-  let successfulOrder;
-  for (const { id: orderId } of orders) {
-    const order = await getPayPalOrder(orderId, accessToken);
-    if (order.status === "COMPLETED") {
-      successfulOrder = order;
-      break;
-    }
-  }
-
-  if (!successfulOrder) {
-    return {
-      status: 404,
-      data: {
-        error: "No successful PayPal orders found for session",
-      },
-    };
-  }
-
-  // Get the first successful payment capture
-  let capture;
-  for (const pu of successfulOrder.purchase_units) {
-    for (const payment of pu.payments.captures) {
-      if (payment.status === "COMPLETED") {
-        capture = payment;
-        break;
-      }
-    }
-  }
-
-  if (!capture) {
-    return {
-      status: 404,
-      data: {
-        error: "No successful PayPal payment captures found for session",
-      },
-    };
-  }
-
-  const paymentId = capture.id;
-
-  // PayPal returns a 403 when trying to get refund details. Not sure if this
-  // is because no refund exists had been performed yet or because of some other.
-  // issue I tried creating new credentials and using the sandbox API but still
-  // got a 403.
-  // const refundDetails = await getPayPalRefundDetails(paymentId, accessToken);
-
-  // if (refundDetails.status === "COMPLETED") {
-  //   return {
-  //     status: 400,
-  //     data: {
-  //       error: "Payment has already been refunded",
-  //     },
-  //   };
-  // }
-
-  const url = `${payPalApiUrlBase}/v2/payments/captures/${paymentId}/refund`;
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`,
-    },
-  };
-  const data = {
-    amount: {
-      value: "7.53",
-      currency_code: "USD",
-    },
-    // invoice_id: "INVOICE-123",
-    note_to_payer: "Failed verification",
-  };
-  const resp = await axios.post(url, data, config);
-
-  if (resp.data?.status !== "COMPLETED") {
-    return {
-      status: 500,
-      data: {
-        error: "Error refunding payment",
-      },
-    };
-  }
-
-  session.status = sessionStatusEnum.REFUNDED;
-  await session.save();
-
-  return {
-    status: 200,
-    data: {},
-  };
-}
-
 async function capturePayPalOrder(orderId) {
   const accessToken = await getPayPalAccessToken();
 
@@ -214,4 +110,4 @@ async function handleIdvSessionCreation(res, session, logger) {
   }
 }
 
-export { refundMintFeePayPal, capturePayPalOrder, handleIdvSessionCreation };
+export { capturePayPalOrder, handleIdvSessionCreation };

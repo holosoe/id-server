@@ -4,7 +4,7 @@ import {
   // createPayPalOrder,
   payForSession,
   refund,
-  // refundV2,
+  refundV2,
   issueCreds,
   getSessions,
 } from "../services/aml-sessions/endpoints.js";
@@ -18,7 +18,7 @@ router.post("/:_id/pay", payForSession);
 // router.post("/:_id/v2", createIdvSessionV2);
 // router.post("/:_id/v3", createIdvSessionV3);
 // router.post("/:_id/refund", refund); // TODO: Uncomment
-// router.post("/:_id/refund/v2", refundV2);
+router.post("/:_id/refund/v2", refundV2);
 router.get("/:_id/credentials/:nullifier", issueCreds);
 
 export default router;
