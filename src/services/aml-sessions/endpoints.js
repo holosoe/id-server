@@ -27,9 +27,6 @@ import {
   sessionStatusEnum,
 } from "../../constants/misc.js";
 import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
-// import {
-//   handleIdvSessionCreation,
-// } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 // const postSessionsLogger = logger.child({
