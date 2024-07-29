@@ -83,7 +83,7 @@ async function deleteUserVerification(req, res) {
     }).exec();
     const deletionCountToday = deletionCountDoc?.deletionCount ?? 0;
     // if (deletionCountToday >= sessionCountToday * 0.02) {
-    if (deletionCountToday > 2) {
+    if (deletionCountToday > 10) {
       deleteEndpointLogger.info("Deletion limit reached for today. Exiting.");
       return res
         .status(429)
