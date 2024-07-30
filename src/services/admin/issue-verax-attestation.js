@@ -138,7 +138,10 @@ function getSBT(address, attestationType) {
 }
 
 async function attest(subject, circuitId, publicValues, revoked) {
-  const portalAddr = "0x5631Aecf3283922b6bf36D7485Eb460f244bfac1"
+  // Old address. Has attestation replacement vulnerability.
+  // const portalAddr = "0x5631Aecf3283922b6bf36D7485Eb460f244bfac1"
+  // New address. Fixes replacement vulnerability.
+  const portalAddr = "0xFa0FFfDc21476245cd8a667DAec4E049eb5337Db"
   const schemaId = "0x1c14fd320660a59a50eb1f795116193a59c26f2463c0705b79d8cb97aa9f419b"
   const expiry = Math.floor(BigInt(publicValues[0]).toString());
   await veraxSdk.portal.attest(
@@ -200,8 +203,9 @@ async function issueVeraxAttestation(req, res) {
     }
     
     // ---------- Make sure user has the required SBT ----------
+    let sbt;
     try {
-      const sbt = await getSBT(address, attestationType);
+      sbt = await getSBT(address, attestationType);
   
       if (!sbt) {
         return res.status(400).json({ error: "User does not have the required SBT" });
