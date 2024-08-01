@@ -87,36 +87,35 @@ export async function refundUnusedTransaction(req, res) {
       });
     }
 
-    // We check that the tx.value is greater than $6. This is a bit of a hack.
-    // Phone verification costs $5, and ID verification costs $10. So, if tx.value
-    // is greater than $6, we can be reasonably confident that the user is trying
-    // to get a refund for ID verification.
-    const expectedAmountInUSD = 6.0;
-
-    let expectedAmountInToken;
-    if ([1, 10, 1313161554].includes(chainId)) {
-      expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    } else if (chainId === 250) {
-      expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
-    } else if (chainId === 43114) {
-      expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
-    } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-      expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    }
-
     if (!tx.blockHash || tx.confirmations === 0) {
       return res.status(400).json({
         error: "Transaction has not been confirmed yet.",
       });
     }
 
+    // We have commented out the expectedAmount check because ID verification
+    // and phone verification are now both $5. Checking the amount will no
+    // longer help filter out transactions that were used for phone.
+    // const expectedAmountInUSD = 6.0;
+
+    // let expectedAmountInToken;
+    // if ([1, 10, 1313161554].includes(chainId)) {
+    //   expectedAmountInToken = await usdToETH(expectedAmountInUSD);
+    // } else if (chainId === 250) {
+    //   expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
+    // } else if (chainId === 43114) {
+    //   expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
+    // } else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    //   expectedAmountInToken = await usdToETH(expectedAmountInUSD);
+    // }
+    
     // Round to 18 decimal places to avoid this underflow error from ethers:
     // "fractional component exceeds decimals"
-    const decimals = 18;
-    const multiplier = 10 ** decimals;
-    const rounded = Math.round(expectedAmountInToken * multiplier) / multiplier;
+    // const decimals = 18;
+    // const multiplier = 10 ** decimals;
+    // const rounded = Math.round(expectedAmountInToken * multiplier) / multiplier;
 
-    const expectedAmount = ethers.utils.parseEther(rounded.toString());
+    // const expectedAmount = ethers.utils.parseEther(rounded.toString());
 
     // if (tx.value.lt(expectedAmount)) {
     //   return res.status(400).json({

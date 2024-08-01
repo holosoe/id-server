@@ -83,7 +83,7 @@ export const payPalApiUrlBase =
     ? `https://api-m.paypal.com`
     : `https://api-m.sandbox.paypal.com`;
 
-export const idvSessionUSDPrice = 10.0;
+export const idvSessionUSDPrice = 5.0;
 
 export const amlSessionUSDPrice = 1;
 

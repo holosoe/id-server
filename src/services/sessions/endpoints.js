@@ -400,7 +400,7 @@ async function createIdvSessionV2(req, res) {
       });
     }
 
-    const expectedAmountInUSD = 10;
+    const expectedAmountInUSD = idvSessionUSDPrice;
 
     let successfulOrder;
     for (const pu of order.purchase_units) {
