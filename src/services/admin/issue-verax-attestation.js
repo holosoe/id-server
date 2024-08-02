@@ -104,7 +104,7 @@ function validatePhoneAttestation(attestation) {
 async function getAndValidateV3SBT(address, circuitId, issuerAddress) {
   const hubV3Contract = new ethers.Contract(hubV3Address, HubV3ABI, optimismProvider);
 
-  // Check v3 contract for KYC SBT
+  // Check v3 contract for SBT
   const sbt = await hubV3Contract.getSBT(address, circuitId);
 
   const publicValues = sbt[1];
@@ -212,7 +212,7 @@ async function issueVeraxAttestation(req, res) {
       }
     } catch (err) {
       if ((err.errorArgs?.[0] ?? "").includes("SBT is expired")) {
-        return res.status(400).json({ error: "User's SBT is expired" });
+        return res.status(400).json({ error: err.errorArgs?.[0] });
       }
     }
 
