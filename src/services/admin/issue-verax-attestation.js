@@ -79,7 +79,7 @@ function validatePhoneAttestation(attestation) {
   const actionId = publicValues[2].toString();
   const issuer = publicValues[4];
   
-  // Make sure circuitId matches KYC circuit ID
+  // Make sure circuitId matches phone circuit ID
   if (circuitId != v3PhoneSybilResistanceCircuitId) {
     return {
       error: "Invalid circuit ID"
@@ -93,10 +93,10 @@ function validatePhoneAttestation(attestation) {
     }
   }
   
-  // Make sure issuer is the KYC Holonym issuer
+  // Make sure issuer is the phone Holonym issuer
   if (issuer != BigInt(phoneIssuerAddress)) {
     return {
-      error: "Invalid KYC issuer"
+      error: "Invalid phone issuer"
     }
   }
 }
