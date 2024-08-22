@@ -7,4 +7,7 @@ notes.txt
 
 lobby3-id-server.json
 
+# old certs
 rds-combined-ca-bundle.pem
+# new certs
+global-bundle.pem
