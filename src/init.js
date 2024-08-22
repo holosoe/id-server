@@ -167,7 +167,7 @@ async function initializeMongoDb() {
     );
     logger.info("Connected to MongoDB database.");
   } catch (err) {
-    logger.error({ error: err }, `Unable to connect to MongoDB database. (cert file name: ${process.env.MONGO_CERT_FILE_NAME})`);
+    logger.error({ error: err }, "Unable to connect to MongoDB database.");
     return;
   }
   const UserVerifications = mongoose.model(
