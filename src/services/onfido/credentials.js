@@ -8,7 +8,7 @@ import {
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, sha256, govIdUUID } from "../../utils/utils.js";
+import { getDateAsInt, sha256, govIdUUID, objectIdOneYearAgo } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -478,7 +478,9 @@ async function getCredentials(req, res) {
       $or: [
         { "govId.uuid": uuidOld },
         { "govId.uuidV2": uuidNew } 
-      ]
+      ],
+      // Filter out documents older than one year
+      _id: { $gt: objectIdOneYearAgo() }
     }).exec();
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
@@ -618,7 +620,9 @@ async function getCredentialsV2(req, res) {
       $or: [
         { "govId.uuid": uuidOld },
         { "govId.uuidV2": uuidNew } 
-      ]
+      ],
+      // Filter out documents older than one year
+      _id: { $gt: objectIdOneYearAgo() }
     }).exec();
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);

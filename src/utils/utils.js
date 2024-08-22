@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import assert from "assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
+import { ObjectId } from "mongodb";
 import { poseidon } from "circomlibjs-old";
 import sgMail from "@sendgrid/mail";
 
@@ -98,4 +99,10 @@ export function govIdUUID(firstName, lastName, dob) {
     // IDV providers provide this info under default settings though.
     (dob || "");
   return sha256(Buffer.from(uuidConstituents)).toString("hex");
+}
+
+export function objectIdOneYearAgo() {
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  return new ObjectId(Math.floor(oneYearAgo.getTime() / 1000).toString(16) + "0000000000000000");
 }
