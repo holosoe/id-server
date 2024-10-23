@@ -12,6 +12,7 @@ import prices from "./routes/prices.js";
 import sessions from "./routes/sessions.js";
 import amlSessions from "./routes/aml-sessions.js";
 import silk from "./routes/silk.js";
+import facetec from "./routes/facetec.js";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/sessions", sessions);
 app.use("/aml-sessions", amlSessions);
 app.use("/prices", prices);
 app.use("/silk", silk); // temporary
+app.use("/facetec", facetec);
 
 app.get("/", (req, res) => {
   const routes = [

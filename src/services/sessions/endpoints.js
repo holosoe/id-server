@@ -102,7 +102,7 @@ async function postSession(req, res) {
     if (!sigDigest) {
       return res.status(400).json({ error: "sigDigest is required" });
     }
-    if (!idvProvider || ["veriff", "onfido"].indexOf(idvProvider) === -1) {
+    if (!idvProvider || ["veriff", "onfido", "facetec"].indexOf(idvProvider) === -1) {
       return res
         .status(400)
         .json({ error: "idvProvider must be one of 'veriff' or 'onfido'" });

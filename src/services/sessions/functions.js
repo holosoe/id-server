@@ -90,6 +90,12 @@ async function handleIdvSessionCreation(res, session, logger) {
       applicant_id: applicant.id,
       sdk_token: sdkTokenData.token,
     });
+  } else if (session.idvProvider === "facetec") {
+    // TODO: facetec: implement this
+
+    return res.status(200).json({
+      message: 'todo: integrate facetec in backend',
+    });
   } else {
     return res.status(500).json({ error: "Invalid idvProvider" });
   }
