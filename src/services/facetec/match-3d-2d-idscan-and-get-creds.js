@@ -556,7 +556,12 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
 
     await updateSessionStatus(session, sessionStatusEnum.ISSUED);
 
-    return res.status(200).json(response);
+    // NOTE: This response shape is different from the veriff and onfido issuance
+    // endpoints. This one includes some of the response from FaceTec
+    return res.status(200).json({
+      issuedCreds: response,
+      scanResultBlob: data.scanResultBlob
+    });
 
     // --
     // --- Forward response from FaceTec server ---
