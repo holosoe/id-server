@@ -14,16 +14,15 @@ import { pinoOptions, logger } from "../../utils/logger.js";
 //   },
 // });
 
-export async function enrollment3d(req, res) {
+/**
+ * Create a FaceTec session token.
+ */
+export async function sessionToken(req, res) {
   try {
     const sid = req.body.sid;
-    const faceTecParams = req.body.faceTecParams;
 
     if (!sid) {
       return res.status(400).json({ error: "sid is required" });
-    }
-    if (!faceTecParams) {
-      return res.status(400).json({ error: "faceTecParams is required" });
     }
 
     // --- Validate id-server session ---
@@ -44,55 +43,29 @@ export async function enrollment3d(req, res) {
       return res.status(400).json({ error: "Session is not in progress" });
     }
 
-    if (session.num_facetec_liveness_checks >= 5) {
-      const failureReason = "User has reached the maximum number of FaceTec liveness checks"
-      // Fail session so user can collect refund
-      await Session.updateOne(
-        { _id: objectId },
-        { 
-          status: sessionStatusEnum.VERIFICATION_FAILED,
-          verificationFailureReason: failureReason
-        }
-      );
-
-      return res.status(400).json({
-        error: failureReason
-      });
-    }
-
     // --- Forward request to FaceTec server ---
-
-    // TODO: For rate limiting, allow the user to enroll up to 5 times.
-    // Once the user has reached this limit, do not allow them to create any more
-    // facetec session tokens; also, obviously, do not let them enroll anymore.
 
     let data = null;
     try {
-      console.log('faceTecParams', faceTecParams)
-      const resp = await axios.post(
-        `${facetecServerBaseURL}/enrollment-3d`,
-        faceTecParams,
+      const resp = await axios.get(
+        `${facetecServerBaseURL}/session-token`,
         {
           headers: {
             "Content-Type": "application/json",
             'X-Device-Key': req.headers['x-device-key'],
-            'X-User-Agent': req.headers['x-user-agent'],
+            // 'X-User-Agent': req.headers['x-user-agent'],
             // TODO: facetec: create FACETEC_API_KEY env var
             // "X-Api-Key": process.env.FACETEC_API_KEY,
           },
         }
       )
-      data = resp.data;  
+      data = resp.data;
     } catch (err) {
-      // TODO: facetec: Look into facetec errors. For some, we
-      // might want to fail the user's id-server session. For most,
-      // we probably just want to forward the error to the user.
-
       if (err.request) {
         console.error('err.request')
         console.error(
           { error: err.request.data },
-          "Error during facetec enrollment-3d"
+          "Error during facetec session-token"
         );
 
         return res.status(502).json({
@@ -102,7 +75,7 @@ export async function enrollment3d(req, res) {
         console.error('err.response')
         console.error(
           { error: err.response.data },
-          "Error during facetec enrollment-3d"
+          "Error during facetec session-token"
         );
 
         // TODO: facetec: We should probably forward the FaceTec server's
@@ -113,22 +86,12 @@ export async function enrollment3d(req, res) {
         })
       } else {
         console.error('err')
-        console.error({ error: err }, "Error during FaceTec enrollment-3d");
+        console.error({ error: err }, "Error during FaceTec session-token");
         return res.status(500).json({ error: "An unknown error occurred" });
       }
     }
-
-    // Increment num_facetec_liveness_checks. 
-    // TODO: Make this atomic. Right now, this endpoint is subject to a 
-    // time-of-check-time-of-use attack. It's not a big deal since we only
-    // care about a loose upper bound on the number of FaceTec checks per
-    // user, but atomicity would be nice.
-    await Session.updateOne(
-      { _id: objectId },
-      { $inc: { num_facetec_liveness_checks: 1 } }
-    );
     
-    // console.log('facetec POST /enrollment-3d response:', data);
+    // console.log('facetec POST /session-token response:', data);
 
     // --- Forward response from FaceTec server ---
 

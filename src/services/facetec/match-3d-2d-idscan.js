@@ -46,9 +46,6 @@ export async function match3d2dIdScan(req, res) {
 
     // --- Forward request to FaceTec server ---
 
-    // TODO: facetec: Figure out rate limiting. Make sure, if facetec charges for
-    // match-3d-2d-idscan requests, that we are not vulnerable to greefing attacks.
-
     let data = null;
     try {
       console.log('faceTecParams', faceTecParams)

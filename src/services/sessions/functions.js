@@ -91,7 +91,7 @@ async function handleIdvSessionCreation(res, session, logger) {
       sdk_token: sdkTokenData.token,
     });
   } else if (session.idvProvider === "facetec") {
-    // TODO: facetec: implement this. Also create an endpoint to allow the user to create a FaceTec session.
+    session.num_facetec_liveness_checks = 0;
 
     await session.save();
 
