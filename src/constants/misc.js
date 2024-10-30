@@ -28,11 +28,12 @@ export const relayerURL =
       "https://relayer.holonym-internal.net";
 
 export const facetecServerBaseURL = 
-  // process.env.NODE_ENV === "development"
-  //   ? "http://localhost:8080"
-  //   // TODO: facetec: Update this to the production URL of _our_ deployed facetec server
-  //   : 
-    "https://api.facetec.com/api/v3.1/biometrics";
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:8080"
+    // TODO: facetec: Update this to the production URL of _our_ deployed facetec server
+    : 
+    "todo"
+    // "https://api.facetec.com/api/v3.1/biometrics";
 
 const supportedChainIds = [
   1, // Ethereum

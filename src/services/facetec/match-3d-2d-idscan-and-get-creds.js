@@ -423,8 +423,7 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
             "Content-Type": "application/json",
             'X-Device-Key': req.headers['x-device-key'],
             'X-User-Agent': req.headers['x-user-agent'],
-            // TODO: facetec: create FACETEC_API_KEY env var
-            // "X-Api-Key": process.env.FACETEC_API_KEY,
+            "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
           },
         }
       )
@@ -560,7 +559,6 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
       scanResultBlob: data.scanResultBlob
     });
 
-    // --
     // --- Forward response from FaceTec server ---
 
 
