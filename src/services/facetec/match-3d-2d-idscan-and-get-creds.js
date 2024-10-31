@@ -37,6 +37,18 @@ import { newDummyUserCreds, countryCodeToPrime, faceTecCountryNameToCode } from 
 //   },
 // });
 
+function flattenScannedValues(scannedValues) {
+  const flattened = {};
+
+  for (const group of scannedValues.groups) {
+    for (const field of group.fields) {
+      flattened[field.fieldKey] = field.value;
+    }
+  }
+
+  return flattened;
+}
+
 function validateFaceTecResponse(data) {
   // TODO: facetec: Should we check barcodeStatusEnumInt?
   if (data.didCompleteIDScanWithUnexpectedMedia) {
@@ -131,6 +143,31 @@ function validateFaceTecResponse(data) {
       },
     };
   }
+  // TODO: facetec: Modify return value shape. Instead of just sending an error message, send an object
+  // like this: { error: "error message", retry: true/false }
+  const flattenedScannedValues = flattenScannedValues(scannedValues);
+  if (!flattenedScannedValues.dateOfBirth) {
+    return {
+      error: `Verification failed. dateOfBirth is missing.`,
+      log: {
+        msg: "Verification failed. dateOfBirth is missing.",
+      },
+    };
+  }
+  let dobIsValid = true;
+  try {
+    new Date(flattenedScannedValues.dateOfBirth);
+  } catch (err) {
+    dobIsValid = false;
+  }
+  if (!dobIsValid) {
+    return {
+      error: `Verification failed. Parsed dateOfBirth (${flattenedScannedValues.dateOfBirth}) is not a valid date.`,
+      log: {
+        msg: `Verification failed. Parsed dateOfBirth (${flattenedScannedValues.dateOfBirth}) is not a valid date.`,
+      },
+    };
+  }
   const templateInfo = documentData.templateInfo;
   if (!templateInfo) {
     return {
@@ -141,18 +178,6 @@ function validateFaceTecResponse(data) {
     };
   }
   return { success: true };
-}
-
-function flattenScannedValues(scannedValues) {
-  const flattened = {};
-
-  for (const group of scannedValues.groups) {
-    for (const field of group.fields) {
-      flattened[field.fieldKey] = field.value;
-    }
-  }
-
-  return flattened;
 }
 
 function extractCreds(data) {
@@ -565,7 +590,7 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
     // if (data) return res.status(200).json(data);
     // else return res.status(500).json({ error: "An unknown error occurred" });
   } catch (err) {
-    console.log("POST /match-3d-2d-idscan-and-get-creds: Error encountered", err.message);
+    console.log("POST /match-3d-2d-idscan-and-get-creds: Error encountered", err);
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }
