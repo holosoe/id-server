@@ -2,7 +2,7 @@ import axios from "axios";
 import { ObjectId } from "mongodb";
 import { subDays } from "date-fns";
 import { Session } from "../../init.js";
-import { sessionStatusEnum } from "../../constants/misc.js";
+import { sessionStatusEnum, facetecServerBaseURL } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { deleteVeriffSession } from "../../utils/veriff.js";
 import { deleteOnfidoApplicant } from "../../utils/onfido.js";
@@ -114,6 +114,24 @@ async function deleteUserData(req, res) {
     // Delete sessions from IDV provider databases
     for (const session of sessions2) {
       await deleteDataFromIDVProvider(session);
+    }
+
+    // Delete records from our FaceTec Server
+    try {
+      const resp = await axios.delete(`${facetecServerBaseURL}/old-enrollments`, {
+        headers: {
+          "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
+        },
+      });
+      // For now, we log the result. Probably not necessary long-term.
+      if (!resp.data?.deleted) {
+        console.log("deleteUserData: No data deleted after calling DELETE /old-enrollments on FaceTec Server. Response from server:", resp.data);
+      }
+    } catch (err) {
+      console.log("deleteUserData: Error encountered while calling DELETE /old-enrollments on FaceTec Server (a)", err.message);
+      if (err?.response?.data)
+        console.log("deleteUserData: Error encountered (b)", err?.response?.data);
+      else console.log("deleteUserData: Error encountered (b)", err);
     }
 
     return res.status(200).json({ message: "Success" });
