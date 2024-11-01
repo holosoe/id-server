@@ -61,25 +61,21 @@ export async function sessionToken(req, res) {
       data = resp.data;
     } catch (err) {
       if (err.request) {
-        console.error('err.request')
         console.error(
           { error: err.request.data },
-          "Error during facetec session-token"
+          "(err.request) Error during facetec session-token"
         );
 
         return res.status(502).json({
           error: "Did not receive a response from the FaceTec server"
         })
       } else if (err.response) {
-        console.error('err.response')
         console.error(
           { error: err.response.data },
-          "Error during facetec session-token"
+          "(err.response) Error during facetec session-token"
         );
 
-        // TODO: facetec: We should probably forward the FaceTec server's
-        // response verbatim, including status code.
-        return res.status(502).json({
+        return res.status(err.response.status).json({
           error: "FaceTec server returned an error",
           data: err.response.data
         })

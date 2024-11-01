@@ -68,25 +68,21 @@ export async function match3d2dIdScan(req, res) {
       // we probably just want to forward the error to the user.
 
       if (err.request) {
-        console.error('err.request')
         console.error(
           { error: err.request.data },
-          "Error during facetec match-3d-2d-idscan"
+          "(err.request) Error during facetec match-3d-2d-idscan"
         );
 
         return res.status(502).json({
           error: "Did not receive a response from the FaceTec server"
         })
       } else if (err.response) {
-        console.error('err.response')
         console.error(
           { error: err.response.data },
-          "Error during facetec match-3d-2d-idscan"
+          "(err.response) Error during facetec match-3d-2d-idscan"
         );
 
-        // TODO: facetec: We should probably forward the FaceTec server's
-        // response verbatim, including status code.
-        return res.status(502).json({
+        return res.status(err.response.status).json({
           error: "FaceTec server returned an error",
           data: err.response.data
         })

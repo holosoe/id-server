@@ -49,88 +49,66 @@ function flattenScannedValues(scannedValues) {
   return flattened;
 }
 
+/**
+ * @returns <{ error, triggerRetry }>. triggerRetry indicates to the frontend whether we should
+ * encourage the user to re-attempt verification (provided they haven't exceeded the retry limit).
+ */
 function validateFaceTecResponse(data) {
   // TODO: facetec: Should we check barcodeStatusEnumInt?
   if (data.didCompleteIDScanWithUnexpectedMedia) {
     return {
       error: `Verification failed. didCompleteIDScanWithUnexpectedMedia is ${data.didCompleteIDScanWithUnexpectedMedia}. Expected false.`,
-      log: {
-        msg: "Verification failed. didCompleteIDScanWithUnexpectedMedia == true",
-      },
+      triggerRetry: false,
     };
   }
   if (data.didCompleteIDScanWithoutMatching) {
-    // TODO: facetec: Probably allow a retry in this case? Does the FaceTec SDK in the frontend handle this?
     return {
       error: `Verification failed. didCompleteIDScanWithoutMatching is ${data.didCompleteIDScanWithoutMatching}. Expected false.`,
-      log: {
-        msg: "Verification failed. didCompleteIDScanWithoutMatching == true",
-      },
+      triggerRetry: true,
     };
   }
   if (data.didCompleteIDScanWithoutMatchingOCRTemplate) {
     return {
       error: `Verification failed. didCompleteIDScanWithoutMatchingOCRTemplate is ${data.didCompleteIDScanWithoutMatchingOCRTemplate}. Expected false.`,
-      log: {
-        msg: "Verification failed. didCompleteIDScanWithoutMatchingOCRTemplate == true",
-      },
+      triggerRetry: false,
     };
   }
   if (data.digitalIDSpoofStatusEnumInt != 0) {
     return {
       error: `Verification failed. digitalIDSpoofStatusEnumInt is ${data.digitalIDSpoofStatusEnumInt}. Expected 0.`,
-      log: {
-        msg: "Verification failed. digitalIDSpoofStatusEnumInt != 0",
-      },
+      triggerRetry: false,
     };
   }
   if (data.error) {
     return {
       error: `Verification failed. FaceTec returned an error. ${data.error}`,
-      log: {
-        msg: "Verification failed. FaceTec returned an error.",
-        data: {
-          error: data.error,
-        },
-      },
+      triggerRetry: false,
     };
   }
   if (data.fullIDStatusEnumInt != 0) {
-    // TODO: facetec: Probably allow a retry in this case? Does the FaceTec SDK in the frontend handle this?
     return {
       error: `Verification failed. fullIDStatusEnumInt is ${data.fullIDStatusEnumInt}. Expected 0.`,
-      log: {
-        msg: "Verification failed. fullIDStatusEnumInt != 0",
-      },
+      triggerRetry: true,
     };
   }
   if (data.matchLevel < 6) {
-    // TODO: facetec: Probably allow a retry in this case? Does the FaceTec SDK in the frontend handle this?
     return {
       error: `Verification failed. matchLevel is ${data.matchLevel}. Expected 6 or greater.`,
-      log: {
-        msg: "Verification failed. matchLevel < 6",
-      },
+      triggerRetry: true,
     };
   }
   // TODO: facetec: maybe: Check mrzStatusEnumInt
   // TODO: facetec: maybe: Check scannedIDPhotoFaceFoundWithMinimumQuality
   if (data.textOnDocumentStatusEnumInt != 1) {
-    // TODO: facetec: Probably allow a retry in this case? Does the FaceTec SDK in the frontend handle this?
     return {
       error: `Verification failed. textOnDocumentStatusEnumInt is ${data.textOnDocumentStatusEnumInt}. Expected 0.`,
-      log: {
-        msg: "Verification failed. textOnDocumentStatusEnumInt != 1",
-      },
+      triggerRetry: true,
     };
   }
   if (data.unexpectedMediaEncounteredAtLeastOnce) {
-    // TODO: facetec: Probably allow a retry in this case? Does the FaceTec SDK in the frontend handle this?
     return {
       error: `Verification failed. unexpectedMediaEncounteredAtLeastOnce is ${data.unexpectedMediaEncounteredAtLeastOnce}. Expected false.`,
-      log: {
-        msg: "Verification failed. unexpectedMediaEncounteredAtLeastOnce == true",
-      },
+      triggerRetry: true,
     };
   }
   const documentData = JSON.parse(data?.documentData ?? '{}');
@@ -138,9 +116,7 @@ function validateFaceTecResponse(data) {
   if (!scannedValues) {
     return {
       error: `Verification failed. documentData.scannedValues is missing.`,
-      log: {
-        msg: "Verification failed. documentData.scannedValues is missing.",
-      },
+      triggerRetry: false,
     };
   }
   // TODO: facetec: Modify return value shape. Instead of just sending an error message, send an object
@@ -149,9 +125,7 @@ function validateFaceTecResponse(data) {
   if (!flattenedScannedValues.dateOfBirth) {
     return {
       error: `Verification failed. dateOfBirth is missing.`,
-      log: {
-        msg: "Verification failed. dateOfBirth is missing.",
-      },
+      triggerRetry: true,
     };
   }
   let dobIsValid = true;
@@ -163,18 +137,14 @@ function validateFaceTecResponse(data) {
   if (!dobIsValid) {
     return {
       error: `Verification failed. Parsed dateOfBirth (${flattenedScannedValues.dateOfBirth}) is not a valid date.`,
-      log: {
-        msg: `Verification failed. Parsed dateOfBirth (${flattenedScannedValues.dateOfBirth}) is not a valid date.`,
-      },
+      triggerRetry: true,
     };
   }
   const templateInfo = documentData.templateInfo;
   if (!templateInfo) {
     return {
       error: `Verification failed. documentData.templateInfo is missing.`,
-      log: {
-        msg: "Verification failed. documentData.templateInfo is missing.",
-      },
+      triggerRetry: true,
     };
   }
   return { success: true };
@@ -459,25 +429,21 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
       // we probably just want to forward the error to the user.
 
       if (err.request) {
-        console.error('err.request')
         console.error(
           { error: err.request.data },
-          "Error during facetec match-3d-2d-idscan"
+          "(err.request) Error during facetec match-3d-2d-idscan"
         );
 
         return res.status(502).json({
           error: "Did not receive a response from the FaceTec server"
         })
       } else if (err.response) {
-        console.error('err.response')
         console.error(
           { error: err.response.data },
-          "Error during facetec match-3d-2d-idscan"
+          "(err.response) Error during facetec match-3d-2d-idscan"
         );
 
-        // TODO: facetec: We should probably forward the FaceTec server's
-        // response verbatim, including status code.
-        return res.status(502).json({
+        return res.status(err.response.status).json({
           error: "FaceTec server returned an error",
           data: err.response.data
         })
@@ -502,7 +468,10 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
         sessionStatusEnum.VERIFICATION_FAILED,
         validationResult.error
       );
-      return res.status(400).json({ error: validationResult.error });
+      return res.status(400).json({
+        error: validationResult.error,
+        triggerRetry: validationResult.triggerRetry
+      });
     }
 
     const creds = extractCreds(data);

@@ -45,7 +45,7 @@ export async function enrollment3d(req, res) {
     }
 
     if (session.num_facetec_liveness_checks >= 5) {
-      const failureReason = "User has reached the maximum number of FaceTec liveness checks"
+      const failureReason = "User has reached the maximum number of allowed FaceTec liveness checks"
       // Fail session so user can collect refund
       await Session.updateOne(
         { _id: objectId },
@@ -88,25 +88,21 @@ export async function enrollment3d(req, res) {
       // we probably just want to forward the error to the user.
 
       if (err.request) {
-        console.error('err.request')
         console.error(
           { error: err.request.data },
-          "Error during facetec enrollment-3d"
+          "(err.request) Error during facetec enrollment-3d"
         );
 
         return res.status(502).json({
           error: "Did not receive a response from the FaceTec server"
         })
       } else if (err.response) {
-        console.error('err.response')
         console.error(
           { error: err.response.data },
-          "Error during facetec enrollment-3d"
+          "(err.response) Error during facetec enrollment-3d"
         );
 
-        // TODO: facetec: We should probably forward the FaceTec server's
-        // response verbatim, including status code.
-        return res.status(502).json({
+        return res.status(err.response.status).json({
           error: "FaceTec server returned an error",
           data: err.response.data
         })
