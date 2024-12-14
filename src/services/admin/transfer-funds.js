@@ -5,10 +5,12 @@ import {
   fantomProvider,
   avalancheProvider,
   auroraProvider,
+  baseProvider,
   companyENS,
   companyAddressOP,
   companyAddressFTM,
   companyAddressAVAX,
+  companyAddressBase,
 } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
@@ -91,6 +93,23 @@ async function transferFunds(req, res) {
       const tx = await fantomWallet.sendTransaction(txReq);
 
       txReceipts["fantom"] = await tx.wait();
+    }
+
+    // Transfer ETH on Base \\
+    const baseWallet = new ethers.Wallet(
+      process.env.PAYMENTS_PRIVATE_KEY,
+      baseProvider
+    );
+    const balanceBase = await baseWallet.getBalance();
+    // If balance is less than 0.2 ETH, don't transfer. Otherwise, send 0.15 ETH.
+    // We keep some ETH to pay for refunds.
+    if (balanceBase.gte(ethers.utils.parseEther("0.2"))) {
+      const tx = await baseWallet.sendTransaction({
+        to: companyAddressBase,
+        value: ethers.utils.parseEther("0.15"),
+      });
+
+      txReceipts["base"] = await tx.wait();
     }
 
     // Transfer AVAX on Avalanche \\

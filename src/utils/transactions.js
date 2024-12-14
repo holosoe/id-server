@@ -8,6 +8,7 @@ import {
   fantomProvider,
   avalancheProvider,
   auroraProvider,
+  baseProvider,
 } from "../constants/misc.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "./cmc.js";
 
@@ -18,6 +19,8 @@ function getTransaction(chainId, txHash) {
     return optimismProvider.getTransaction(txHash);
   } else if (chainId === 250) {
     return fantomProvider.getTransaction(txHash);
+  } else if (chainId === 8453) {
+    return baseProvider.getTransaction(txHash);
   } else if (chainId === 43114) {
     return avalancheProvider.getTransaction(txHash);
   } else if (process.env.NODE_ENV === "development" && chainId === 420) {
@@ -66,7 +69,7 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
   const expectedAmountInUSD = desiredAmount * 0.95;
 
   let expectedAmountInToken;
-  if ([1, 10, 1313161554].includes(chainId)) {
+  if ([1, 10, 1313161554, 8453].includes(chainId)) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
   } else if (chainId === 250) {
     expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
@@ -78,6 +81,11 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
   // }
   else if (process.env.NODE_ENV === "development" && chainId === 420) {
     expectedAmountInToken = await usdToETH(expectedAmountInUSD);
+  } else {
+    return {
+      status: 400,
+      error: `Unsupported chain ID: ${chainId}`,
+    }
   }
 
   if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
@@ -125,6 +133,8 @@ async function refundMintFeeOnChain(session, to) {
     provider = optimismProvider;
   } else if (session.chainId === 250) {
     provider = fantomProvider;
+  } else if (chainId === 8453) {
+    provider = baseProvider;
   } else if (session.chainId === 43114) {
     provider = avalancheProvider;
   } else if (session.chainId === 1313161554) {

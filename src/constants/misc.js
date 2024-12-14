@@ -10,6 +10,8 @@ export const companyAddressOP = "0x03627Ac5A08056B50084d8B9cf550EB74a13C78A";
 
 export const companyAddressFTM = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
 
+export const companyAddressBase = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
+
 export const companyAddressAVAX = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
 
 export const companyAddressAurora = "0xbe20d0A27B79BA2E53c9DF150BadAa21D4783D42";
@@ -36,6 +38,7 @@ const supportedChainIds = [
   1, // Ethereum
   10, // Optimism
   250, // Fantom
+  8453, // Base
   43114, // Avalanche
   1313161554, // Aurora
 ];
@@ -72,6 +75,9 @@ export const optimismProvider = new ethers.providers.JsonRpcProvider(
 );
 export const optimismGoerliProvider = new ethers.providers.JsonRpcProvider(
   process.env.OPTIMISM_GOERLI_RPC_URL
+);
+export const baseProvider = new ethers.providers.JsonRpcProvider(
+  process.env.BASE_RPC_URL
 );
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
   "https://rpc.ftm.tools"

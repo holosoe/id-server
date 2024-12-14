@@ -10,6 +10,7 @@ import {
   fantomProvider,
   avalancheProvider,
   auroraProvider,
+  baseProvider,
   supportedChainIds,
 } from "../../constants/misc.js";
 import logger from "../../utils/logger.js";
@@ -58,6 +59,8 @@ export async function refundFailedSession(req, res) {
       provider = optimismProvider;
     } else if (session.chainId === 250) {
       provider = fantomProvider;
+    } else if (chainId === 8453) {
+      provider = baseProvider;
     } else if (session.chainId === 43114) {
       provider = avalancheProvider;
     } else if (session.chainId === 1313161554) {
