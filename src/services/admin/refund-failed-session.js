@@ -59,7 +59,7 @@ export async function refundFailedSession(req, res) {
       provider = optimismProvider;
     } else if (session.chainId === 250) {
       provider = fantomProvider;
-    } else if (chainId === 8453) {
+    } else if (session.chainId === 8453) {
       provider = baseProvider;
     } else if (session.chainId === 43114) {
       provider = avalancheProvider;
