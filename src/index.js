@@ -34,6 +34,7 @@ app.use("/admin", admin);
 app.use("/session-status", sessionStatus);
 app.use("/ip-info", ipInfo);
 app.use("/sessions", sessions);
+// TODO: Rename these to "ctf-sessions"
 app.use("/aml-sessions", amlSessions);
 app.use("/prices", prices);
 app.use("/silk", silk); // temporary
