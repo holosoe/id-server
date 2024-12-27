@@ -140,8 +140,10 @@ function getSBT(address, attestationType) {
 async function attest(subject, circuitId, publicValues, revoked) {
   // Old address. Has attestation replacement vulnerability.
   // const portalAddr = "0x5631Aecf3283922b6bf36D7485Eb460f244bfac1"
-  // New address. Fixes replacement vulnerability.
-  const portalAddr = "0xFa0FFfDc21476245cd8a667DAec4E049eb5337Db"
+  // v2. Fixes replacement vulnerability.
+  // const portalAddr = "0xFa0FFfDc21476245cd8a667DAec4E049eb5337Db"
+  // v3
+  const portalAddr = "0x3d2F5e17e365CE495df340a341755EFA6F4f553c"
   const schemaId = "0x1c14fd320660a59a50eb1f795116193a59c26f2463c0705b79d8cb97aa9f419b"
   const expiry = Math.floor(BigInt(publicValues[0]).toString());
   await veraxSdk.portal.attest(
