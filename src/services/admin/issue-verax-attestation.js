@@ -146,7 +146,7 @@ async function attest(subject, circuitId, publicValues, revoked) {
   const portalAddr = "0x3d2F5e17e365CE495df340a341755EFA6F4f553c"
   const schemaId = "0x1c14fd320660a59a50eb1f795116193a59c26f2463c0705b79d8cb97aa9f419b"
   const expiry = Math.floor(BigInt(publicValues[0]).toString());
-  await veraxSdk.portal.attest(
+  await veraxSdk.portal.attestV2(
     portalAddr,
     {
       schemaId,
