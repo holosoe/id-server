@@ -10,6 +10,7 @@ import { userSessions } from "../services/admin/user-sessions.js";
 import { failSession } from "../services/admin/fail-session.js";
 import { refundUnusedTransaction } from "../services/admin/refund-unused-transaction.js";
 import { refundFailedSession } from "../services/admin/refund-failed-session.js";
+import { refundFailedCleanHandsSession } from "../services/admin/refund-failed-clean-hands-session.js";
 import { issueVeraxAttestation } from "../services/admin/issue-verax-attestation.js";
 
 const router = express.Router();
@@ -23,6 +24,7 @@ router.post("/user-sessions", userSessions);
 router.post("/fail-session", failSession);
 router.post("/refund-unused-transaction", refundUnusedTransaction);
 router.post("/refund-failed-session", refundFailedSession);
+router.post("/refund-failed-clean-hands-session", refundFailedCleanHandsSession);
 router.post("/issue-verax-attestation", issueVeraxAttestation);
 
 export default router;
