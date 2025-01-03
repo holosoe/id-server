@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 import { ethers } from "ethers";
-import { Session } from "../../init.js";
+import { Session, AMLChecksSession } from "../../init.js";
 import {
   idServerPaymentAddress,
   sessionStatusEnum,
@@ -55,6 +55,14 @@ export async function refundUnusedTransaction(req, res) {
     if (session) {
       return res.status(404).json({
         error: `Transaction ${txHash} is already associated with a session.`,
+      });
+    }
+
+    const cleanHandsSession = await AMLChecksSession.findOne({ txHash }).exec();
+
+    if (cleanHandsSession) {
+      return res.status(404).json({
+        error: `Transaction ${txHash} is already associated with a clean hands session.`,
       });
     }
 
