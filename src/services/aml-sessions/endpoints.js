@@ -663,7 +663,8 @@ async function issueCreds(req, res) {
     sanctionsUrl.searchParams.append('name', `${firstName} ${lastName}`)
     sanctionsUrl.searchParams.append('date_of_birth', dateOfBirth)
     sanctionsUrl.searchParams.append('entity_type', 'individual')
-    sanctionsUrl.searchParams.append('country_residence', 'us')
+    // TODO: Add country_residence to zkp
+    // sanctionsUrl.searchParams.append('country_residence', 'us')
     const config = {
       headers: {
         'Accept': 'application/json; version=2.2',
