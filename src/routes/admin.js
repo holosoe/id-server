@@ -26,9 +26,10 @@ router.post("/user-sessions", userSessions);
 router.post("/fail-session", failSession);
 router.post("/refund-unused-transaction", refundUnusedTransaction);
 router.post("/refund-failed-session", refundFailedSession);
+router.post("/issue-verax-attestation", issueVeraxAttestation);
+// ---- Clean hands ----
 router.post("/user-clean-hands-sessions", userCleanHandsSessions);
 router.post("/fail-clean-hands-session", failCleanHandsSession);
 router.post("/refund-failed-clean-hands-session", refundFailedCleanHandsSession);
-router.post("/issue-verax-attestation", issueVeraxAttestation);
 
 export default router;
