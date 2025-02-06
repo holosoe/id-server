@@ -101,8 +101,14 @@ export function govIdUUID(firstName, lastName, dob) {
   return sha256(Buffer.from(uuidConstituents)).toString("hex");
 }
 
-export function objectIdOneYearAgo() {
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  return new ObjectId(Math.floor(oneYearAgo.getTime() / 1000).toString(16) + "0000000000000000");
+/**
+ * When checking whether a user has already been verified, we want to ignore
+ * records that are older than 11 months. The soonest an SBT can expire is
+ * 11 months after the _credentials_ are issued. See the logic in the 
+ * frontend for the security offset to see why we use 11 months instead of 12.
+ */
+export function objectIdElevenMonthsAgo() {
+  const now = new Date();
+  const elevenMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, now.getDate())
+  return new ObjectId(Math.floor(elevenMonthsAgo.getTime() / 1000).toString(16) + "0000000000000000");
 }

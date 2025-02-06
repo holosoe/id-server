@@ -7,7 +7,7 @@ import {
   VerificationCollisionMetadata,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { createLeaf, getDateAsInt, sha256, govIdUUID, objectIdOneYearAgo } from "../../utils/utils.js";
+import { createLeaf, getDateAsInt, sha256, govIdUUID, objectIdElevenMonthsAgo } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
@@ -406,7 +406,7 @@ async function getCredentials(req, res) {
         { "govId.uuidV2": uuidNew } 
       ],
       // Filter out documents older than one year
-      _id: { $gt: objectIdOneYearAgo() }
+      _id: { $gt: objectIdElevenMonthsAgo() }
     }).exec();
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, scanRef, verificationData);

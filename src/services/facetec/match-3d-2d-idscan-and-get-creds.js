@@ -26,7 +26,7 @@ import {
   idvSessionUSDPrice,
 } from "../../constants/misc.js";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, sha256, govIdUUID, objectIdOneYearAgo } from "../../utils/utils.js";
+import { getDateAsInt, sha256, govIdUUID, objectIdElevenMonthsAgo } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { newDummyUserCreds, countryCodeToPrime, faceTecCountryNameToCode } from "../../utils/constants.js";
 
@@ -500,7 +500,7 @@ export async function match3d2dIdScanAndGetCreds(req, res) {
         { "govId.uuidV2": uuidNew } 
       ],
       // Filter out documents older than one year
-      _id: { $gt: objectIdOneYearAgo() }
+      _id: { $gt: objectIdElevenMonthsAgo() }
     }).exec();
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, data.additionalSessionData.sessionID);
