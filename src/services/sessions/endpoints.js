@@ -524,8 +524,8 @@ async function createIdvSessionV3(req, res) {
           validationResult.error.split("Found: ")[1].split(".")[0]
         );
 
-        // Make sure found is at least 50% of expected
-        if (found.lt(expected.div(2))) {
+        // Make sure found is at least 80% of expected
+        if (found.lt(expected.mul(8).div(10))) {
           return res
             .status(validationResult.status)
             .json({ error: validationResult.error });
