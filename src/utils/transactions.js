@@ -41,7 +41,11 @@ function getTransaction(chainId, txHash) {
 async function validateTxForSessionCreation(session, chainId, txHash, desiredAmount) {
   // Transactions on L2s mostly go through within a few seconds. Mainnet can take 15s or
   // possibly even longer.
-  const tx = await retry(() => getTransaction(chainId, txHash), 5, 5000);
+  const tx = await retry(async () => {
+    const result = await getTransaction(chainId, txHash)
+    if (!result) throw new Error('Transaction not found')
+    return result
+  }, 5, 5000);
   
   // If it's still not found, return an error.
   if (!tx) {
