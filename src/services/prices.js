@@ -102,18 +102,19 @@ async function getPriceV2(req, res) {
 
     return res.status(200).json({ ...newPrices, ...cachedPrices });
   } catch (err) {
+    let errorObjStr = JSON.stringify(err);
     if (err.response) {
       endpointLogger.error(
         { error: err.response.data },
-        "Error getting price from CMC"
+        "Error getting price from CMC:" + errorObjStr
       );
     } else if (err.request) {
       endpointLogger.error(
         { error: err.request.data },
-        "Error getting price from CMC"
+        "Error getting price from CMC:" + errorObjStr
       );
     } else {
-      endpointLogger.error({ error: err.message }, "Error getting price from CMC");
+      endpointLogger.error({ error: err.message }, "Error getting price from CMC:" + errorObjStr);
     }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
