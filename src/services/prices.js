@@ -31,16 +31,16 @@ async function getPrice(req, res) {
   } catch (err) {
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data, userIp: req.ip, userReq: req },
+        { error: err.response.data, theUserIp: req.ip, userReq: req },
         "Error getting price from CMC (getPrice v1)"
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data, userIp: req.ip, userReq: req },
+        { error: err.request.data, theUserIp: req.ip, userReq: req },
         "Error getting price from CMC (getPrice v1)"
       );
     } else {
-      endpointLogger.error({ error: err.message }, "Error getting price from CMC");
+      endpointLogger.error({ error: err.message }, "Error getting price from CMC (getPrice V1)");
     }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
@@ -106,12 +106,12 @@ async function getPriceV2(req, res) {
     let errorObjStr = JSON.stringify(err);
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data, userIp: req.ip, userReq: req },
+        { error: err.response.data, theUserIp: req.ip, userReq: req },
         "Error getting price from CMC from IP: " + req.ip
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data, userIp: req.ip, userReq: req },
+        { error: err.request.data, theUserIp: req.ip, userReq: req },
         "Error getting price from CMC from IP: " + req.ip
       );
     } else {
