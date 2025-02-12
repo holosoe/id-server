@@ -31,12 +31,12 @@ async function getPrice(req, res) {
   } catch (err) {
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data, userReq: req },
+        { error: err.response.data, userIp: req.ip, userReq: req },
         "Error getting price from CMC (getPrice v1)"
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data, userReq: req },
+        { error: err.request.data, userIp: req.ip, userReq: req },
         "Error getting price from CMC (getPrice v1)"
       );
     } else {
@@ -47,6 +47,7 @@ async function getPrice(req, res) {
 }
 
 async function getPriceV2(req, res) {
+  // const ip = headers().get("x-forwarded-for") || req.connection.remoteAddress;
   try {
     const slug = req.query.slug;
     if (!slug) {
@@ -105,12 +106,12 @@ async function getPriceV2(req, res) {
     let errorObjStr = JSON.stringify(err);
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data, userReq: req },
+        { error: err.response.data, userIp: req.ip, userReq: req },
         "Error getting price from CMC:" + errorObjStr
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data, userReq: req },
+        { error: err.request.data, userIp: req.ip, userReq: req },
         "Error getting price from CMC:" + errorObjStr
       );
     } else {

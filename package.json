@@ -26,6 +26,7 @@
     "holonym-wasm-issuer-v2": "npm:holonym-wasm-issuer@^2.0.0",
     "mongodb": "^4.11.0",
     "mongoose": "^6.7.2",
+    "next": "^15.1.7",
     "pg": "^8.8.0",
     "pino": "^8.15.0",
     "pino-datadog-transport": "^1.3.0",
