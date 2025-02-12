@@ -1,5 +1,5 @@
 import { pinoOptions, logger } from "../utils/logger.js";
-import { getLatestCryptoPrice } from "../utils/cmc.js";
+import { getPriceFromCache, setPriceInCache, getLatestCryptoPrice } from "../utils/cmc.js";
 import { slugToID } from "../constants/cmc.js";
 
 const endpointLogger = logger.child({
@@ -8,10 +8,6 @@ const endpointLogger = logger.child({
     ...pinoOptions.base,
   },
 });
-
-// TODO: Use redis instead. This is a temporary solution to avoid hitting
-// CMC's rate limit. key-value pair is { slug: { price: number, lastUpdatedAt: Date } }
-const cryptoPrices = {};
 
 async function getPrice(req, res) {
   try {
@@ -58,13 +54,11 @@ async function getPriceV2(req, res) {
 
     // Check cache first
     const cachedPrices = {};
-    const now = new Date();
     for (let i = 0; i < slugs.length; i++) {
       const slug = slugs[i];
-      const cachedPrice = cryptoPrices[slug];
-      // If price was last updated less than 30 seconds ago, use cached price
-      if (cachedPrice && now - cachedPrice.lastUpdatedAt < 30 * 1000) {
-        cachedPrices[slug] = cachedPrice.price;
+      const cachedPrice = getPriceFromCache(slug);
+      if (cachedPrice) {
+        cachedPrices[slug] = cachedPrice;
       }
     }
 
@@ -95,10 +89,7 @@ async function getPriceV2(req, res) {
       newPrices[slug] = resp?.data?.data?.[id]?.quote?.USD?.price;
 
       // Update cache
-      cryptoPrices[slug] = {
-        price: newPrices[slug],
-        lastUpdatedAt: new Date(),
-      };
+      setPriceInCache(slug, newPrices[slug]);
     }
 
     return res.status(200).json({ ...newPrices, ...cachedPrices });

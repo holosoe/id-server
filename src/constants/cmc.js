@@ -10,3 +10,10 @@ export const slugToID = {
   fantom: fantomCMCID,
   near: nearCMCID,
 };
+
+export const idToSlug = {
+  [ethereumCMCID]: "ethereum",
+  [avalancheCMCID]: "avalanche",
+  [fantomCMCID]: "fantom",
+  [nearCMCID]: "near",
+}
