@@ -11,6 +11,7 @@ import {
   baseProvider,
 } from "../constants/misc.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "./cmc.js";
+import { retry } from './utils.js';
 
 function getTransaction(chainId, txHash) {
   if (chainId === 1) {
@@ -38,21 +39,16 @@ function getTransaction(chainId, txHash) {
  * - Ensure tx is on a supported chain.
  */
 async function validateTxForSessionCreation(session, chainId, txHash, desiredAmount) {
-  let tx = await getTransaction(chainId, txHash);
-
+  // Transactions on L2s mostly go through within a few seconds. Mainnet can take 15s or
+  // possibly even longer.
+  const tx = await retry(() => getTransaction(chainId, txHash), 5, 5000);
+  
+  // If it's still not found, return an error.
   if (!tx) {
-    // Hacky solution, but sometimes a transaction is not found even though it exists.
-    // Sleep for 5 seconds and try again.
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-    tx = await getTransaction(chainId, txHash);
-
-    // If it's still not found, return an error.
-    if (!tx) {
-      return {
-        status: 400,
-        error: `Could not find transaction with txHash ${txHash}`,
-      };
-    }
+    return {
+      status: 400,
+      error: `Session creation error: Could not find transaction with txHash ${txHash}`,
+    };
   }
 
   const txReceipt = await tx.wait();
