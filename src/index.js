@@ -40,6 +40,9 @@ app.use("/prices", prices);
 app.use("/silk", silk); // temporary
 app.use("/facetec", facetec);
 
+// Trust the X-Forwarded-For header from the load balancer or the user's proxy
+app.set("trust proxy", true);
+
 app.get("/", (req, res) => {
   const routes = [
     "GET /veriff/credentials",
