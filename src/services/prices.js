@@ -31,13 +31,13 @@ async function getPrice(req, res) {
   } catch (err) {
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data },
-        "Error getting price from CMC"
+        { error: err.response.data, userReq: req },
+        "Error getting price from CMC (getPrice v1)"
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data },
-        "Error getting price from CMC"
+        { error: err.request.data, userReq: req },
+        "Error getting price from CMC (getPrice v1)"
       );
     } else {
       endpointLogger.error({ error: err.message }, "Error getting price from CMC");
@@ -105,16 +105,16 @@ async function getPriceV2(req, res) {
     let errorObjStr = JSON.stringify(err);
     if (err.response) {
       endpointLogger.error(
-        { error: err.response.data },
+        { error: err.response.data, userReq: req },
         "Error getting price from CMC:" + errorObjStr
       );
     } else if (err.request) {
       endpointLogger.error(
-        { error: err.request.data },
+        { error: err.request.data, userReq: req },
         "Error getting price from CMC:" + errorObjStr
       );
     } else {
-      endpointLogger.error({ error: err.message }, "Error getting price from CMC:" + errorObjStr);
+      endpointLogger.error({ error: err.message, userReq: req }, "Error getting price from CMC:" + errorObjStr);
     }
     return res.status(500).json({ error: "An unknown error occurred" });
   }
