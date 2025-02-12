@@ -43,7 +43,7 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
   // possibly even longer.
   const tx = await retry(async () => {
     const result = await getTransaction(chainId, txHash)
-    if (!result) throw new Error('Transaction not found')
+    if (!result) throw new Error(`Could not find transaction with txHash ${txHash} on chain ${chainId}`)
     return result
   }, 5, 5000);
   
@@ -51,7 +51,7 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
   if (!tx) {
     return {
       status: 400,
-      error: `Session creation error: Could not find transaction with txHash ${txHash}`,
+      error: `Session creation error: Could not find transaction with txHash ${txHash} on chain ${chainId}`,
     };
   }
 
