@@ -533,7 +533,7 @@ async function main() {
       // this transaction's data matches this session ID, then we know that this transaction
       // was a retry and should be refunded.
       if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
-        console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+        console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
         // await refundUnusedTransaction(
         //   tx.hash,
         //   tx.chainId,
@@ -544,7 +544,7 @@ async function main() {
       }
 
       if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
-        console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+        console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
         // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
         // session.status = status;
         // session.chainId = tx.chainId;
