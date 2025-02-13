@@ -74,7 +74,7 @@ async function initializeMongoDb() {
     const mongoConfig = {
       ssl: true,
       sslValidate: true,
-      sslCA: `${__dirname}/${process.env.MONGO_CERT_FILE_NAME}`,
+      sslCA: `${__dirname}/../${process.env.MONGO_CERT_FILE_NAME}`,
     };
     await mongoose.connect(
       process.env.MONGO_DB_CONNECTION_STR as string,
