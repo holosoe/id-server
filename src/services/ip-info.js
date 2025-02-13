@@ -2,21 +2,16 @@ import axios from "axios";
 
 async function getCountry(req, res) {
   try {
-    // Feb 13, 2025: Getting rate limited by ipapi. So we just pretend all users are from US for now
+    const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+
+    const resp = await axios.get(
+      `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
+    );
+    const country = resp?.data?.country_name;
+
     return res.status(200).json({
-      country: 'United States'
+      country,
     });
-
-    // const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
-
-    // const resp = await axios.get(
-    //   `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
-    // );
-    // const country = resp?.data?.country_name;
-
-    // return res.status(200).json({
-    //   country,
-    // });
   } catch (err) {
     console.log("GET ip-info/country: Error encountered (a)", err.message);
     console.log("GET ip-info/country: Error encountered (b)", err?.response?.data);
