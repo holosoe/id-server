@@ -64,6 +64,8 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
           address: ourAddress,
         });
 
+        console.log('logs', logs)
+
         // Extract transaction hashes from logs
         const txHashes = logs.map((log) => log.transactionHash);
 
