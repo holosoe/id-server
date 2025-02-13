@@ -525,7 +525,7 @@ async function main() {
       // console.log('processing transaction', txHash, 'and session', session._id)
       const digest = ethers.utils.keccak256("0x" + session._id);
 
-      if (tx.to !== ourAddress || tx.data !== digest) {
+      if (tx.to_address !== ourAddress || tx.input !== digest) {
         continue;
       }
 
