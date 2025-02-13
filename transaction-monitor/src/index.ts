@@ -534,24 +534,23 @@ async function main() {
       // was a retry and should be refunded.
       if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
         console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
-        // await refundUnusedTransaction(
-        //   tx.hash,
-        //   tx.chainId,
-        //   tx.from,
-        // );
+        await refundUnusedTransaction(
+          tx.hash,
+          tx.chainId,
+          tx.from,
+        );
 
-        // await setProcessed(txHash);
+        await setProcessed(txHash);
       }
 
       if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
         console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
-        // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
-        // session.status = status;
-        // session.chainId = tx.chainId;
-        // session.txHash = tx.hash;
-        // await session.save();
+        session.status = sessionStatusEnum.IN_PROGRESS;
+        session.chainId = tx.chainId;
+        session.txHash = tx.hash;
+        await session.save();
 
-        // await setProcessed(txHash);
+        await setProcessed(txHash);
       }
     }
   }
