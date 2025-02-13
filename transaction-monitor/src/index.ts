@@ -19,6 +19,7 @@ const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae
 
 async function isProcessed(hash: string): Promise<boolean> {
   const db = await JSONFilePreset(txHashesDbName, defaultDbValue)
+  console.log('db.data', db.data)
   return db.data.includes(hash)
 }
 
