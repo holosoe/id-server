@@ -317,7 +317,7 @@ async function main() {
   // }
 
 
-  console.log("txsByChain", JSON.stringify(txsByChain, null, 2))
+  console.log("data", JSON.stringify(data, null, 2))
 
 
   console.log('getting sessions')
