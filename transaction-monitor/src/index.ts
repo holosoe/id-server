@@ -292,8 +292,30 @@ async function getTransaction(chainId: number, txHash: string) {
 async function main() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851";
   console.log('getting transaction hashes')
-  const transactionHashesByChain =
-    await getTransactionsHashesByChainLast48Hrs(ourAddress);
+  // const transactionHashesByChain =
+  //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
+
+
+  // Get the last 1,000 transactions for each chain
+  const txsByChain: any = {}
+  // for (const chainId of Object.keys(chainProviders)) {
+    const txs = []
+    // for (let page = 0; page < 10; page++) {
+      // TODO: Update query based on chain
+      const resp = await fetch(
+        `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12`, 
+        {
+          headers: {
+            'X-API-Key': process.env.MORALIS_API_KEY as string
+          }
+        }
+      )
+      const data = await resp.json()
+      txs.push(...data.result)
+      txsByChain['1'] = txs
+    // }
+  // }
+
 
   console.log('getting sessions')
   
@@ -301,16 +323,20 @@ async function main() {
 
   console.log('processing transactions')
 
-  console.log('transactionHashesByChain', transactionHashesByChain)
+  // console.log('transactionHashesByChain', transactionHashesByChain)
 
   // Object.entries(transactionHashesByChain).forEach(
-  for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
+  // for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
     // async ([chainId, txHashes]) => {
-      for (let txHash in txHashes) {
+      // for (let txHash in txHashes) {
+      for (const tx of txs) {
+        const txHash = tx.hash
+        const chainId = tx.chainId
         console.log('processing tx', txHash)
         let fullTransaction;
         if (!isProcessed(txHash)) {
-          fullTransaction = await getTransaction(Number(chainId), txHash);
+          // fullTransaction = await getTransaction(Number(chainId), txHash);
+          fullTransaction = tx
         }
         if (!fullTransaction) {
           continue;
@@ -364,7 +390,7 @@ async function main() {
           // }
         }
       }
-    }
+    // }
   // );
 }
 
