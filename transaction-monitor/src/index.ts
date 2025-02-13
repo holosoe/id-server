@@ -505,7 +505,15 @@ async function main() {
 
   console.log('processing transactions')
 
-  for (const tx of allTxsFromFileParsed) {
+  // for (const tx of allTxsFromFileParsed) {
+  for (let i = 0; i < allTxsFromFileParsed.length; i++) {
+    const tx = allTxsFromFileParsed[i]
+
+    // Print progress at 10% intervals
+    if (i % (allTxsFromFileParsed.length / 10) === 0) {
+      console.log(`Processing transaction ${i} of ${allTxsFromFileParsed.length}`);
+    }
+
     const txHash = tx.hash
     const chainId = tx.chainId
     if (await isProcessed(txHash)) {
