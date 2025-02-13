@@ -89,7 +89,7 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
   return txHashesByChain;
 }
 
-export async function refundUnusedTransaction(
+async function refundUnusedTransaction(
   txHash: string,
   chainId: number,
   to: string,
