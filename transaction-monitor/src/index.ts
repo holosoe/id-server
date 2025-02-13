@@ -22,7 +22,6 @@ const moralisApiKey = process.env.MORALIS_API_KEY!
 
 async function isProcessed(hash: string): Promise<boolean> {
   const db = await JSONFilePreset(txHashesDbName, defaultDbValue)
-  console.log('db.data', db.data)
   return db.data.includes(hash)
 }
 
