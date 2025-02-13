@@ -342,7 +342,7 @@ async function getAuroraTransaction(ourAddress: string) {
 const chainIdToMoralisChainParam: Record<number, string> = {
   1: "0x1",             // Ethereum
   10: "0xa",            // Optimism
-  250: "0xfa",         // Fantom // ? discuss with team as fantom is sonic now 
+  // 250: "0xfa",         // Fantom // ? discuss with team as fantom is sonic now 
   8453: "0x2105",         // Base mainnet
   43114: "0xa86a",      // Avalanche C-chain
   // 1313161554: "0x4e454153", // Aurora  // ? moralis does not support this chain
