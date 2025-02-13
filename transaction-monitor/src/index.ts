@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { promises as fs } from "fs";
 import { JSONFilePreset } from 'lowdb/node'
 import { ObjectId } from 'mongodb'
 import {
@@ -13,10 +14,11 @@ import {
   sessionStatusEnum,
   supportedChainIds,
 } from "./constants/misc.js";
-import { AMLChecksSession, Session } from "./init.js";
+// import { AMLChecksSession, Session } from "./init.js";
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
+const moralisApiKey = process.env.MORALIS_API_KEY!
 
 async function isProcessed(hash: string): Promise<boolean> {
   const db = await JSONFilePreset(txHashesDbName, defaultDbValue)
@@ -291,37 +293,223 @@ async function getTransaction(chainId: number, txHash: string) {
 //     txHash: string;
 // }
 
+
+async function getAuroraTransaction(ourAddress: string) {
+  const provider = auroraProvider;
+  const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
+  const timeWindowInSeconds = 48 * 60 * 60; // 48 hours in seconds
+  const startTime = currentTime - timeWindowInSeconds;
+
+  let transactions = [];
+  let currentBlockNumber = await provider.getBlockNumber();
+
+  while (true) {
+    const block = await provider.getBlock(currentBlockNumber);
+
+    if (!block) {
+      // console.log("block is null");
+      break;
+    }
+    if (block.timestamp < startTime) {
+      // console.log("reached blocks older than the start time");
+      break; // Stop when we reach blocks older than the start time
+    }
+    if (!block.transactions) {
+      console.log("block.transactions is null");
+      break;
+    }
+    for (const txHash of block.transactions) {
+      // console.log("txHash", txHash);
+      try {
+        const tx = await provider.getTransaction(txHash);
+        if (tx && (tx.to === ourAddress)) {
+          // console.log("tx", tx);
+          transactions.push(tx);
+        }
+      } catch (error) {
+        console.error(`Error fetching transaction ${txHash}:`, error);
+      }
+    }
+
+    currentBlockNumber--;
+  }
+
+  return transactions;
+}
+
+
+// chainId -> Moralis chain param
+const chainIdToMoralisChainParam: Record<number, string> = {
+  1: "0x1",             // Ethereum
+  10: "0xa",            // Optimism
+  250: "0xfa",         // Fantom // ? discuss with team as fantom is sonic now 
+  8453: "0x2105",         // Base mainnet
+  43114: "0xa86a",      // Avalanche C-chain
+  // 1313161554: "0x4e454153", // Aurora  // ? moralis does not support this chain
+};
+
+
+async function fetchMoralisTxsForChain({
+  address,
+  chainId,
+  fromDate,
+  toDate,
+}: {
+  address: string;
+  chainId: number;
+  fromDate: string;
+  toDate: string;
+}) {
+  const chainParam = chainIdToMoralisChainParam[chainId];
+  if (!chainParam) {
+    console.warn(`ChainId ${chainId} is not mapped or supported by Moralis param`);
+    return [];
+  }
+
+  let allTxs: any[] = [];
+  let cursor = "";
+  let page = 0;
+
+  while (true) {
+
+    const url = new URL(`https://deep-index.moralis.io/api/v2.2/${address}`);
+    url.searchParams.set("chain", chainParam);
+    url.searchParams.set("order", "DESC");
+    url.searchParams.set("from_date", fromDate);
+    url.searchParams.set("to_date", toDate);
+
+    if (cursor) {
+      url.searchParams.set("cursor", cursor);
+    }
+
+    const resp = await fetch(url.toString(), {
+      headers: {
+        "X-API-Key": moralisApiKey,
+        "accept": "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      console.error(
+        `Moralis request failed (chainId=${chainId}): ${resp.status} ${resp.statusText}`,
+      );
+      break;
+    }
+
+    const data = await resp.json();
+    if (!data.result || !Array.isArray(data.result) || data.result.length === 0) {
+      // No more transactions to page through
+      break;
+    }
+
+    // Add them to our array
+    // Attach chainId manually 
+    for (const tx of data.result) {
+      tx.chainId = chainId;
+    }
+    allTxs.push(...data.result);
+
+    // If Moralis provides a next cursor, use it
+    // If there's no cursor, we've fetched everything
+    if (data.cursor) {
+      cursor = data.cursor;
+    } else {
+      break;
+    }
+
+    page++;
+  }
+
+  return allTxs;
+}
+
+async function getLast48HoursTxs(ourAddress: string) {
+  const chainIds = Object.keys(chainIdToMoralisChainParam).map(Number);
+
+  // Build date range for the last 48 hours
+  // Moralis typically accepts YYYY-MM-DD or full ISO date strings
+  const now = new Date();
+  const fromDate = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+  const toDate = now.toISOString();
+
+  const txsByChain: Record<number, any[]> = {};
+  const allTxs: any[] = [];
+
+  for (const chainId of chainIds) {
+    try {
+      const chainTxs = await fetchMoralisTxsForChain({
+        address: ourAddress,
+        chainId,
+        fromDate,
+        toDate,
+      });
+      txsByChain[chainId] = chainTxs;
+      allTxs.push(...chainTxs);
+      console.log(
+        `Fetched ${chainTxs.length} txs on chain ${chainId} from Moralis in last 48 hrs.`,
+      );
+    } catch (err) {
+      console.error(`Error fetching chain ${chainId}:`, err);
+      txsByChain[chainId] = [];
+    }
+  }
+
+  // // aurora
+  // const auroraTxs = await getAuroraTransaction(ourAddress);
+  // console.log(
+  //   `Fetched ${auroraTxs.length} txs on chain 1313161554 from Aurora in last 48 hrs.`,
+  // );
+  // txsByChain[1313161554] = auroraTxs;
+  // allTxs.push(...auroraTxs);
+
+  return { allTxs, txsByChain };
+
+}
+
+
+
 async function main() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851";
   console.log('getting transaction hashes')
   // const transactionHashesByChain =
   //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
+  console.log("Fetching transactions from Moralis for last 48 hours...");
+  const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
+  console.log("Total TXs across all chains:", allTxs.length);
 
-  // Get the last 1,000 transactions for each chain
-  const txsByChain: any = {}
-  // for (const chainId of Object.keys(chainProviders)) {
-    const txs = []
-    let cursor = ''
-    for (let page = 0; page < 10; page++) {
-      // TODO: Update query based on chain
-      const resp = await fetch(
-        `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12${cursor ? `&cursor=${cursor}` : ''}`, 
-        {
-          headers: {
-            'X-API-Key': process.env.MORALIS_API_KEY as string
-          }
-        }
-      )
-      const data = await resp.json()
-      cursor = data.cursor
-      txs.push(...data.result)
-    }
-    txsByChain['1'] = txs
-  // }
+  // Now write allTxs to a JSON file
+  await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
+
+  console.log('Wrote "allTxs.json" with all transactions.');
+  
+  return
+
+  // //    // Loop over each chain & fetch from Moralis
+  // // Get the last 1,000 transactions for each chain
+  // const txsByChain: any = {}
+  // // for (const chainId of Object.keys(chainProviders)) {
+  //   const txs = []
+  //   let cursor = ''
+  //   for (let page = 0; page < 10; page++) {
+  //     // TODO: Update query based on chain
+  //     const resp = await fetch(
+  //       `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12${cursor ? `&cursor=${cursor}` : ''}`, 
+  //       {
+  //         headers: {
+  //           'X-API-Key': process.env.MORALIS_API_KEY as string
+  //         }
+  //       }
+  //     )
+  //     const data = await resp.json()
+  //     cursor = data.cursor
+  //     txs.push(...data.result)
+  //   }
+  //   txsByChain['1'] = txs
+  // // }
 
 
-  console.log('txs.length', txs.length)
+  // console.log('txs.length', txs.length)
   // console.log("data", JSON.stringify(data, null, 2))
 
 
