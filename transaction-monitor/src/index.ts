@@ -299,6 +299,8 @@ async function main() {
 
   console.log('processing transactions')
 
+  console.log('transactionHashesByChain', transactionHashesByChain)
+
   // Object.entries(transactionHashesByChain).forEach(
   for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
     // async ([chainId, txHashes]) => {
