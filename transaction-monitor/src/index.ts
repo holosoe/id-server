@@ -537,7 +537,7 @@ async function main() {
         await refundUnusedTransaction(
           tx.hash,
           tx.chainId,
-          tx.from,
+          tx.from_address,
         );
 
         await setProcessed(txHash);
