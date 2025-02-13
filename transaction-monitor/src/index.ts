@@ -317,6 +317,9 @@ async function main() {
   // }
 
 
+  console.log("txsByChain", JSON.stringify(txsByChain, null, 2))
+
+
   console.log('getting sessions')
   
   const allSessions = await Session.find({}).exec(); //get all sessions
