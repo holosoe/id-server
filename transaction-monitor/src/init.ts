@@ -20,53 +20,6 @@ dotenv.config();
 const { Schema } = mongoose;
 if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
-function validateEnv() {
-  // assert.ok(process.env.PRIVATE_KEY, "PRIVATE_KEY environment variable is not set");
-  // assert.ok(process.env.ADDRESS, "ADDRESS environment variable is not set");
-
-  assert.ok(
-    process.env.HOLONYM_ISSUER_PRIVKEY,
-    "HOLONYM_ISSUER_PRIVKEY environment variable is not set"
-  );
-
-  assert.ok(process.env.ENVIRONMENT, "ENVIRONMENT environment variable is not set");
-  assert.ok(process.env.NODE_ENV, "NODE_ENV environment variable is not set");
-
-  assert.ok(
-    process.env.VERIFF_PUBLIC_API_KEY,
-    "VERIFF_PUBLIC_API_KEY environment variable is not set"
-  );
-  assert.ok(
-    process.env.VERIFF_SECRET_API_KEY,
-    "VERIFF_SECRET_API_KEY environment variable is not set"
-  );
-
-  assert.ok(
-    process.env.MONGO_DB_CONNECTION_STR,
-    "MONGO_DB_CONNECTION_STR environment variable is not set"
-  );
-
-  if (process.env.NODE_ENV !== "development") {
-    assert.ok(process.env.BUCKET_NAME, "BUCKET_NAME environment variable is not set");
-    assert.ok(
-      process.env.MONGO_CERT_FILE_NAME,
-      "MONGO_CERT_FILE_NAME environment variable is not set"
-    );
-    assert.ok(
-      process.env.AWS_ACCESS_KEY_ID,
-      "AWS_ACCESS_KEY_ID environment variable is not set"
-    );
-    assert.ok(
-      process.env.AWS_SECRET_ACCESS_KEY,
-      "AWS_SECRET_ACCESS_KEY environment variable is not set"
-    );
-    assert.ok(
-      process.env.ADMIN_EMAILS,
-      "ADMIN_EMAILS environment variable is not set"
-    );
-  }
-}
-
 async function initializeMongoDb() {
   if (process.env.ENVIRONMENT != "dev") {
     // Download certificate used for TLS connection
@@ -154,8 +107,6 @@ async function initializeMongoDb() {
     // AMLChecksSession,
   };
 }
-
-validateEnv();
 
 // let UserVerifications,
 //   IDVSessions,
