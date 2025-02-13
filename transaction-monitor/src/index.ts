@@ -327,6 +327,8 @@ async function main() {
   
   const allSessions = await Session.find({}).exec(); //get all sessions
 
+  console.log('allSessions.length', allSessions.length)
+
   console.log('processing transactions')
 
   // console.log('transactionHashesByChain', transactionHashesByChain)
@@ -341,15 +343,17 @@ async function main() {
         console.log('processing tx', txHash)
         let fullTransaction;
         if (!isProcessed(txHash)) {
+          console.log(txHash, 'is not processed')
           // fullTransaction = await getTransaction(Number(chainId), txHash);
           fullTransaction = tx
         }
         if (!fullTransaction) {
+          console.log('no fullTransaction')
           continue;
         }
 
         for (let session of allSessions) {
-          // console.log('processing transaction', txHash, 'and session', session._id)
+          console.log('processing transaction', txHash, 'and session', session._id)
           const digest = ethers.utils.keccak256("0x" + session._id);
 
           if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
