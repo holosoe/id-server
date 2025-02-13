@@ -53,6 +53,11 @@ export async function refundUnusedTransaction(req, res) {
     const session = await Session.findOne({ txHash }).exec();
 
     if (session) {
+      if (session.refundTxHash) {
+        return res.status(400).json({
+          error: `Transaction ${txHash} is already associated with a session and has already received a refund. Refund tx: ${session.refundTxHash} on chain ${session.chainId}.`,
+        }); 
+      }
       return res.status(404).json({
         error: `Transaction ${txHash} is already associated with a session.`,
       });
