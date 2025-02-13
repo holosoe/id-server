@@ -111,16 +111,12 @@ async function getOnfidoCheck(check_id) {
     });
     return resp.data;
   } catch (err) {
-    endpointLogger.error(
-      { error: err, check_id },
-      "An error occurred while getting onfido check"
-    );
+    let errToLog = err;
     // Onfido deletes checks after 30 days. So, if we get a 410, delete the check
     // from IDVSessions.
     if (err.response?.status === 410) {
-      // We don't await here because the result of this operation isn't necessary
-      // for subsequent operations
-      IDVSessions.findOneAndUpdate(
+      errToLog = err.message; // reduces unnecessary verbosity
+      await IDVSessions.findOneAndUpdate(
         { "onfido.checks.check_id": check_id },
         {
           $pull: {
@@ -131,6 +127,10 @@ async function getOnfidoCheck(check_id) {
         }
       ).exec();
     }
+    endpointLogger.error(
+      { error: errToLog, check_id },
+      "An error occurred while getting onfido check"
+    );
   }
 }
 
