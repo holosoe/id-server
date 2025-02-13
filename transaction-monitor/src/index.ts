@@ -346,6 +346,8 @@ async function main() {
           console.log(txHash, 'is not processed')
           // fullTransaction = await getTransaction(Number(chainId), txHash);
           fullTransaction = tx
+          console.log('fullTransaction', fullTransaction)
+          console.log('tx', tx)
         }
         if (!fullTransaction) {
           console.log('no fullTransaction')
