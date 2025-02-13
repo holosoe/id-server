@@ -10,7 +10,7 @@ import {
   sessionSchema,
   sessionRefundMutexSchema,
   amlChecksSessionSchema,
-} from "./schemas";
+} from "./schemas.js";
 import dotenv from "dotenv";
 dotenv.config();
 

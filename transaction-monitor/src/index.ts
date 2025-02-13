@@ -11,8 +11,8 @@ import {
   optimismProvider,
   sessionStatusEnum,
   supportedChainIds,
-} from "./constants/misc";
-import { AMLChecksSession, Session } from "./init";
+} from "./constants/misc.js";
+import { AMLChecksSession, Session } from "./init.js";
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
