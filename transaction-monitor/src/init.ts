@@ -17,7 +17,8 @@ dotenv.config();
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const { Schema } = mongoose;
-if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
+// if (process.env.ENVIRONMENT == "dev") 
+mongoose.set("debug", true);
 
 async function initializeMongoDb() {
   // if (process.env.ENVIRONMENT != "dev") {
