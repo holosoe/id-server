@@ -31,7 +31,7 @@ async function setProcessed(hash: string) {
 const chainProviders: Record<number, ethers.providers.JsonRpcProvider> = {
   1: ethereumProvider,
   10: optimismProvider,
-  250: fantomProvider,
+  // 250: fantomProvider, // ignoring fantom for now
   8453: baseProvider,
   43114: avalancheProvider,
   1313161554: auroraProvider,
@@ -46,8 +46,12 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
       const provider = chainProviders[chainId];
       try {
         const latestBlock = await provider.getBlockNumber();
-        const blocksPerDay = 7200; // Approx. 15s per block
-        const startBlock = latestBlock - blocksPerDay * 2; // 48 hours ago
+        // TODO: Make this more sophisticated. We can only query 10,000 blocks (for some chains; for others, 
+        // it's ~2k) at a time. We should get all blocks within the last 48 hours, and then all blocks 
+        // within last year. For now, we just get the last 2,000 blocks.
+        const startBlock = latestBlock - 2_000; 
+        // const blocksPerDay = 7200; // Approx. 15s per block
+        // const startBlock = latestBlock - blocksPerDay * 2; // 48 hours ago
 
         console.log(
           `Fetching transactions for ${ourAddress} on chain ${chainId} from block ${startBlock} to ${latestBlock}`,
