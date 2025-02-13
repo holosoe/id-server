@@ -302,6 +302,7 @@ async function main() {
   Object.entries(transactionHashesByChain).forEach(
     async ([chainId, txHashes]) => {
       for (let txHash in txHashes) {
+        console.log('processing tx', txHash)
         let fullTransaction;
         if (!isProcessed(txHash)) {
           fullTransaction = await getTransaction(Number(chainId), txHash);
