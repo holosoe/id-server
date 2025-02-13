@@ -507,6 +507,7 @@ async function main() {
 
   // for (const tx of allTxsFromFileParsed) {
   for (let i = 0; i < allTxsFromFileParsed.length; i++) {
+    console.log('i', i)
     const tx = allTxsFromFileParsed[i]
 
     // Print progress at 10% intervals
