@@ -300,10 +300,11 @@ async function main() {
   const txsByChain: any = {}
   // for (const chainId of Object.keys(chainProviders)) {
     const txs = []
-    // for (let page = 0; page < 10; page++) {
+    let cursor = ''
+    for (let page = 0; page < 10; page++) {
       // TODO: Update query based on chain
       const resp = await fetch(
-        `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12`, 
+        `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12${cursor ? `&cursor=${cursor}` : ''}`, 
         {
           headers: {
             'X-API-Key': process.env.MORALIS_API_KEY as string
@@ -311,13 +312,15 @@ async function main() {
         }
       )
       const data = await resp.json()
+      cursor = data.cursor
       txs.push(...data.result)
-      txsByChain['1'] = txs
-    // }
+    }
+    txsByChain['1'] = txs
   // }
 
 
-  console.log("data", JSON.stringify(data, null, 2))
+  console.log('txs.length', txs.length)
+  // console.log("data", JSON.stringify(data, null, 2))
 
 
   console.log('getting sessions')
