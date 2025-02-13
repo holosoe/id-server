@@ -470,138 +470,83 @@ async function getLast48HoursTxs(ourAddress: string) {
 
 async function main() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851";
-  console.log('getting transaction hashes')
+  // console.log('getting transaction hashes')
   // const transactionHashesByChain =
   //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
-  console.log("Fetching transactions from Moralis for last 48 hours...");
-  const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
-  console.log("Total TXs across all chains:", allTxs.length);
+  // console.log("Fetching transactions from Moralis for last 48 hours...");
+  // const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
+  // console.log("Total TXs across all chains:", allTxs.length);
 
   // Now write allTxs to a JSON file
-  await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
+  // await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
+  // console.log('Wrote "allTxs.json" with all transactions.');
 
-  console.log('Wrote "allTxs.json" with all transactions.');
+  const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
+  if (!allTxsFromFile) {
+    console.error('Could not read "allTxs.json"');
+    return;
+  }
+  const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
+  console.log('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
+
+  console.log('getting sessions')
   
-  return
+  //get all sessions within last 72 hours
+  const now = new Date();
+  const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
+  const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+  const allSessions = await Session.find({
+    _id: {
+      $gte: objectId
+    }
+  }).exec();
 
-  // //    // Loop over each chain & fetch from Moralis
-  // // Get the last 1,000 transactions for each chain
-  // const txsByChain: any = {}
-  // // for (const chainId of Object.keys(chainProviders)) {
-  //   const txs = []
-  //   let cursor = ''
-  //   for (let page = 0; page < 10; page++) {
-  //     // TODO: Update query based on chain
-  //     const resp = await fetch(
-  //       `https://deep-index.moralis.io/api/v2.2/${ourAddress}?chain=eth&order=DESC&from_date=2025-02-10&to_date=2025-02-12${cursor ? `&cursor=${cursor}` : ''}`, 
-  //       {
-  //         headers: {
-  //           'X-API-Key': process.env.MORALIS_API_KEY as string
-  //         }
-  //       }
-  //     )
-  //     const data = await resp.json()
-  //     cursor = data.cursor
-  //     txs.push(...data.result)
-  //   }
-  //   txsByChain['1'] = txs
-  // // }
+  console.log('allSessions.length', allSessions.length)
 
+  console.log('processing transactions')
 
-  // console.log('txs.length', txs.length)
-  // console.log("data", JSON.stringify(data, null, 2))
+  for (const tx of allTxsFromFileParsed) {
+    const txHash = tx.hash
+    const chainId = tx.chainId
+    if (await isProcessed(txHash)) {
+      continue;
+    }
 
+    for (let session of allSessions) {
+      // console.log('processing transaction', txHash, 'and session', session._id)
+      const digest = ethers.utils.keccak256("0x" + session._id);
 
-  // console.log('getting sessions')
-  
-  // //get all sessions within last 72 hours
-  // const now = new Date();
-  // const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
-  // const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
-  // const allSessions = await Session.find({
-  //   _id: {
-  //     $gte: objectId
-  //   }
-  // }).exec();
+      if (tx.to !== ourAddress || tx.data !== digest) {
+        continue;
+      }
 
-  // console.log('allSessions.length', allSessions.length)
+      // If the session is already associated with some other transaction, and if
+      // this transaction's data matches this session ID, then we know that this transaction
+      // was a retry and should be refunded.
+      if (session.txHash && (session.txHash !== tx.hash)) {
+        console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+        // await refundUnusedTransaction(
+        //   tx.hash,
+        //   tx.chainId,
+        //   tx.from,
+        // );
 
-  // console.log('processing transactions')
+        // await setProcessed(txHash);
+      }
 
-  // // console.log('transactionHashesByChain', transactionHashesByChain)
+      if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
+        console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+        // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
+        // session.status = status;
+        // session.chainId = tx.chainId;
+        // session.txHash = tx.hash;
+        // await session.save();
 
-  // // Object.entries(transactionHashesByChain).forEach(
-  // // for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
-  //   // async ([chainId, txHashes]) => {
-  //     // for (let txHash in txHashes) {
-  //     for (const tx of txs) {
-  //       const txHash = tx.hash
-  //       const chainId = tx.chainId
-  //       console.log('processing tx', txHash)
-  //       let fullTransaction;
-  //       if (!await isProcessed(txHash)) {
-  //         console.log(txHash, 'is not processed')
-  //         // fullTransaction = await getTransaction(Number(chainId), txHash);
-  //         fullTransaction = tx
-  //         console.log('fullTransaction', fullTransaction)
-  //         console.log('tx', tx)
-  //       }
-  //       if (!fullTransaction) {
-  //         console.log('no fullTransaction')
-  //         continue;
-  //       }
-
-  //       for (let session of allSessions) {
-  //         console.log('processing transaction', txHash, 'and session', session._id)
-  //         const digest = ethers.utils.keccak256("0x" + session._id);
-
-  //         if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
-  //           continue;
-  //         }
-
-  //         // If the session is already associated with some other transaction, and if
-  //         // this transaction's data matches this session ID, then we know that this transaction
-  //         // was a retry and should be refunded.
-  //         if (session.txHash && (session.txHash !== fullTransaction.hash)) {
-  //           console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-  //           // await refundUnusedTransaction(
-  //           //   fullTransaction.hash,
-  //           //   fullTransaction.chainId,
-  //           //   fullTransaction.from,
-  //           // );
-
-  //           await setProcessed(txHash);
-  //         }
-
-  //         if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
-  //           console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-  //           // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
-  //           // session.status = status;
-  //           // session.chainId = fullTransaction.chainId;
-  //           // session.txHash = fullTransaction.hash;
-  //           // await session.save();
-
-  //           await setProcessed(txHash);
-  //         } 
-  //         // TODO: Probably delete this if block. It's accounted for by the if (session.txHash != txHash) block
-  //         // else if (
-  //         //   session.status === sessionStatusEnum.IN_PROGRESS &&
-  //         //   session.txHash !== fullTransaction.hash
-  //         // ) {
-  //         //   console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-  //         //   // await refundUnusedTransaction(
-  //         //   //   fullTransaction.hash,
-  //         //   //   fullTransaction.chainId,
-  //         //   //   fullTransaction.from,
-  //         //   // );
-
-  //         //   // setProcessed(txHash);
-  //         // }
-  //       }
-  //     }
-  //   // }
-  // // );
+        // await setProcessed(txHash);
+      }
+    }
+  }
 }
 
 main()
