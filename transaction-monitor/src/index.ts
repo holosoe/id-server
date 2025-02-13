@@ -297,7 +297,7 @@ async function main() {
   
   const allSessions = await Session.find({}).exec(); //get all sessions
 
-  console.log('processing transaction')
+  console.log('processing transactions')
 
   Object.entries(transactionHashesByChain).forEach(
     async ([chainId, txHashes]) => {
