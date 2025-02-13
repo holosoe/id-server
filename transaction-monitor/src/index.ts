@@ -308,24 +308,15 @@ async function main() {
 
         for (let session of allSessions) {
           const digest = ethers.utils.keccak256("0x" + session._id);
-          if (
-            fullTransaction.to == ourAddress &&
-            fullTransaction.data == digest &&
-            session.status === sessionStatusEnum.NEEDS_PAYMENT
-          ) {
-            console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-            // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
-            // session.status = status;
-            // session.chainId = fullTransaction.chainId;
-            // session.txHash = fullTransaction.hash;
-            // await session.save();
 
-            // setProcessed(txHash);
-          } else if (
-            fullTransaction.to == ourAddress &&
-            fullTransaction.data == digest &&
-            session.status === sessionStatusEnum.IN_PROGRESS
-          ) {
+          if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
+            continue;
+          }
+
+          // If the session is already associated with some other transaction, and if
+          // this transaction's data matches this session ID, then we know that this transaction
+          // was a retry and should be refunded.
+          if (session.txHash && (session.txHash !== fullTransaction.hash)) {
             console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
             // await refundUnusedTransaction(
             //   fullTransaction.hash,
@@ -335,6 +326,31 @@ async function main() {
 
             // setProcessed(txHash);
           }
+
+          if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
+            console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+            // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
+            // session.status = status;
+            // session.chainId = fullTransaction.chainId;
+            // session.txHash = fullTransaction.hash;
+            // await session.save();
+
+            // setProcessed(txHash);
+          } 
+          // TODO: Probably delete this if block. It's accounted for by the if (session.txHash != txHash) block
+          // else if (
+          //   session.status === sessionStatusEnum.IN_PROGRESS &&
+          //   session.txHash !== fullTransaction.hash
+          // ) {
+          //   console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+          //   // await refundUnusedTransaction(
+          //   //   fullTransaction.hash,
+          //   //   fullTransaction.chainId,
+          //   //   fullTransaction.from,
+          //   // );
+
+          //   // setProcessed(txHash);
+          // }
         }
       }
     },
