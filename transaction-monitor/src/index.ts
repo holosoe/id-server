@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import { JSONFilePreset } from 'lowdb/node'
+import { ObjectId } from 'mongodb'
 import {
   auroraProvider,
   avalancheProvider,
@@ -326,7 +327,15 @@ async function main() {
 
   console.log('getting sessions')
   
-  const allSessions = await Session.find({}).exec(); //get all sessions
+  //get all sessions within last 72 hours
+  const now = new Date();
+  const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
+  const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+  const allSessions = await Session.find({
+    _id: {
+      $gte: objectId
+    }
+  }).exec();
 
   console.log('allSessions.length', allSessions.length)
 
