@@ -349,7 +349,7 @@ async function main() {
         }
 
         for (let session of allSessions) {
-          console.log('processing transaction', txHash, 'and session', session._id)
+          // console.log('processing transaction', txHash, 'and session', session._id)
           const digest = ethers.utils.keccak256("0x" + session._id);
 
           if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
