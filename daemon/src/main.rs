@@ -1,9 +1,11 @@
-use std::env;
+use std::{env, process::Command};
 
 use tokio::time::{interval, Duration};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use dotenv::dotenv;
+use std::process::Stdio;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct DeleteUserDataResponse {
@@ -17,6 +19,13 @@ struct TransferFundsResponse {
     fantom: Option<Value>,
     avalanche: Option<Value>,
     error: Option<String>,
+}
+
+fn get_hours_since_epoch() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() / 3600  // Convert seconds to hours
 }
 
 fn get_id_server_url() -> String {
@@ -86,6 +95,21 @@ async fn trigger_transfer_of_funds() {
     }
 }
 
+async fn run_transaction_scanner() {
+    let path_to_js = env::var("PATH_TO_TRANSACTION_SCANNER_DIR").expect("PATH_TO_TRANSACTION_SCANNER_DIR must be set");
+    
+    let mut child = Command::new("node")
+        .arg(path_to_js + "/dist/index.js")
+        .arg("id-and-phone")
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .unwrap();
+
+    let status = child.wait();
+    println!("Transaction scanner exited with status {:?}", status);
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -93,11 +117,23 @@ async fn main() {
 
     env::var("ENVIRONMENT").expect("ENVIRONMENT must be set");
     env::var("ADMIN_API_KEY").expect("ADMIN_API_KEY must be set");
+    env::var("PATH_TO_TRANSACTION_SCANNER_DIR").expect("PATH_TO_TRANSACTION_SCANNER_DIR must be set");
+
+    let started_at_hour = get_hours_since_epoch();
 
     let mut interval = interval(Duration::from_secs(600));
     loop {
         interval.tick().await;
         trigger_deletion_of_user_idv_data().await;
         trigger_transfer_of_funds().await;
+
+        // Run the transaction scanner every 12 hours
+        let current_hour = get_hours_since_epoch();
+        if (current_hour - started_at_hour) % 12 == 0 {
+            println!("Running transaction scanner");
+            tokio::spawn(async {
+                run_transaction_scanner().await;
+            });
+        }
     }
 }

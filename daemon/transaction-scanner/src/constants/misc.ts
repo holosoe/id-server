@@ -1,4 +1,6 @@
 import { ethers } from "ethers";
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
 
