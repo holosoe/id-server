@@ -37,9 +37,11 @@ async function initializeMongoDb() {
       await new Promise<void>((resolve, reject) => {
         console.log("Downloading certificate for MongoDB connection...");
         s3.getObject(params, async (getObjectErr: any, data: any) => {
+          console.log('entered s3.getObject callback')
           if (getObjectErr) reject(getObjectErr);
           const bodyStream = data.Body;
           const bodyAsString = await bodyStream.transformToString();
+          console.log(`writing to file (${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME})`)
           fs.writeFile(
             `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
             bodyAsString,
