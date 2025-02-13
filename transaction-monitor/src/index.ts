@@ -343,7 +343,7 @@ async function main() {
         const chainId = tx.chainId
         console.log('processing tx', txHash)
         let fullTransaction;
-        if (!isProcessed(txHash)) {
+        if (!await isProcessed(txHash)) {
           console.log(txHash, 'is not processed')
           // fullTransaction = await getTransaction(Number(chainId), txHash);
           fullTransaction = tx
@@ -374,7 +374,7 @@ async function main() {
             //   fullTransaction.from,
             // );
 
-            setProcessed(txHash);
+            await setProcessed(txHash);
           }
 
           if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
@@ -385,7 +385,7 @@ async function main() {
             // session.txHash = fullTransaction.hash;
             // await session.save();
 
-            setProcessed(txHash);
+            await setProcessed(txHash);
           } 
           // TODO: Probably delete this if block. It's accounted for by the if (session.txHash != txHash) block
           // else if (
