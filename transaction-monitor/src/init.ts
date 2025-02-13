@@ -20,61 +20,61 @@ const { Schema } = mongoose;
 if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
 async function initializeMongoDb() {
-  if (process.env.ENVIRONMENT != "dev") {
-    // Download certificate used for TLS connection
-    try {
-      const s3 = new AWS.S3({
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-        },
-        region: "us-east-1",
-      });
-      const params = {
-        Bucket: process.env.BUCKET_NAME,
-        Key: process.env.MONGO_CERT_FILE_NAME,
-      };
-      await new Promise<void>((resolve, reject) => {
-        console.log("Downloading certificate for MongoDB connection...");
-        s3.getObject(params, async (getObjectErr: any, data: any) => {
-          console.log('entered s3.getObject callback')
-          if (getObjectErr) reject(getObjectErr);
-          const bodyStream = data.Body;
-          const bodyAsString = await bodyStream.transformToString();
-          console.log(`writing to file (${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME})`)
-          fs.writeFile(
-            `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
-            bodyAsString,
-            (writeFileErr) => {
-              if (writeFileErr) {
-                console.error(
-                  { error: writeFileErr },
-                  "Encountered error while trying to write cert file for MongoDB connection."
-                );
-                return resolve();
-              }
-              console.log(
-                "Successfully downloaded certificate for MongoDB connection"
-              );
-              resolve();
-            }
-          );
-        });
-      });
-    } catch (err) {
-      console.error(
-        { error: err },
-        "Unable to download certificate for MongoDB connection."
-      );
-      return;
-    }
-  }
+  // if (process.env.ENVIRONMENT != "dev") {
+  //   // Download certificate used for TLS connection
+  //   try {
+  //     const s3 = new AWS.S3({
+  //       credentials: {
+  //         accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+  //         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  //       },
+  //       region: "us-east-1",
+  //     });
+  //     const params = {
+  //       Bucket: process.env.BUCKET_NAME,
+  //       Key: process.env.MONGO_CERT_FILE_NAME,
+  //     };
+  //     await new Promise<void>((resolve, reject) => {
+  //       console.log("Downloading certificate for MongoDB connection...");
+  //       s3.getObject(params, async (getObjectErr: any, data: any) => {
+  //         console.log('entered s3.getObject callback')
+  //         if (getObjectErr) reject(getObjectErr);
+  //         const bodyStream = data.Body;
+  //         const bodyAsString = await bodyStream.transformToString();
+  //         console.log(`writing to file (${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME})`)
+  //         fs.writeFile(
+  //           `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
+  //           bodyAsString,
+  //           (writeFileErr) => {
+  //             if (writeFileErr) {
+  //               console.error(
+  //                 { error: writeFileErr },
+  //                 "Encountered error while trying to write cert file for MongoDB connection."
+  //               );
+  //               return resolve();
+  //             }
+  //             console.log(
+  //               "Successfully downloaded certificate for MongoDB connection"
+  //             );
+  //             resolve();
+  //           }
+  //         );
+  //       });
+  //     });
+  //   } catch (err) {
+  //     console.error(
+  //       { error: err },
+  //       "Unable to download certificate for MongoDB connection."
+  //     );
+  //     return;
+  //   }
+  // }
 
   try {
     const mongoConfig = {
       ssl: true,
       sslValidate: true,
-      sslCA: `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
+      sslCA: `${__dirname}/${process.env.MONGO_CERT_FILE_NAME}`,
     };
     await mongoose.connect(
       process.env.MONGO_DB_CONNECTION_STR as string,
