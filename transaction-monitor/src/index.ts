@@ -14,7 +14,7 @@ import {
   sessionStatusEnum,
   supportedChainIds,
 } from "./constants/misc.js";
-// import { AMLChecksSession, Session } from "./init.js";
+import { AMLChecksSession, Session } from "./init.js";
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
@@ -513,95 +513,95 @@ async function main() {
   // console.log("data", JSON.stringify(data, null, 2))
 
 
-  console.log('getting sessions')
+  // console.log('getting sessions')
   
-  //get all sessions within last 72 hours
-  const now = new Date();
-  const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
-  const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
-  const allSessions = await Session.find({
-    _id: {
-      $gte: objectId
-    }
-  }).exec();
+  // //get all sessions within last 72 hours
+  // const now = new Date();
+  // const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
+  // const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+  // const allSessions = await Session.find({
+  //   _id: {
+  //     $gte: objectId
+  //   }
+  // }).exec();
 
-  console.log('allSessions.length', allSessions.length)
+  // console.log('allSessions.length', allSessions.length)
 
-  console.log('processing transactions')
+  // console.log('processing transactions')
 
-  // console.log('transactionHashesByChain', transactionHashesByChain)
+  // // console.log('transactionHashesByChain', transactionHashesByChain)
 
-  // Object.entries(transactionHashesByChain).forEach(
-  // for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
-    // async ([chainId, txHashes]) => {
-      // for (let txHash in txHashes) {
-      for (const tx of txs) {
-        const txHash = tx.hash
-        const chainId = tx.chainId
-        console.log('processing tx', txHash)
-        let fullTransaction;
-        if (!await isProcessed(txHash)) {
-          console.log(txHash, 'is not processed')
-          // fullTransaction = await getTransaction(Number(chainId), txHash);
-          fullTransaction = tx
-          console.log('fullTransaction', fullTransaction)
-          console.log('tx', tx)
-        }
-        if (!fullTransaction) {
-          console.log('no fullTransaction')
-          continue;
-        }
+  // // Object.entries(transactionHashesByChain).forEach(
+  // // for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
+  //   // async ([chainId, txHashes]) => {
+  //     // for (let txHash in txHashes) {
+  //     for (const tx of txs) {
+  //       const txHash = tx.hash
+  //       const chainId = tx.chainId
+  //       console.log('processing tx', txHash)
+  //       let fullTransaction;
+  //       if (!await isProcessed(txHash)) {
+  //         console.log(txHash, 'is not processed')
+  //         // fullTransaction = await getTransaction(Number(chainId), txHash);
+  //         fullTransaction = tx
+  //         console.log('fullTransaction', fullTransaction)
+  //         console.log('tx', tx)
+  //       }
+  //       if (!fullTransaction) {
+  //         console.log('no fullTransaction')
+  //         continue;
+  //       }
 
-        for (let session of allSessions) {
-          console.log('processing transaction', txHash, 'and session', session._id)
-          const digest = ethers.utils.keccak256("0x" + session._id);
+  //       for (let session of allSessions) {
+  //         console.log('processing transaction', txHash, 'and session', session._id)
+  //         const digest = ethers.utils.keccak256("0x" + session._id);
 
-          if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
-            continue;
-          }
+  //         if (fullTransaction.to !== ourAddress || fullTransaction.data !== digest) {
+  //           continue;
+  //         }
 
-          // If the session is already associated with some other transaction, and if
-          // this transaction's data matches this session ID, then we know that this transaction
-          // was a retry and should be refunded.
-          if (session.txHash && (session.txHash !== fullTransaction.hash)) {
-            console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-            // await refundUnusedTransaction(
-            //   fullTransaction.hash,
-            //   fullTransaction.chainId,
-            //   fullTransaction.from,
-            // );
+  //         // If the session is already associated with some other transaction, and if
+  //         // this transaction's data matches this session ID, then we know that this transaction
+  //         // was a retry and should be refunded.
+  //         if (session.txHash && (session.txHash !== fullTransaction.hash)) {
+  //           console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+  //           // await refundUnusedTransaction(
+  //           //   fullTransaction.hash,
+  //           //   fullTransaction.chainId,
+  //           //   fullTransaction.from,
+  //           // );
 
-            await setProcessed(txHash);
-          }
+  //           await setProcessed(txHash);
+  //         }
 
-          if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
-            console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-            // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
-            // session.status = status;
-            // session.chainId = fullTransaction.chainId;
-            // session.txHash = fullTransaction.hash;
-            // await session.save();
+  //         if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
+  //           console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+  //           // const status: keyof typeof sessionStatusEnum = "IN_PROGRESS";
+  //           // session.status = status;
+  //           // session.chainId = fullTransaction.chainId;
+  //           // session.txHash = fullTransaction.hash;
+  //           // await session.save();
 
-            await setProcessed(txHash);
-          } 
-          // TODO: Probably delete this if block. It's accounted for by the if (session.txHash != txHash) block
-          // else if (
-          //   session.status === sessionStatusEnum.IN_PROGRESS &&
-          //   session.txHash !== fullTransaction.hash
-          // ) {
-          //   console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
-          //   // await refundUnusedTransaction(
-          //   //   fullTransaction.hash,
-          //   //   fullTransaction.chainId,
-          //   //   fullTransaction.from,
-          //   // );
+  //           await setProcessed(txHash);
+  //         } 
+  //         // TODO: Probably delete this if block. It's accounted for by the if (session.txHash != txHash) block
+  //         // else if (
+  //         //   session.status === sessionStatusEnum.IN_PROGRESS &&
+  //         //   session.txHash !== fullTransaction.hash
+  //         // ) {
+  //         //   console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
+  //         //   // await refundUnusedTransaction(
+  //         //   //   fullTransaction.hash,
+  //         //   //   fullTransaction.chainId,
+  //         //   //   fullTransaction.from,
+  //         //   // );
 
-          //   // setProcessed(txHash);
-          // }
-        }
-      }
-    // }
-  // );
+  //         //   // setProcessed(txHash);
+  //         // }
+  //       }
+  //     }
+  //   // }
+  // // );
 }
 
 main()
