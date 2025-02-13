@@ -468,7 +468,7 @@ async function getLast48HoursTxs(ourAddress: string) {
 
 
 async function main() {
-  const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851";
+  const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851".toLowerCase();
   // console.log('getting transaction hashes')
   // const transactionHashesByChain =
   //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
@@ -532,7 +532,7 @@ async function main() {
       // If the session is already associated with some other transaction, and if
       // this transaction's data matches this session ID, then we know that this transaction
       // was a retry and should be refunded.
-      if (session.txHash && (session.txHash !== tx.hash)) {
+      if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
         console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session._id}`);
         // await refundUnusedTransaction(
         //   tx.hash,
