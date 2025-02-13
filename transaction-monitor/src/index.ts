@@ -469,25 +469,25 @@ async function getLast48HoursTxs(ourAddress: string) {
 
 async function main() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851".toLowerCase();
-  // console.log('getting transaction hashes')
-  // const transactionHashesByChain =
-  //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
+  console.log('getting transaction hashes')
+  const transactionHashesByChain =
+    await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
   // console.log("Fetching transactions from Moralis for last 48 hours...");
-  // const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
-  // console.log("Total TXs across all chains:", allTxs.length);
+  const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
+  console.log("Total TXs across all chains:", allTxs.length);
 
   // Now write allTxs to a JSON file
   // await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
   // console.log('Wrote "allTxs.json" with all transactions.');
 
-  const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
-  if (!allTxsFromFile) {
-    console.error('Could not read "allTxs.json"');
-    return;
-  }
-  const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
-  console.log('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
+  // const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
+  // if (!allTxsFromFile) {
+  //   console.error('Could not read "allTxs.json"');
+  //   return;
+  // }
+  // const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
+  // console.log('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
 
   console.log('getting sessions')
   
@@ -506,13 +506,13 @@ async function main() {
   console.log('processing transactions')
 
   // for (const tx of allTxsFromFileParsed) {
-  for (let i = 0; i < allTxsFromFileParsed.length; i++) {
+  for (let i = 0; i < allTxs.length; i++) {
     console.log('i', i)
-    const tx = allTxsFromFileParsed[i]
+    const tx = allTxs[i]
 
     // Print progress at 10% intervals
-    if (i % (allTxsFromFileParsed.length / 10) === 0) {
-      console.log(`Processing transaction ${i} of ${allTxsFromFileParsed.length}`);
+    if (i % (allTxs.length / 10) === 0) {
+      console.log(`Processing transaction ${i} of ${allTxs.length}`);
     }
 
     const txHash = tx.hash
