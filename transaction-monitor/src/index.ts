@@ -299,8 +299,9 @@ async function main() {
 
   console.log('processing transactions')
 
-  Object.entries(transactionHashesByChain).forEach(
-    async ([chainId, txHashes]) => {
+  // Object.entries(transactionHashesByChain).forEach(
+  for (const [chainId, txHashes] of Object.entries(transactionHashesByChain)) {
+    // async ([chainId, txHashes]) => {
       for (let txHash in txHashes) {
         console.log('processing tx', txHash)
         let fullTransaction;
@@ -359,8 +360,8 @@ async function main() {
           // }
         }
       }
-    },
-  );
+    }
+  // );
 }
 
 main()
