@@ -429,7 +429,8 @@ async function getLast48HoursTxs(ourAddress: string) {
   // Build date range for the last 48 hours
   // Moralis typically accepts YYYY-MM-DD or full ISO date strings
   const now = new Date();
-  const fromDate = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+  // const fromDate = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+  const fromDate = new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString(); // last 12 hours
   const toDate = now.toISOString();
 
   const txsByChain: Record<number, any[]> = {};
