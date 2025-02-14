@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { v4 as uuidV4 } from "uuid";
+import { logAndPersistLogUpdate } from './logger.js'
 
 // -------------------- Onfido --------------------
 
@@ -29,7 +30,7 @@ async function createOnfidoApplicant() {
     );
     return resp.data;
   } catch (err) {
-    console.log("Error creating Onfido applicant", (err as any).message, (err as any).response?.data);
+    logAndPersistLogUpdate("Error creating Onfido applicant", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -59,7 +60,7 @@ async function createOnfidoSdkToken(applicant_id: string, referrer?: string) {
     );
     return resp.data;
   } catch (err) {
-    console.log("Error creating Onfido SDK token", (err as any).message, (err as any).response?.data);
+    logAndPersistLogUpdate("Error creating Onfido SDK token", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -95,7 +96,7 @@ async function createVeriffSession() {
     );
     return resp.data;
   } catch (err) {
-    console.log("Error creating veriff session:", (err as any).message, (err as any).response?.data);
+    logAndPersistLogUpdate("Error creating veriff session:", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -103,37 +104,37 @@ async function createVeriffSession() {
 
 // TODO: Add session type. Don't use "any"
 export async function handleIdvSessionCreation(session: any) {
-  console.log('entered handleIdvSessionCreation')
+  logAndPersistLogUpdate('entered handleIdvSessionCreation')
   if (session.idvProvider === "veriff") {
-    console.log('handleIdvSessionCreation: veriff')
+    logAndPersistLogUpdate('handleIdvSessionCreation: veriff')
     const veriffSession = await createVeriffSession();
-    console.log('handleIdvSessionCreation: created veriff session')
+    logAndPersistLogUpdate('handleIdvSessionCreation: created veriff session')
     if (!veriffSession) { 
       return
     }
 
-    console.log('handleIdvSessionCreation: saving')
+    logAndPersistLogUpdate('handleIdvSessionCreation: saving')
 
     session.sessionId = veriffSession.verification.id;
     session.veriffUrl = veriffSession.verification.url;
     await session.save();
 
-    console.log(
+    logAndPersistLogUpdate(
       { sessionId: veriffSession.verification.id, idvProvider: "veriff" },
       "Created Veriff session"
     );
   } else if (session.idvProvider === "onfido") {
-    console.log('handleIdvSessionCreation: onfido')
+    logAndPersistLogUpdate('handleIdvSessionCreation: onfido')
     const applicant = await createOnfidoApplicant();
     if (!applicant) {
       return
     }
 
-    console.log('handleIdvSessionCreation: created onfido applicant')
+    logAndPersistLogUpdate('handleIdvSessionCreation: created onfido applicant')
 
     session.applicant_id = applicant.id;
 
-    console.log(
+    logAndPersistLogUpdate(
       { applicantId: applicant.id, idvProvider: "onfido" },
       "Created Onfido applicant"
     );
@@ -143,16 +144,16 @@ export async function handleIdvSessionCreation(session: any) {
       return
     }
 
-    console.log('handleIdvSessionCreation: created sdk token')
+    logAndPersistLogUpdate('handleIdvSessionCreation: created sdk token')
 
     session.onfido_sdk_token = sdkTokenData.token;
     await session.save();
 
-    console.log(
+    logAndPersistLogUpdate(
       { sdkToken: sdkTokenData.token, idvProvider: "onfido" },
       "Created Onfido SDK token"
     )
   } else {
-    console.log("Invalid idvProvider", session.idvProvider);
+    logAndPersistLogUpdate("Invalid idvProvider", session.idvProvider);
   }
 }

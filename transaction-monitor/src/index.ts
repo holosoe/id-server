@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { promises as fs } from "fs";
 import { JSONFilePreset } from 'lowdb/node'
 import { ObjectId } from 'mongodb'
+import logUpdate from "log-update";
 import {
   auroraProvider,
   avalancheProvider,
@@ -16,7 +17,7 @@ import {
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
 import { handleIdvSessionCreation } from './idv-sessions.js';
-import { fixIdvSessionsWithNoIdvSession } from './fix-idv-sessions-with-no-idv-session.js';
+import { logAndPersistLogUpdate } from './logger.js'
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
@@ -58,7 +59,7 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
         // const blocksPerDay = 7200; // Approx. 15s per block
         // const startBlock = latestBlock - blocksPerDay * 2; // 48 hours ago
 
-        console.log(
+        logAndPersistLogUpdate(
           `Fetching transactions for ${ourAddress} on chain ${chainId} from block ${startBlock} to ${latestBlock}`,
         );
 
@@ -69,14 +70,14 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
           address: ourAddress,
         });
 
-        console.log('logs', logs)
+        logAndPersistLogUpdate('logs', logs)
 
         // Extract transaction hashes from logs
         const txHashes = logs.map((log) => log.transactionHash);
 
         return { chainId, txHashes };
       } catch (error) {
-        console.log(
+        logAndPersistLogUpdate(
           `Error fetching transactions from chain ${chainId}:`,
           error,
         );
@@ -105,34 +106,34 @@ async function refundUnusedTransaction(
     // const apiKey = "OUR_API_KEY";
 
     // if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
-    //   console.log("Invalid API key.");
+    //   logAndPersistLogUpdate("Invalid API key.");
     //   return;
     // }
 
     if (!txHash) {
-      console.log("No txHash specified.");
+      logAndPersistLogUpdate("No txHash specified.");
       return;
     }
 
     if (!chainId) {
-      console.log("No chainId specified.");
+      logAndPersistLogUpdate("No chainId specified.");
       return;
     }
 
     if (supportedChainIds.indexOf(chainId) === -1) {
-      console.log(`chainId must be one of ${supportedChainIds.join(", ")}`);
+      logAndPersistLogUpdate(`chainId must be one of ${supportedChainIds.join(", ")}`);
       return;
     }
 
     if (!to) {
-      console.log("No 'to' specified.");
+      logAndPersistLogUpdate("No 'to' specified.");
       return;
     }
 
     const session = await Session.findOne({ txHash }).exec();
 
     if (session) {
-      console.log(
+      logAndPersistLogUpdate(
         `Transaction ${txHash} is already associated with a session.`,
       );
       return;
@@ -141,7 +142,7 @@ async function refundUnusedTransaction(
     const cleanHandsSession = await AMLChecksSession.findOne({ txHash }).exec();
 
     if (cleanHandsSession) {
-      console.log(
+      logAndPersistLogUpdate(
         `Transaction ${txHash} is already associated with a clean hands session.`,
       );
       return;
@@ -170,19 +171,19 @@ async function refundUnusedTransaction(
     const tx = await provider.getTransaction(txHash);
 
     if (!tx) {
-      console.log(`Could not find ${txHash} on chain ${chainId}.`);
+      logAndPersistLogUpdate(`Could not find ${txHash} on chain ${chainId}.`);
       return;
     }
 
     if (idServerPaymentAddress !== (tx.to ?? '').toLowerCase()) {
-      console.log(
+      logAndPersistLogUpdate(
         `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
       );
       return;
     }
 
     if (!tx.blockHash || tx.confirmations === 0) {
-      console.log(`Transaction ${txHash} has not been confirmed yet.`);
+      logAndPersistLogUpdate(`Transaction ${txHash} has not been confirmed yet.`);
       return;
     }
 
@@ -220,7 +221,7 @@ async function refundUnusedTransaction(
 
     const priv_key = process.env.PAYMENTS_PRIVATE_KEY;
     if (!priv_key) {
-      console.log("No private key found in env.");
+      logAndPersistLogUpdate("No private key found in env.");
       return;
     }
     const wallet = new ethers.Wallet(priv_key, provider);
@@ -231,7 +232,7 @@ async function refundUnusedTransaction(
     // Ensure wallet has enough funds to refund
     const balance = await wallet.getBalance();
     if (balance.lt(refundAmount)) {
-      console.log("Wallet does not have enough funds to issue refund.");
+      logAndPersistLogUpdate("Wallet does not have enough funds to issue refund.");
       return;
     }
 
@@ -252,7 +253,7 @@ async function refundUnusedTransaction(
       //     txReq.maxPriorityFeePerGas = txReq.maxFeePerGas;
       //   }
 
-      console.log("Fantom is currently not appliable.");
+      logAndPersistLogUpdate("Fantom is currently not appliable.");
       return;
     }
 
@@ -271,13 +272,13 @@ async function refundUnusedTransaction(
     });
     await newSession.save();
 
-    console.log(
+    logAndPersistLogUpdate(
       `Successfully refunded user ${to} for transaction ${txHash} on chain ${chainId}.`,
     );
     return;
   } catch (err) {
     // postEndpointLogger.error({ error: err, errMsg: err.message });
-    console.log("An unknown error occurred");
+    logAndPersistLogUpdate("An unknown error occurred");
     return;
   }
 }
@@ -308,27 +309,27 @@ async function getAuroraTransaction(ourAddress: string) {
     const block = await provider.getBlock(currentBlockNumber);
 
     if (!block) {
-      // console.log("block is null");
+      // logAndPersistLogUpdate("block is null");
       break;
     }
     if (block.timestamp < startTime) {
-      // console.log("reached blocks older than the start time");
+      // logAndPersistLogUpdate("reached blocks older than the start time");
       break; // Stop when we reach blocks older than the start time
     }
     if (!block.transactions) {
-      console.log("block.transactions is null");
+      logAndPersistLogUpdate("block.transactions is null");
       break;
     }
     for (const txHash of block.transactions) {
-      // console.log("txHash", txHash);
+      // logAndPersistLogUpdate("txHash", txHash);
       try {
         const tx = await provider.getTransaction(txHash);
         if (tx && (tx.to === ourAddress)) {
-          // console.log("tx", tx);
+          // logAndPersistLogUpdate("tx", tx);
           transactions.push(tx);
         }
       } catch (error) {
-        console.log(`Error fetching transaction ${txHash}:`, error);
+        logAndPersistLogUpdate(`Error fetching transaction ${txHash}:`, error);
       }
     }
 
@@ -391,7 +392,7 @@ async function fetchMoralisTxsForChain({
     });
 
     if (!resp.ok) {
-      console.log(
+      logAndPersistLogUpdate(
         `Moralis request failed (chainId=${chainId}): ${resp.status} ${resp.statusText}`,
       );
       break;
@@ -447,18 +448,18 @@ async function getLast48HoursTxs(ourAddress: string) {
       });
       txsByChain[chainId] = chainTxs;
       allTxs.push(...chainTxs);
-      console.log(
+      logAndPersistLogUpdate(
         `Fetched ${chainTxs.length} txs on chain ${chainId} from Moralis in last 48 hrs.`,
       );
     } catch (err) {
-      console.log(`Error fetching chain ${chainId}:`, err);
+      logAndPersistLogUpdate(`Error fetching chain ${chainId}:`, err);
       txsByChain[chainId] = [];
     }
   }
 
   // // aurora
   // const auroraTxs = await getAuroraTransaction(ourAddress);
-  // console.log(
+  // logAndPersistLogUpdate(
   //   `Fetched ${auroraTxs.length} txs on chain 1313161554 from Aurora in last 48 hrs.`,
   // );
   // txsByChain[1313161554] = auroraTxs;
@@ -470,29 +471,29 @@ async function getLast48HoursTxs(ourAddress: string) {
 
 
 
-async function main() {
+async function processIdServerTransactions() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851".toLowerCase();
-  // console.log('getting transaction hashes')
+  // logAndPersistLogUpdate('getting transaction hashes')
   // const transactionHashesByChain =
   //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
-  console.log("Fetching transactions from Moralis for last 48 hours...");
+  logAndPersistLogUpdate("Fetching transactions from Moralis for last 48 hours...");
   const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
-  console.log("Total TXs across all chains:", allTxs.length);
+  logAndPersistLogUpdate("Total TXs across all chains:", allTxs.length);
 
   // Now write allTxs to a JSON file
   // await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
-  // console.log('Wrote "allTxs.json" with all transactions.');
+  // logAndPersistLogUpdate('Wrote "allTxs.json" with all transactions.');
 
   // const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
   // if (!allTxsFromFile) {
-  //   console.log('Could not read "allTxs.json"');
+  //   logAndPersistLogUpdate('Could not read "allTxs.json"');
   //   return;
   // }
   // const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
-  // console.log('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
+  // logAndPersistLogUpdate('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
 
-  console.log('getting sessions')
+  logAndPersistLogUpdate('getting sessions')
   
   //get all sessions within last 72 hours
   const now = new Date();
@@ -504,18 +505,18 @@ async function main() {
     }
   }).exec();
 
-  console.log('allSessions.length', allSessions.length)
+  logAndPersistLogUpdate('allSessions.length', allSessions.length)
 
-  console.log('processing transactions')
+  logAndPersistLogUpdate('processing transactions')
 
   // for (const tx of allTxsFromFileParsed) {
   for (let i = 0; i < allTxs.length; i++) {
-    console.log('i', i)
+    logUpdate(`i ${i}`)
     const tx = allTxs[i]
 
     // Print progress at 10% intervals
     if (i % (allTxs.length / 10) === 0) {
-      console.log(`Processing transaction ${i} of ${allTxs.length}`);
+      logAndPersistLogUpdate(`Processing transaction ${i} of ${allTxs.length}`);
     }
 
     const txHash = tx.hash
@@ -525,7 +526,7 @@ async function main() {
     }
 
     for (let session of allSessions) {
-      // console.log('processing transaction', txHash, 'and session', session._id)
+      // logAndPersistLogUpdate('processing transaction', txHash, 'and session', session._id)
       const digest = ethers.utils.keccak256("0x" + session._id);
 
       if (tx.to_address !== ourAddress || tx.input !== digest) {
@@ -536,7 +537,7 @@ async function main() {
       // this transaction's data matches this session ID, then we know that this transaction
       // was a retry and should be refunded.
       if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
-        console.log(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
+        logAndPersistLogUpdate(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
         await refundUnusedTransaction(
           tx.hash,
           tx.chainId,
@@ -547,7 +548,7 @@ async function main() {
       }
 
       if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
-        console.log(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
+        logAndPersistLogUpdate(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
         session.status = sessionStatusEnum.IN_PROGRESS;
         session.chainId = tx.chainId;
         session.txHash = tx.hash;
@@ -560,27 +561,12 @@ async function main() {
   }
 }
 
-const command = process.argv[2]
-
-// Default to main
-if (!command) {
-  main()
-    .then(() => {
-      console.log('done')
-      process.exit(0)
-    })
-    .catch((err) => {
-      console.log(err)
-      process.exit(1)
-    })
-} else if (command == 'fix-in-progress-sessions-with-no-idv-session') {
-  fixIdvSessionsWithNoIdvSession()
-    .then(() => {
-      console.log('done')
-      process.exit(0)
-    })
-    .catch((err) => {
-      console.log(err)
-      process.exit(1)
-    })
-}
+processIdServerTransactions()
+  .then(() => {
+    logAndPersistLogUpdate('done')
+    process.exit(0)
+  })
+  .catch((err) => {
+    logAndPersistLogUpdate(err)
+    process.exit(1)
+  })

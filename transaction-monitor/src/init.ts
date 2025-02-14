@@ -11,6 +11,7 @@ import {
   sessionRefundMutexSchema,
   amlChecksSessionSchema,
 } from "./schemas.js";
+import { logAndPersistLogUpdate } from './logger.js'
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -36,25 +37,25 @@ async function initializeMongoDb() {
   //       Key: process.env.MONGO_CERT_FILE_NAME,
   //     };
   //     await new Promise<void>((resolve, reject) => {
-  //       console.log("Downloading certificate for MongoDB connection...");
+  //       logAndPersistLogUpdate("Downloading certificate for MongoDB connection...");
   //       s3.getObject(params, async (getObjectErr: any, data: any) => {
-  //         console.log('entered s3.getObject callback')
+  //         logAndPersistLogUpdate('entered s3.getObject callback')
   //         if (getObjectErr) reject(getObjectErr);
   //         const bodyStream = data.Body;
   //         const bodyAsString = await bodyStream.transformToString();
-  //         console.log(`writing to file (${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME})`)
+  //         logAndPersistLogUpdate(`writing to file (${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME})`)
   //         fs.writeFile(
   //           `${__dirname}/../../${process.env.MONGO_CERT_FILE_NAME}`,
   //           bodyAsString,
   //           (writeFileErr) => {
   //             if (writeFileErr) {
-  //               console.log(
+  //               logAndPersistLogUpdate(
   //                 { error: writeFileErr },
   //                 "Encountered error while trying to write cert file for MongoDB connection."
   //               );
   //               return resolve();
   //             }
-  //             console.log(
+  //             logAndPersistLogUpdate(
   //               "Successfully downloaded certificate for MongoDB connection"
   //             );
   //             resolve();
@@ -63,7 +64,7 @@ async function initializeMongoDb() {
   //       });
   //     });
   //   } catch (err) {
-  //     console.log(
+  //     logAndPersistLogUpdate(
   //       { error: err },
   //       "Unable to download certificate for MongoDB connection."
   //     );
@@ -81,9 +82,9 @@ async function initializeMongoDb() {
       process.env.MONGO_DB_CONNECTION_STR as string,
       process.env.ENVIRONMENT == "dev" ? {} : mongoConfig
     );
-    console.log("Connected to MongoDB database.");
+    logAndPersistLogUpdate("Connected to MongoDB database.");
   } catch (err) {
-    console.log({ error: err }, "Unable to connect to MongoDB database.");
+    logAndPersistLogUpdate({ error: err }, "Unable to connect to MongoDB database.");
     return;
   }
 //   const UserVerifications = mongoose.model(
@@ -134,14 +135,14 @@ const AMLChecksSession = mongoose.model("AMLChecksSession", amlChecksSessionSche
 
 initializeMongoDb().then((result) => {
   if (result) {
-    console.log("Initialized MongoDB connection");
+    logAndPersistLogUpdate("Initialized MongoDB connection");
     // UserVerifications = result.UserVerifications;
     // IDVSessions = result.IDVSessions;
     // Session = result.Session;
     // SessionRefundMutex = result.SessionRefundMutex;
     // AMLChecksSession = result.AMLChecksSession;
   } else {
-    console.log("MongoDB initialization failed");
+    logAndPersistLogUpdate("MongoDB initialization failed");
   }
 });
 
