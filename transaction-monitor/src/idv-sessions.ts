@@ -29,7 +29,7 @@ async function createOnfidoApplicant() {
     );
     return resp.data;
   } catch (err) {
-    console.error("Error creating Onfido applicant", (err as any).message, (err as any).response?.data);
+    console.log("Error creating Onfido applicant", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -59,7 +59,7 @@ async function createOnfidoSdkToken(applicant_id: string, referrer?: string) {
     );
     return resp.data;
   } catch (err) {
-    console.error("Error creating Onfido SDK token", (err as any).message, (err as any).response?.data);
+    console.log("Error creating Onfido SDK token", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -95,7 +95,7 @@ async function createVeriffSession() {
     );
     return resp.data;
   } catch (err) {
-    console.error("Error creating veriff session:", (err as any).message, (err as any).response?.data);
+    console.log("Error creating veriff session:", (err as any).message, (err as any).response?.data);
   }
 }
 
@@ -143,6 +143,6 @@ export async function handleIdvSessionCreation(session: any) {
       "Created Onfido SDK token"
     )
   } else {
-    console.error("Invalid idvProvider", session.idvProvider);
+    console.log("Invalid idvProvider", session.idvProvider);
   }
 }

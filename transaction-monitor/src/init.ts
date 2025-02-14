@@ -48,7 +48,7 @@ async function initializeMongoDb() {
   //           bodyAsString,
   //           (writeFileErr) => {
   //             if (writeFileErr) {
-  //               console.error(
+  //               console.log(
   //                 { error: writeFileErr },
   //                 "Encountered error while trying to write cert file for MongoDB connection."
   //               );
@@ -63,7 +63,7 @@ async function initializeMongoDb() {
   //       });
   //     });
   //   } catch (err) {
-  //     console.error(
+  //     console.log(
   //       { error: err },
   //       "Unable to download certificate for MongoDB connection."
   //     );
@@ -83,7 +83,7 @@ async function initializeMongoDb() {
     );
     console.log("Connected to MongoDB database.");
   } catch (err) {
-    console.error({ error: err }, "Unable to connect to MongoDB database.");
+    console.log({ error: err }, "Unable to connect to MongoDB database.");
     return;
   }
 //   const UserVerifications = mongoose.model(
@@ -141,7 +141,7 @@ initializeMongoDb().then((result) => {
     // SessionRefundMutex = result.SessionRefundMutex;
     // AMLChecksSession = result.AMLChecksSession;
   } else {
-    console.error("MongoDB initialization failed");
+    console.log("MongoDB initialization failed");
   }
 });
 

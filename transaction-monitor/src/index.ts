@@ -75,7 +75,7 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
 
         return { chainId, txHashes };
       } catch (error) {
-        console.error(
+        console.log(
           `Error fetching transactions from chain ${chainId}:`,
           error,
         );
@@ -104,34 +104,34 @@ async function refundUnusedTransaction(
     // const apiKey = "OUR_API_KEY";
 
     // if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
-    //   console.error("Invalid API key.");
+    //   console.log("Invalid API key.");
     //   return;
     // }
 
     if (!txHash) {
-      console.error("No txHash specified.");
+      console.log("No txHash specified.");
       return;
     }
 
     if (!chainId) {
-      console.error("No chainId specified.");
+      console.log("No chainId specified.");
       return;
     }
 
     if (supportedChainIds.indexOf(chainId) === -1) {
-      console.error(`chainId must be one of ${supportedChainIds.join(", ")}`);
+      console.log(`chainId must be one of ${supportedChainIds.join(", ")}`);
       return;
     }
 
     if (!to) {
-      console.error("No 'to' specified.");
+      console.log("No 'to' specified.");
       return;
     }
 
     const session = await Session.findOne({ txHash }).exec();
 
     if (session) {
-      console.error(
+      console.log(
         `Transaction ${txHash} is already associated with a session.`,
       );
       return;
@@ -140,7 +140,7 @@ async function refundUnusedTransaction(
     const cleanHandsSession = await AMLChecksSession.findOne({ txHash }).exec();
 
     if (cleanHandsSession) {
-      console.error(
+      console.log(
         `Transaction ${txHash} is already associated with a clean hands session.`,
       );
       return;
@@ -219,7 +219,7 @@ async function refundUnusedTransaction(
 
     const priv_key = process.env.PAYMENTS_PRIVATE_KEY;
     if (!priv_key) {
-      console.error("No private key found in env.");
+      console.log("No private key found in env.");
       return;
     }
     const wallet = new ethers.Wallet(priv_key, provider);
@@ -230,7 +230,7 @@ async function refundUnusedTransaction(
     // Ensure wallet has enough funds to refund
     const balance = await wallet.getBalance();
     if (balance.lt(refundAmount)) {
-      console.error("Wallet does not have enough funds to issue refund.");
+      console.log("Wallet does not have enough funds to issue refund.");
       return;
     }
 
@@ -251,7 +251,7 @@ async function refundUnusedTransaction(
       //     txReq.maxPriorityFeePerGas = txReq.maxFeePerGas;
       //   }
 
-      console.error("Fantom is currently not appliable.");
+      console.log("Fantom is currently not appliable.");
       return;
     }
 
@@ -276,7 +276,7 @@ async function refundUnusedTransaction(
     return;
   } catch (err) {
     // postEndpointLogger.error({ error: err, errMsg: err.message });
-    console.error("An unknown error occurred");
+    console.log("An unknown error occurred");
     return;
   }
 }
@@ -327,7 +327,7 @@ async function getAuroraTransaction(ourAddress: string) {
           transactions.push(tx);
         }
       } catch (error) {
-        console.error(`Error fetching transaction ${txHash}:`, error);
+        console.log(`Error fetching transaction ${txHash}:`, error);
       }
     }
 
@@ -390,7 +390,7 @@ async function fetchMoralisTxsForChain({
     });
 
     if (!resp.ok) {
-      console.error(
+      console.log(
         `Moralis request failed (chainId=${chainId}): ${resp.status} ${resp.statusText}`,
       );
       break;
@@ -449,7 +449,7 @@ async function getLast48HoursTxs(ourAddress: string) {
         `Fetched ${chainTxs.length} txs on chain ${chainId} from Moralis in last 48 hrs.`,
       );
     } catch (err) {
-      console.error(`Error fetching chain ${chainId}:`, err);
+      console.log(`Error fetching chain ${chainId}:`, err);
       txsByChain[chainId] = [];
     }
   }
@@ -484,7 +484,7 @@ async function main() {
 
   // const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
   // if (!allTxsFromFile) {
-  //   console.error('Could not read "allTxs.json"');
+  //   console.log('Could not read "allTxs.json"');
   //   return;
   // }
   // const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
@@ -564,6 +564,6 @@ main()
     process.exit(0)
   })
   .catch((err) => {
-    console.error(err)
+    console.log(err)
     process.exit(1)
   })
