@@ -17,7 +17,6 @@ import {
   supportedChainIds,
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
-import { handleIdvSessionCreation } from './idv-sessions.js';
 import { logAndPersistLogUpdate } from './logger.js';
 import { idServerAdmin } from './admin-calls.js'
 
