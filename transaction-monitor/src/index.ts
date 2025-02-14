@@ -15,6 +15,7 @@ import {
   supportedChainIds,
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
+import { handleIdvSessionCreation } from './idv-sessions.js'
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
@@ -548,6 +549,7 @@ async function main() {
         session.status = sessionStatusEnum.IN_PROGRESS;
         session.chainId = tx.chainId;
         session.txHash = tx.hash;
+        await handleIdvSessionCreation(session)
         await session.save();
 
         await setProcessed(txHash);
