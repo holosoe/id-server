@@ -18,7 +18,8 @@ import {
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
 import { handleIdvSessionCreation } from './idv-sessions.js';
-import { logAndPersistLogUpdate } from './logger.js'
+import { logAndPersistLogUpdate } from './logger.js';
+import { idServerAdmin } from './admin-calls.js'
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
@@ -98,192 +99,6 @@ async function getTransactionsHashesByChainLast48Hrs(ourAddress: string) {
   return txHashesByChain;
 }
 
-async function refundUnusedTransaction(
-  txHash: string,
-  chainId: number,
-  to: string,
-) {
-  try {
-    // const apiKey = "OUR_API_KEY";
-
-    // if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
-    //   logAndPersistLogUpdate("Invalid API key.");
-    //   return;
-    // }
-
-    if (!txHash) {
-      logAndPersistLogUpdate("No txHash specified.");
-      return;
-    }
-
-    if (!chainId) {
-      logAndPersistLogUpdate("No chainId specified.");
-      return;
-    }
-
-    if (supportedChainIds.indexOf(chainId) === -1) {
-      logAndPersistLogUpdate(`chainId must be one of ${supportedChainIds.join(", ")}`);
-      return;
-    }
-
-    if (!to) {
-      logAndPersistLogUpdate("No 'to' specified.");
-      return;
-    }
-
-    const session = await Session.findOne({ txHash }).exec();
-
-    if (session) {
-      logAndPersistLogUpdate(
-        `Transaction ${txHash} is already associated with a session.`,
-      );
-      return;
-    }
-
-    const cleanHandsSession = await AMLChecksSession.findOne({ txHash }).exec();
-
-    if (cleanHandsSession) {
-      logAndPersistLogUpdate(
-        `Transaction ${txHash} is already associated with a clean hands session.`,
-      );
-      return;
-    }
-
-    // ------------ begin tx validation ------------
-    let provider;
-    if (chainId === 1) {
-      provider = ethereumProvider;
-    } else if (chainId === 10) {
-      provider = optimismProvider;
-    } else if (chainId === 250) {
-      provider = fantomProvider;
-    } else if (chainId === 8453) {
-      provider = baseProvider;
-    } else if (chainId === 43114) {
-      provider = avalancheProvider;
-    } else if (chainId === 1313161554) {
-      provider = auroraProvider;
-    } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-      provider = optimismGoerliProvider;
-    } else {
-      throw new Error('Invalid chainId');
-    }
-    // optimismProvider.getLogs
-    const tx = await provider.getTransaction(txHash);
-
-    if (!tx) {
-      logAndPersistLogUpdate(`Could not find ${txHash} on chain ${chainId}.`);
-      return;
-    }
-
-    if (idServerPaymentAddress !== (tx.to ?? '').toLowerCase()) {
-      logAndPersistLogUpdate(
-        `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
-      );
-      return;
-    }
-
-    if (!tx.blockHash || tx.confirmations === 0) {
-      logAndPersistLogUpdate(`Transaction ${txHash} has not been confirmed yet.`);
-      return;
-    }
-
-    // We have commented out the expectedAmount check because ID verification
-    // and phone verification are now both $5. Checking the amount will no
-    // longer help filter out transactions that were used for phone.
-    // const expectedAmountInUSD = 6.0;
-
-    // let expectedAmountInToken;
-    // if ([1, 10, 1313161554].includes(chainId)) {
-    //   expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    // } else if (chainId === 250) {
-    //   expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
-    // } else if (chainId === 43114) {
-    //   expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
-    // } else if (process.env.NODE_ENV === "development" && chainId === 420) {
-    //   expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    // }
-
-    // Round to 18 decimal places to avoid this underflow error from ethers:
-    // "fractional component exceeds decimals"
-    // const decimals = 18;
-    // const multiplier = 10 ** decimals;
-    // const rounded = Math.round(expectedAmountInToken * multiplier) / multiplier;
-
-    // const expectedAmount = ethers.utils.parseEther(rounded.toString());
-
-    // if (tx.value.lt(expectedAmount)) {
-    //   return res.status(400).json({
-    //     error: `Invalid transaction amount. Expected it to be greater than: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`,
-    //   });
-    // }
-
-    // ------------ end tx validation ------------
-
-    const priv_key = process.env.PAYMENTS_PRIVATE_KEY;
-    if (!priv_key) {
-      logAndPersistLogUpdate("No private key found in env.");
-      return;
-    }
-    const wallet = new ethers.Wallet(priv_key, provider);
-
-    // Send 90% of tx.value back to sender. We keep some to cover gas
-    const refundAmount = tx.value.mul(9).div(10);
-
-    // Ensure wallet has enough funds to refund
-    const balance = await wallet.getBalance();
-    if (balance.lt(refundAmount)) {
-      logAndPersistLogUpdate("Wallet does not have enough funds to issue refund.");
-      return;
-    }
-
-    const txReq = await wallet.populateTransaction({
-      to: to,
-      value: refundAmount,
-    });
-
-    // For some reason gas estimates from Fantom are way off. We manually increase
-    // gas to avoid "transaction underpriced" error. Hopefully this is unnecessary
-    // in the future. The following values happened to be sufficient at the time
-    // of adding this block.
-    if (chainId === 250) {
-      //   txReq.maxFeePerGas = txReq.maxFeePerGas.mul(2);
-      //   txReq.maxPriorityFeePerGas = txReq.maxPriorityFeePerGas.mul(14);
-
-      //   if (txReq.maxPriorityFeePerGas.gt(txReq.maxFeePerGas)) {
-      //     txReq.maxPriorityFeePerGas = txReq.maxFeePerGas;
-      //   }
-
-      logAndPersistLogUpdate("Fantom is currently not appliable.");
-      return;
-    }
-
-    const txResponse = await wallet.sendTransaction(txReq);
-
-    await txResponse.wait();
-
-    // create new session to ensure this transaction cannot be used again
-    const newSession = new Session({
-      sigDigest: "n/a",
-      idvProvider: "n/a",
-      status: sessionStatusEnum.REFUNDED,
-      txHash,
-      chainId,
-      refundTxHash: txResponse.hash,
-    });
-    await newSession.save();
-
-    logAndPersistLogUpdate(
-      `Successfully refunded user ${to} for transaction ${txHash} on chain ${chainId}.`,
-    );
-    return;
-  } catch (err) {
-    // postEndpointLogger.error({ error: err, errMsg: err.message });
-    logAndPersistLogUpdate("An unknown error occurred");
-    return;
-  }
-}
-
 async function getTransaction(chainId: number, txHash: string) {
   const provider = chainProviders[chainId];
   return provider.getTransaction(txHash);
@@ -297,10 +112,10 @@ async function getTransaction(chainId: number, txHash: string) {
 // }
 
 
-async function getAuroraTransaction(ourAddress: string) {
+async function getLast24HoursOfAuroraTransactions(ourAddress: string) {
   const provider = auroraProvider;
   const currentTime = Math.floor(Date.now() / 1000); // Current time in seconds
-  const timeWindowInSeconds = 48 * 60 * 60; // 48 hours in seconds
+  const timeWindowInSeconds = 24 * 60 * 60; // 24 hours in seconds
   const startTime = currentTime - timeWindowInSeconds;
 
   let transactions = [];
@@ -426,14 +241,13 @@ async function fetchMoralisTxsForChain({
   return allTxs;
 }
 
-async function getLast48HoursTxs(ourAddress: string) {
+async function getLast24HoursTxs(ourAddress: string) {
   const chainIds = Object.keys(chainIdToMoralisChainParam).map(Number);
 
-  // Build date range for the last 48 hours
+  // Build date range for the last 24 hours
   // Moralis typically accepts YYYY-MM-DD or full ISO date strings
   const now = new Date();
-  // const fromDate = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
-  const fromDate = new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString(); // last 12 hours
+  const fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   const toDate = now.toISOString();
 
   const txsByChain: Record<number, any[]> = {};
@@ -450,7 +264,7 @@ async function getLast48HoursTxs(ourAddress: string) {
       txsByChain[chainId] = chainTxs;
       allTxs.push(...chainTxs);
       logAndPersistLogUpdate(
-        `Fetched ${chainTxs.length} txs on chain ${chainId} from Moralis in last 48 hrs.`,
+        `Fetched ${chainTxs.length} txs on chain ${chainId} from Moralis in last 24 hrs.`,
       );
     } catch (err) {
       logAndPersistLogUpdate(`Error fetching chain ${chainId}:`, err);
@@ -459,9 +273,9 @@ async function getLast48HoursTxs(ourAddress: string) {
   }
 
   // // aurora
-  // const auroraTxs = await getAuroraTransaction(ourAddress);
+  // const auroraTxs = await getLast24HoursOfAuroraTransactions(ourAddress);
   // logAndPersistLogUpdate(
-  //   `Fetched ${auroraTxs.length} txs on chain 1313161554 from Aurora in last 48 hrs.`,
+  //   `Fetched ${auroraTxs.length} txs on chain 1313161554 from Aurora in last 24 hrs.`,
   // );
   // txsByChain[1313161554] = auroraTxs;
   // allTxs.push(...auroraTxs);
@@ -478,8 +292,8 @@ async function processIdServerTransactions() {
   // const transactionHashesByChain =
   //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
-  logAndPersistLogUpdate("Fetching transactions from Moralis for last 48 hours...");
-  const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
+  logAndPersistLogUpdate("Fetching transactions from Moralis for last 24 hours...");
+  const { allTxs, txsByChain } = await getLast24HoursTxs(ourAddress);
   logAndPersistLogUpdate("Total TXs across all chains:", allTxs.length);
 
   logAndPersistLogUpdate('getting sessions')
@@ -525,20 +339,7 @@ async function processIdServerTransactions() {
       // was a retry and should be refunded.
       if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
         logAndPersistLogUpdate(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
-        const resp = await axios.post(
-          'https://id-server.holonym.io/admin/refund-unused-transaction',
-          {
-            txHash: tx.hash,
-            chainId: tx.chainId,
-            to: tx.from_address,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'x-api-key': process.env.ADMIN_API_KEY_LOW_PRIVILEGE,
-            }
-          }
-        )
+        const resp = await idServerAdmin.refundUnusedTransaction(tx.hash, tx.chainId, tx.from_address)
         logAndPersistLogUpdate('refund response', resp.data)
 
         await setProcessed(txHash);
@@ -546,11 +347,7 @@ async function processIdServerTransactions() {
 
       if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
         logAndPersistLogUpdate(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
-        session.status = sessionStatusEnum.IN_PROGRESS;
-        session.chainId = tx.chainId;
-        session.txHash = tx.hash;
-        await handleIdvSessionCreation(session)
-        await session.save();
+        await idServerAdmin.createIDVSession(session._id.toString(), txHash, chainId)
 
         await setProcessed(txHash);
       }
