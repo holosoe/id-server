@@ -15,7 +15,8 @@ import {
   supportedChainIds,
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
-import { handleIdvSessionCreation } from './idv-sessions.js'
+import { handleIdvSessionCreation } from './idv-sessions.js';
+import { fixIdvSessionsWithNoIdvSession } from './fix-idv-sessions-with-no-idv-session.js';
 
 const txHashesDbName = "processedTxHashes.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
@@ -559,12 +560,27 @@ async function main() {
   }
 }
 
-main()
-  .then(() => {
-    console.log('done')
-    process.exit(0)
-  })
-  .catch((err) => {
-    console.log(err)
-    process.exit(1)
-  })
+const command = process.argv[2]
+
+// Default to main
+if (!command) {
+  main()
+    .then(() => {
+      console.log('done')
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.log(err)
+      process.exit(1)
+    })
+} else if (command == 'fix-in-progress-sessions-with-no-idv-session') {
+  fixIdvSessionsWithNoIdvSession()
+    .then(() => {
+      console.log('done')
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.log(err)
+      process.exit(1)
+    })
+}
