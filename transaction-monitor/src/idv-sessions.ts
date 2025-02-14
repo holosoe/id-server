@@ -103,11 +103,16 @@ async function createVeriffSession() {
 
 // TODO: Add session type. Don't use "any"
 export async function handleIdvSessionCreation(session: any) {
+  console.log('entered handleIdvSessionCreation')
   if (session.idvProvider === "veriff") {
+    console.log('handleIdvSessionCreation: veriff')
     const veriffSession = await createVeriffSession();
+    console.log('handleIdvSessionCreation: created veriff session')
     if (!veriffSession) { 
       return
     }
+
+    console.log('handleIdvSessionCreation: saving')
 
     session.sessionId = veriffSession.verification.id;
     session.veriffUrl = veriffSession.verification.url;
@@ -118,10 +123,13 @@ export async function handleIdvSessionCreation(session: any) {
       "Created Veriff session"
     );
   } else if (session.idvProvider === "onfido") {
+    console.log('handleIdvSessionCreation: onfido')
     const applicant = await createOnfidoApplicant();
     if (!applicant) {
       return
     }
+
+    console.log('handleIdvSessionCreation: created onfido applicant')
 
     session.applicant_id = applicant.id;
 
@@ -134,6 +142,8 @@ export async function handleIdvSessionCreation(session: any) {
     if (!sdkTokenData) {
       return
     }
+
+    console.log('handleIdvSessionCreation: created sdk token')
 
     session.onfido_sdk_token = sdkTokenData.token;
     await session.save();
