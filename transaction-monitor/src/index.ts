@@ -1,3 +1,4 @@
+import axios from "axios";
 import { ethers } from "ethers";
 import { promises as fs } from "fs";
 import { JSONFilePreset } from 'lowdb/node'
@@ -481,24 +482,12 @@ async function processIdServerTransactions() {
   const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
   logAndPersistLogUpdate("Total TXs across all chains:", allTxs.length);
 
-  // Now write allTxs to a JSON file
-  // await fs.writeFile("allTxs.json", JSON.stringify(allTxs, null, 2), "utf8");
-  // logAndPersistLogUpdate('Wrote "allTxs.json" with all transactions.');
-
-  // const allTxsFromFile = await fs.readFile("allTxs.json", "utf8");
-  // if (!allTxsFromFile) {
-  //   logAndPersistLogUpdate('Could not read "allTxs.json"');
-  //   return;
-  // }
-  // const allTxsFromFileParsed = JSON.parse(allTxsFromFile);
-  // logAndPersistLogUpdate('allTxsFromFileParsed.length', allTxsFromFileParsed.length)
-
   logAndPersistLogUpdate('getting sessions')
   
-  //get all sessions within last 72 hours
+  //get all sessions within last 24 hours
   const now = new Date();
-  const threeDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 3)
-  const objectId = new ObjectId(Math.floor(threeDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+  const objectId = new ObjectId(Math.floor(twentyFourHoursAgo.getTime() / 1000).toString(16) + "0000000000000000");
   const allSessions = await Session.find({
     _id: {
       $gte: objectId
@@ -507,9 +496,8 @@ async function processIdServerTransactions() {
 
   logAndPersistLogUpdate('allSessions.length', allSessions.length)
 
-  logAndPersistLogUpdate('processing transactions')
+  logAndPersistLogUpdate('processing transactions against id-server sessions')
 
-  // for (const tx of allTxsFromFileParsed) {
   for (let i = 0; i < allTxs.length; i++) {
     logUpdate(`i ${i}`)
     const tx = allTxs[i]
@@ -526,7 +514,6 @@ async function processIdServerTransactions() {
     }
 
     for (let session of allSessions) {
-      // logAndPersistLogUpdate('processing transaction', txHash, 'and session', session._id)
       const digest = ethers.utils.keccak256("0x" + session._id);
 
       if (tx.to_address !== ourAddress || tx.input !== digest) {
@@ -538,11 +525,21 @@ async function processIdServerTransactions() {
       // was a retry and should be refunded.
       if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
         logAndPersistLogUpdate(`REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
-        await refundUnusedTransaction(
-          tx.hash,
-          tx.chainId,
-          tx.from_address,
-        );
+        const resp = await axios.post(
+          'https://id-server.holonym.io/admin/refund-unused-transaction',
+          {
+            txHash: tx.hash,
+            chainId: tx.chainId,
+            to: tx.from_address,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.ADMIN_API_KEY_LOW_PRIVILEGE,
+            }
+          }
+        )
+        logAndPersistLogUpdate('refund response', resp.data)
 
         await setProcessed(txHash);
       }
