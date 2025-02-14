@@ -470,11 +470,11 @@ async function getLast48HoursTxs(ourAddress: string) {
 
 async function main() {
   const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851".toLowerCase();
-  console.log('getting transaction hashes')
-  const transactionHashesByChain =
-    await getTransactionsHashesByChainLast48Hrs(ourAddress);
+  // console.log('getting transaction hashes')
+  // const transactionHashesByChain =
+  //   await getTransactionsHashesByChainLast48Hrs(ourAddress);
 
-  // console.log("Fetching transactions from Moralis for last 48 hours...");
+  console.log("Fetching transactions from Moralis for last 48 hours...");
   const { allTxs, txsByChain } = await getLast48HoursTxs(ourAddress);
   console.log("Total TXs across all chains:", allTxs.length);
 
