@@ -397,7 +397,14 @@ async function processPhoneServerTransactions() {
     }
 
     for (let session of phoneSessions) {
-      const digest = ethers.utils.keccak256("0x" + session.id);
+      // const digest = ethers.utils.keccak256("0x" + session.id);
+      let digest = null
+      try {
+        digest = ethers.utils.keccak256('0x' + session.id);
+      } catch (err) {
+        console.error('error hashing session id', session.id, err)
+        continue
+      }
 
       if (tx.to_address !== ourAddress || tx.input !== digest) {
         continue;
