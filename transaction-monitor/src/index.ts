@@ -407,7 +407,7 @@ async function processPhoneServerTransactions() {
       try {
         digest = ethers.utils.keccak256("0x" + session.id);
       } catch (err) {
-        logAndPersistLogUpdate(`error hashing session id ${(err as any).message}`)
+        logAndPersistLogUpdate(`error hashing session id for session ${session}... ${(err as any).message}`)
         continue;
       }
 
