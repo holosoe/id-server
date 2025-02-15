@@ -18,6 +18,7 @@
     "dependencies": {
         "@aws-sdk/client-s3": "^3.209.0",
         "@types/node": "^20.3.1",
+        "aws-sdk": "^2.1295.0",
         "axios": "^1.7.9",
         "concurrently": "^8.2.0",
         "dotenv": "^16.0.3",

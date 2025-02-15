@@ -6,7 +6,6 @@ import axios from 'axios'
 // -------------------- For id-server admin endpoints --------------------
 
 function createIDVSession(sid: string, txHash: string, chainId: number) {
-  // curl -X POST -d '{"chainId": "1", "txHash": "0x1234"}' https://id-server.holonym.io/sessions/<sid>/idv-session/v3
   return axios.post(
     `https://id-server.holonym.io/sessions/${sid}/idv-session/v3`,
     {
@@ -46,3 +45,22 @@ export const idServerAdmin = {
 
 // -------------------- For phone-number-server admin endpoints --------------------
 
+function payForPhoneSession(sid: string, txHash: string, chainId: number) {
+  return axios.post(
+    `https://phone.holonym.io/sessions/${sid}/payment/v3`,
+    {
+      txHash,
+      chainId
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ADMIN_API_KEY_LOW_PRIVILEGE,
+      }
+    }
+  )
+}
+
+export const phoneServerAdmin = {
+  payForSession: payForPhoneSession,
+}

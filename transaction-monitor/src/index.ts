@@ -18,19 +18,31 @@ import {
 } from "./constants/misc.js";
 import { AMLChecksSession, Session } from "./init.js";
 import { logAndPersistLogUpdate } from './logger.js';
-import { idServerAdmin } from './admin-calls.js'
+import { idServerAdmin, phoneServerAdmin } from './admin-calls.js'
+import { getAllPhoneSessions } from './dynamodb.js'
 
-const txHashesDbName = "processedTxHashes.json";
+const txHashesIdServerDbName = "processedTxHashesIdServer.json";
+const txHashesPhoneServerDbName = "processedTxHashesIdServer.json";
 const defaultDbValue = ['0x2287db81fb436c58f53c62cb700e7198f99a522fa8352f6cbcbae7e75489bca1']
 const moralisApiKey = process.env.MORALIS_API_KEY!
 
-async function isProcessed(hash: string): Promise<boolean> {
-  const db = await JSONFilePreset(txHashesDbName, defaultDbValue)
+async function isProcessedForIdServer(hash: string): Promise<boolean> {
+  const db = await JSONFilePreset(txHashesIdServerDbName, defaultDbValue)
   return db.data.includes(hash)
 }
 
-async function setProcessed(hash: string) {
-  const db = await JSONFilePreset(txHashesDbName, defaultDbValue)
+async function setProcessedForIdServer(hash: string) {
+  const db = await JSONFilePreset(txHashesIdServerDbName, defaultDbValue)
+  await db.update((txHashes: string[]) => txHashes.push(hash))
+}
+
+async function isProcessedForPhoneServer(hash: string): Promise<boolean> {
+  const db = await JSONFilePreset(txHashesPhoneServerDbName, defaultDbValue)
+  return db.data.includes(hash)
+}
+
+async function setProcessedForPhoneServer(hash: string) {
+  const db = await JSONFilePreset(txHashesPhoneServerDbName, defaultDbValue)
   await db.update((txHashes: string[]) => txHashes.push(hash))
 }
 
@@ -322,7 +334,7 @@ async function processIdServerTransactions() {
 
     const txHash = tx.hash
     const chainId = tx.chainId
-    if (await isProcessed(txHash)) {
+    if (await isProcessedForIdServer(txHash)) {
       continue;
     }
 
@@ -341,25 +353,101 @@ async function processIdServerTransactions() {
         const resp = await idServerAdmin.refundUnusedTransaction(tx.hash, tx.chainId, tx.from_address)
         logAndPersistLogUpdate('refund response', resp.data)
 
-        await setProcessed(txHash);
+        await setProcessedForIdServer(txHash);
       }
 
       if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
         logAndPersistLogUpdate(`SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
         await idServerAdmin.createIDVSession(session._id.toString(), txHash, chainId)
 
-        await setProcessed(txHash);
+        await setProcessedForIdServer(txHash);
       }
     }
   }
 }
 
-processIdServerTransactions()
-  .then(() => {
-    logAndPersistLogUpdate('done')
-    process.exit(0)
-  })
-  .catch((err) => {
-    logAndPersistLogUpdate(err)
-    process.exit(1)
-  })
+async function processPhoneServerTransactions() {
+  const ourAddress = "0xdcA2e9AE8423D7B0F94D7F9FC09E698a45F3c851".toLowerCase();
+
+  logAndPersistLogUpdate("Fetching transactions from Moralis for last 24 hours...");
+  const { allTxs, txsByChain } = await getLast24HoursTxs(ourAddress);
+  logAndPersistLogUpdate("Total TXs across all chains:", allTxs.length);
+
+  logAndPersistLogUpdate("Getting phone sessions")
+
+  const phoneSessions = await getAllPhoneSessions()
+
+  logAndPersistLogUpdate('phoneSessions.length', phoneSessions.length)
+
+  logAndPersistLogUpdate('processing transactions against phone-number-server sessions')
+
+  for (let i = 0; i < allTxs.length; i++) {
+    logUpdate(`i ${i}`)
+    const tx = allTxs[i]
+
+    // Print progress at 10% intervals
+    if (i % (allTxs.length / 10) === 0) {
+      logAndPersistLogUpdate(`Processing transaction ${i} of ${allTxs.length}`);
+    }
+
+    const txHash = tx.hash
+    const chainId = tx.chainId
+    if (await isProcessedForPhoneServer(txHash)) {
+      continue;
+    }
+
+    for (let session of phoneSessions) {
+      const digest = ethers.utils.keccak256("0x" + session.id);
+
+      if (tx.to_address !== ourAddress || tx.input !== digest) {
+        continue;
+      }
+
+      // If the session is already associated with some other transaction, and if
+      // this transaction's data matches this session ID, then we know that this transaction
+      // was a retry and should be refunded.
+      if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
+        logAndPersistLogUpdate(`(phone) REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${session}`);
+        // TODO: Update this. Call endpoint in phone server instead
+        const resp = await idServerAdmin.refundUnusedTransaction(tx.hash, tx.chainId, tx.from_address)
+        logAndPersistLogUpdate('refund response', resp.data)
+
+        await setProcessedForPhoneServer(txHash);
+      }
+
+      if (session.sessionStatus === sessionStatusEnum.NEEDS_PAYMENT) {
+        logAndPersistLogUpdate(`(phone) SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${session}`);
+        await phoneServerAdmin.payForSession(session.id.toString(), txHash, chainId)
+
+        await setProcessedForPhoneServer(txHash);
+      }
+    }
+  }
+}
+
+const command = process.argv[2]
+
+if (command === 'id-server') {
+  processIdServerTransactions()
+    .then(() => {
+      logAndPersistLogUpdate('done')
+      process.exit(0)
+    })
+    .catch((err) => {
+      logAndPersistLogUpdate(err)
+      process.exit(1)
+    })  
+} else if (command === 'phone-number-server') {
+  processPhoneServerTransactions()
+    .then(() => {
+      logAndPersistLogUpdate('done')
+      process.exit(0)
+    })
+    .catch((err) => {
+      logAndPersistLogUpdate(err)
+      process.exit(1)
+    })
+} else {
+  console.log(`unknown command "${command}`)
+  process.exit(1)
+}
