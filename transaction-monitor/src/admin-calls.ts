@@ -55,7 +55,7 @@ function payForPhoneSession(sid: string, txHash: string, chainId: number) {
     {
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ADMIN_API_KEY_LOW_PRIVILEGE,
+        'x-api-key': process.env.PHONE_ADMIN_API_KEY_LOW_PRIVILEGE,
       }
     }
   )
