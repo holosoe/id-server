@@ -407,7 +407,7 @@ async function processPhoneServerTransactions() {
       try {
         digest = ethers.utils.keccak256("0x" + session.id);
       } catch (err) {
-        console.error(err)
+        console.error('error hashing session id', (err as any).message)
         continue;
       }
 
