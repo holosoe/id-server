@@ -396,7 +396,7 @@ async function processPhoneServerTransactions() {
       continue;
     }
 
-    for (let session of phoneSessions) {
+    for (const session of phoneSessions) {
       // Really old phone sessions have session IDs that start with 0x. We don't
       // care about those, so we filter those out.
       if (session.id.startsWith('0x')) {
@@ -407,7 +407,7 @@ async function processPhoneServerTransactions() {
       try {
         digest = ethers.utils.keccak256("0x" + session.id);
       } catch (err) {
-        logAndPersistLogUpdate('error hashing session id', (err as any).message)
+        logAndPersistLogUpdate(`error hashing session id ${(err as any).message}`)
         continue;
       }
 
