@@ -397,14 +397,13 @@ async function processPhoneServerTransactions() {
     }
 
     for (let session of phoneSessions) {
-      // const digest = ethers.utils.keccak256("0x" + session.id);
-      let digest = null
-      try {
-        digest = ethers.utils.keccak256('0x' + session.id);
-      } catch (err) {
-        console.error('error hashing session id', session.id, err)
+      // Really old phone sessions have session IDs that start with 0x. We don't
+      // care about those, so we filter those out.
+      if (session.id.startsWith('0x')) {
         continue
       }
+
+      const digest = ethers.utils.keccak256("0x" + session.id);
 
       if (tx.to_address !== ourAddress || tx.input !== digest) {
         continue;
