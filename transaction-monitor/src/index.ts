@@ -403,7 +403,13 @@ async function processPhoneServerTransactions() {
         continue
       }
 
-      const digest = ethers.utils.keccak256("0x" + session.id);
+      let digest = null
+      try {
+        digest = ethers.utils.keccak256("0x" + session.id);
+      } catch (err) {
+        console.error(err)
+        continue;
+      }
 
       if (tx.to_address !== ourAddress || tx.input !== digest) {
         continue;
