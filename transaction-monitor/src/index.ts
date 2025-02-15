@@ -371,11 +371,20 @@ async function processPhoneServerTransactions() {
 
   logAndPersistLogUpdate("Fetching transactions from Moralis for last 24 hours...");
   const { allTxs, txsByChain } = await getLast24HoursTxs(ourAddress);
+  // const allTxs = [{hash: '0x123', chainId: 1, to_address: '0x123', input: '0x123', from_address: '0x123'}] // for testing
   logAndPersistLogUpdate("Total TXs across all chains:", allTxs.length);
 
   logAndPersistLogUpdate("Getting phone sessions")
 
-  const phoneSessions = await getAllPhoneSessions()
+  const allPhoneSessions = await getAllPhoneSessions()
+
+  // TODO: Remove this block
+  const phoneSessions = []
+  for (const session of allPhoneSessions) {
+    if (session.sessionStatus !== sessionStatusEnum.NEEDS_PAYMENT) {
+      phoneSessions.push(session)
+    }
+  }
 
   logAndPersistLogUpdate('phoneSessions.length', phoneSessions.length)
 
