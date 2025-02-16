@@ -565,6 +565,80 @@ async function createIdvSessionV3(req, res) {
   }
 }
 
+/**
+ * Set IDV Provider in the session document
+ * 
+ */
+async function setIdvProvider(req, res) {
+  try {
+    const _id = req.params._id;
+    const idvProvider = req.params.idvProvider;
+
+    let objectId = null;
+
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    // check the session idvProvider
+    if (session.idvProvider === idvProvider) {
+      return res.status(400).json({ error: "IDV provider is already set the same" });
+    }
+
+    // check the session status of current idvProvider,
+    // only proceed with if it is "VERIFICATION_FAILED"
+    if(session.status !== "VERIFICATION_FAILED") {
+      return res.status(400).json({ error: "Another IDV can be set only when current verification has failed" });
+    }
+
+    // check the session does not already have idv session of the requested idvProvider
+    // if setting to veriff, session.sessionId and session.veriffUrl must be undefined
+    if (idvProvider === "veriff" && session.sessionId && session.veriffUrl) {
+      return res.status(400).json({ error: "Veriff IDV session has already been tried" });
+    }
+
+    // if setting to onfido, session.onfido_sdk_token and session.applicant_id must be undefined
+    if(idvProvider === "onfido" && session.onfido_sdk_token && session.applicant_id) {
+      return res.status(400).json({ error: "Onfido IDV session has already been tried" });
+    }
+
+    // if all clear then proceed
+    // session is not saved unless IdvSessionCreation is successful
+
+    // set session.idvProvider to the requested provider
+    session.idvProvider = idvProvider;
+    // set session.status to IN_PROGRESS for the "new" session with the requested provider
+    session.status = "IN_PROGRESS";
+
+    return handleIdvSessionCreation(res, session, createIdvSessionLogger);
+
+  } catch (err) {
+    if (err.response) {
+      createIdvSessionLogger.error(
+        { error: err.response.data },
+        "Error setting IDV provider and creating IDV session"
+      );
+    } else if (err.request) {
+      createIdvSessionLogger.error(
+        { error: err.request.data },
+        "Error setting IDV provider and creating IDV session"
+      );
+    } else {
+      createIdvSessionLogger.error({ error: err }, "Error setting IDV provider and creating IDV session");
+    }
+
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
 async function refreshOnfidoToken(req, res) {
   const _id = req.params._id;
 
@@ -879,6 +953,7 @@ export {
   createIdvSession,
   createIdvSessionV2,
   createIdvSessionV3,
+  setIdvProvider,
   refreshOnfidoToken,
   createOnfidoCheckEndpoint,
   refund,
