@@ -109,7 +109,8 @@ async function processIdServerTransactions() {
           await setProcessedForIdServer(txHash);
         }
       } catch (err) {
-        logAndPersistLogUpdate(`(id-server) encountered error for session ${JSON.stringify(session)}`, err)
+        const errMsg = (err as any)?.response?.data ?? (err as any)?.message
+        logAndPersistLogUpdate(`(id-server) encountered error for session ${JSON.stringify(session)}`, errMsg)
       }
     }
   }
@@ -184,7 +185,8 @@ async function processPhoneServerTransactions() {
           await setProcessedForPhoneServer(txHash);
         }
       } catch (err) {
-        logAndPersistLogUpdate(`(phone) encountered error for session ${JSON.stringify(session)}`, err)
+        const errMsg = (err as any)?.response?.data ?? (err as any)?.message
+        logAndPersistLogUpdate(`(phone) encountered error for session ${JSON.stringify(session)}`, errMsg)
       }
     }
   }
