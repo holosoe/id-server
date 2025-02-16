@@ -70,7 +70,6 @@ async function processIdServerTransactions() {
   logAndPersistLogUpdate('(id-server) processing transactions against id-server sessions')
 
   for (let i = 0; i < allTxs.length; i++) {
-    logUpdate(`i ${i}`)
     const tx = allTxs[i]
 
     // Print progress at 10% intervals
@@ -129,7 +128,6 @@ async function processPhoneServerTransactions() {
   logAndPersistLogUpdate('(phone) processing transactions against phone-number-server sessions')
 
   for (let i = 0; i < allTxs.length; i++) {
-    logUpdate(`i ${i}`)
     const tx = allTxs[i]
 
     // Print progress at 10% intervals
