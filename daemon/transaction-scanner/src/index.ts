@@ -70,7 +70,6 @@ async function processIdServerTransactions() {
   logAndPersistLogUpdate('(id-server) processing transactions against id-server sessions')
 
   for (let i = 0; i < allTxs.length; i++) {
-    logUpdate(`i ${i}`)
     const tx = allTxs[i]
 
     // Print progress at 10% intervals
@@ -85,28 +84,33 @@ async function processIdServerTransactions() {
     }
 
     for (let session of allSessions) {
-      const digest = ethers.utils.keccak256("0x" + session._id);
+      try {
+        const digest = ethers.utils.keccak256("0x" + session._id);
 
-      if (tx.to_address !== ourAddress || tx.input !== digest) {
-        continue;
-      }
+        if (tx.to_address !== ourAddress || tx.input !== digest) {
+          continue;
+        }
 
-      // If the session is already associated with some other transaction, and if
-      // this transaction's data matches this session ID, then we know that this transaction
-      // was a retry and should be refunded.
-      if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
-        logAndPersistLogUpdate(`(id-server) REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${JSON.stringify(session)}`);
-        const resp = await idServerAdmin.refundUnusedTransaction(tx.hash, tx.chainId, tx.from_address)
-        logAndPersistLogUpdate('(id-server) refund response', resp.data)
+        // If the session is already associated with some other transaction, and if
+        // this transaction's data matches this session ID, then we know that this transaction
+        // was a retry and should be refunded.
+        if (session.txHash && (session.txHash.toLowerCase() !== tx.hash.toLowerCase())) {
+          logAndPersistLogUpdate(`(id-server) REFUNDING: Refunding transaction ${txHash} on chain ${chainId} for session ${JSON.stringify(session)}`);
+          const resp = await idServerAdmin.refundUnusedTransaction(tx.hash, tx.chainId, tx.from_address)
+          logAndPersistLogUpdate('(id-server) refund response', resp.data)
 
-        await setProcessedForIdServer(txHash);
-      }
+          await setProcessedForIdServer(txHash);
+        }
 
-      if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
-        logAndPersistLogUpdate(`(id-server) SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${JSON.stringify(session)}`);
-        await idServerAdmin.createIDVSession(session._id.toString(), txHash, chainId)
+        if (session.status === sessionStatusEnum.NEEDS_PAYMENT) {
+          logAndPersistLogUpdate(`(id-server) SET IN_PROGRESS: Using transaction ${txHash} on chain ${chainId} for session ${JSON.stringify(session)}`);
+          await idServerAdmin.createIDVSession(session._id.toString(), txHash, chainId)
 
-        await setProcessedForIdServer(txHash);
+          await setProcessedForIdServer(txHash);
+        }
+      } catch (err) {
+        const errMsg = (err as any)?.response?.data ?? (err as any)?.message
+        logAndPersistLogUpdate(`(id-server) encountered error for session ${JSON.stringify(session)}`, errMsg)
       }
     }
   }
@@ -129,7 +133,6 @@ async function processPhoneServerTransactions() {
   logAndPersistLogUpdate('(phone) processing transactions against phone-number-server sessions')
 
   for (let i = 0; i < allTxs.length; i++) {
-    logUpdate(`i ${i}`)
     const tx = allTxs[i]
 
     // Print progress at 10% intervals
@@ -182,7 +185,8 @@ async function processPhoneServerTransactions() {
           await setProcessedForPhoneServer(txHash);
         }
       } catch (err) {
-        logAndPersistLogUpdate(`(phone) encountered error for session ${JSON.stringify(session)}`, err)
+        const errMsg = (err as any)?.response?.data ?? (err as any)?.message
+        logAndPersistLogUpdate(`(phone) encountered error for session ${JSON.stringify(session)}`, errMsg)
       }
     }
   }
