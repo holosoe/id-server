@@ -574,6 +574,11 @@ async function setIdvProvider(req, res) {
     const _id = req.params._id;
     const idvProvider = req.params.idvProvider;
 
+    // check the idvProvider is either veriff or onfido
+    if (!(idvProvider === "onfido" || idvProvider === "veriff")) {
+      return res.status(400).json({ error: "IDV provider can only be either onfido or veriff" });
+    }
+
     let objectId = null;
 
     try {
