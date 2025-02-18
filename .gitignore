@@ -11,3 +11,5 @@ lobby3-id-server.json
 rds-combined-ca-bundle.pem
 # new certs
 global-bundle.pem
+
+FaceTecSDK-standard-server*

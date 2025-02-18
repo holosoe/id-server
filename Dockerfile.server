@@ -22,6 +22,10 @@ RUN npm ci --omit=dev
 
 COPY . .
 
-EXPOSE 3000
+# Use 3000 for production, but allow overriding for development
+ARG PORT=3000
+ENV PORT=$PORT
+
+EXPOSE $PORT
 
 CMD ["dumb-init", "node", "./src/server"]
