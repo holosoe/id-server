@@ -567,6 +567,11 @@ async function getCredentialsV2(req, res) {
     const check = await getOnfidoCheck(check_id);
     const validationResultCheck = validateCheck(check);
     if (validationResultCheck.error) {
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        validationResultCheck.error
+      );
       endpointLogger.error(
         validationResultCheck.log.data,
         validationResultCheck.log.msg
@@ -576,6 +581,11 @@ async function getCredentialsV2(req, res) {
 
     const reports = await getOnfidoReports(check.report_ids);
     if (!reports || reports.length == 0) {
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        "No onfido reports found"
+      );
       endpointLogger.error("No reports found");
       return res.status(400).json({ error: "No reports found" });
     }
