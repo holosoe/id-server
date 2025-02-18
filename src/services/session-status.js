@@ -282,6 +282,12 @@ async function getSessionStatusV2(req, res) {
       return res.status(404).json({ error: "Session not found" });
     }
 
+    // not required
+    // this is to provide direct status query
+    // when more than 1 idv sessions are done in 1 session
+    const provider = req.query.provider;
+    if(provider) session.idvProvider = provider;
+
     if (session.idvProvider === "veriff") {
       if (!session.sessionId) {
         return res.status(200).json({
