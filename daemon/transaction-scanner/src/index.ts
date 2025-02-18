@@ -57,9 +57,7 @@ async function processIdServerTransactions() {
   
   //get all sessions within last 24 hours
   const now = new Date();
-  // const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-  // TODO: Change this back to 24 hours
-  const twentyFourHoursAgo = new Date(now.getTime() - (10 * 24 * 60 * 60 * 1000)); // last 10 days
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
   const objectId = new ObjectId(Math.floor(twentyFourHoursAgo.getTime() / 1000).toString(16) + "0000000000000000");
   const allSessions = await Session.find({
     _id: {
