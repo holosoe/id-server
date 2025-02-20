@@ -9,54 +9,106 @@ import {
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
-import { getDateAsInt, sha256, govIdUUID, objectIdElevenMonthsAgo } from "../../utils/utils.js";
+import {
+  getDateAsInt,
+  sha256,
+  govIdUUID,
+  objectIdElevenMonthsAgo,
+} from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
-import { newDummyUserCreds, countryCodeToPrime } from "../../utils/constants.js";
+import {
+  newDummyUserCreds,
+  countryCodeToPrime,
+} from "../../utils/constants.js";
 import { sessionStatusEnum } from "../../constants/misc.js";
-import { getVeriffSessionDecision, deleteVeriffSession } from "../../utils/veriff.js";
+import {
+  getVeriffSessionDecision,
+  deleteVeriffSession,
+} from "../../utils/veriff.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /veriff/credentials] ",
   base: {
     ...pinoOptions.base,
     idvProvider: "veriff",
+    feature: "holonym",
+    subFeature: "gov-id",
   },
 });
+
+//TODO: Improve dd logs and error messages
 
 function validateSession(session, metaSession) {
   if (session.status !== "success") {
     return {
-      error: `Verification failed. Status is '${session.status}'. Expected 'success'.`,
+      error: `Verification failed. Status '${session.status}' indicates the verification was not successful.`,
       log: {
-        msg: "Verification failed. status !== 'success'",
+        msg: "Verification failed due to unsuccessful status",
         data: {
           status: session.status,
+          details:
+            "The verification session did not complete successfully. This could mean the session was abandoned, expired, or had technical issues.",
+          tags: [
+            "action:validateSession",
+            "error:unsuccessfulStatus",
+            "stage:sessionValidation",
+          ],
         },
       },
     };
   }
+
   if (session.verification?.code !== 9001) {
+    // Map verification codes to human-readable messages
+    const verificationMessages = {
+      9102: "The verification was declined. This could be due to: suspected document tampering, document/person mismatch, suspicious behavior, or known fraud patterns.",
+      9103: "Verification requires resubmission. Common reasons include: poor image quality, incomplete document visibility, or expired documents.",
+      9104: "The verification session has expired. Please start a new verification session.",
+      9121: "The verification was abandoned before completion.",
+    };
+
     return {
-      error: `Verification failed. Verification code is ${session.verification?.code}. Expected 9001.`,
+      error: `Verification failed: ${
+        verificationMessages[session.verification?.code] ||
+        "Unknown verification code"
+      }`,
       log: {
-        msg: "Verification failed. Verification code !== 9001",
+        msg: "Verification failed due to non-approval code",
         data: {
           code: session.verification?.code,
+          expectedCode: 9001,
+          details:
+            verificationMessages[session.verification?.code] ||
+            "Unknown verification reason",
+          tags: [
+            "action:validateSession",
+            "error:invalidVerificationCode",
+            "stage:verificationValidation",
+          ],
         },
       },
     };
   }
+
   if (session.verification.status !== "approved") {
     return {
-      error: `Verification failed. Verification status is ${session.verification.status}. Expected 'approved'.`,
+      error: `Verification status '${session.verification.status}' indicates the verification was not approved. This could be due to document issues, identity mismatch, or quality problems.`,
       log: {
-        msg: "Verification failed. Verification status !== 'approved'",
+        msg: "Verification failed due to non-approved status",
         data: {
           status: session.verification.status,
+          details:
+            "The verification was completed but did not receive approval. This typically indicates issues with document validity or identity verification.",
+          tags: [
+            "action:validateSession",
+            "error:notApproved",
+            "stage:verificationValidation",
+          ],
         },
       },
     };
   }
+
   const necessaryPersonFields = ["firstName", "lastName", "dateOfBirth"];
   const person = session.verification.person;
   for (const field of necessaryPersonFields) {
@@ -102,7 +154,8 @@ function validateSession(session, metaSession) {
       },
     };
   }
-  const countryCode = countryCodeToPrime[session?.verification?.document?.country];
+  const countryCode =
+    countryCodeToPrime[session?.verification?.document?.country];
   if (!countryCode) {
     return {
       error: `Unsupported country: ${session?.verification?.document?.country}.`,
@@ -139,7 +192,9 @@ function extractCreds(session) {
   const birthdate = person.dateOfBirth ? person.dateOfBirth : "";
   const birthdateNum = birthdate ? getDateAsInt(birthdate) : 0;
   const firstNameStr = person.firstName ? person.firstName : "";
-  const firstNameBuffer = firstNameStr ? Buffer.from(firstNameStr) : Buffer.alloc(1);
+  const firstNameBuffer = firstNameStr
+    ? Buffer.from(firstNameStr)
+    : Buffer.alloc(1);
   // Veriff doesn't support middle names, but we keep it for backwards compatibility
   // const middleNameStr = person.middleName ? person.middleName : "";
   // const middleNameBuffer = middleNameStr
@@ -148,9 +203,11 @@ function extractCreds(session) {
   const middleNameStr = "";
   const middleNameBuffer = Buffer.alloc(1);
   const lastNameStr = person.lastName ? person.lastName : "";
-  const lastNameBuffer = lastNameStr ? Buffer.from(lastNameStr) : Buffer.alloc(1);
-  const nameArgs = [firstNameBuffer, middleNameBuffer, lastNameBuffer].map((x) =>
-    ethers.BigNumber.from(x).toString()
+  const lastNameBuffer = lastNameStr
+    ? Buffer.from(lastNameStr)
+    : Buffer.alloc(1);
+  const nameArgs = [firstNameBuffer, middleNameBuffer, lastNameBuffer].map(
+    (x) => ethers.BigNumber.from(x).toString()
   );
   const nameHash = ethers.BigNumber.from(poseidon(nameArgs)).toString();
   // BIG NOTE: We assume all address fields are empty since Veriff only supports
@@ -178,8 +235,8 @@ function extractCreds(session) {
   );
   const streetHash = ethers.BigNumber.from(poseidon(addrArgs)).toString();
   const zipCode = Number(address?.postcode ? address.postcode : 0);
-  const addressArgs = [cityBuffer, subdivisionBuffer, zipCode, streetHash].map((x) =>
-    ethers.BigNumber.from(x)
+  const addressArgs = [cityBuffer, subdivisionBuffer, zipCode, streetHash].map(
+    (x) => ethers.BigNumber.from(x)
   );
   const addressHash = ethers.BigNumber.from(poseidon(addressArgs)).toString();
   // BIG NOTE: We are not including expiration date in issued credentials, but
@@ -380,10 +437,19 @@ async function getCredentials(req, res) {
 
     if (!session) {
       endpointLogger.error(
-        { sessionId: req.query.sessionId },
+        {
+          sessionId: req.query.sessionId,
+          tags: [
+            "action:getVeriffSessionDecision",
+            "error:noSession",
+            "stage:getVeriffSessionDecision",
+          ],
+        },
         "Failed to retrieve Verrif session."
       );
-      return res.status(400).json({ error: "Failed to retrieve Verrif session." });
+      return res
+        .status(400)
+        .json({ error: "Failed to retrieve Verrif session." });
     }
 
     const validationResult = validateSession(session, metaSession);
@@ -394,7 +460,16 @@ async function getCredentials(req, res) {
         sessionStatusEnum.VERIFICATION_FAILED,
         validationResult.error
       );
-      return res.status(400).json({ error: validationResult.error });
+      return res.status(400).json({
+        error: validationResult.error,
+        details: {
+          status: session.status,
+          verification: {
+            code: session.verification?.code,
+            status: session.verification?.status,
+          },
+        },
+      });
     }
 
     // Get UUID
@@ -409,24 +484,36 @@ async function getCredentials(req, res) {
       session.verification.person.firstName,
       session.verification.person.lastName,
       session.verification.person.dateOfBirth
-    )
+    );
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ 
-      $or: [
-        { "govId.uuid": uuidOld },
-        { "govId.uuidV2": uuidNew } 
-      ],
+    const user = await UserVerifications.findOne({
+      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
       // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() }
+      _id: { $gt: objectIdElevenMonthsAgo() },
     }).exec();
     if (user) {
-      await saveCollisionMetadata(uuidOld, uuidNew, req.query.sessionId, session);
+      await saveCollisionMetadata(
+        uuidOld,
+        uuidNew,
+        req.query.sessionId,
+        session
+      );
 
-      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+      endpointLogger.error(
+        {
+          uuidV2: uuidNew,
+          tags: [
+            "action:RegisterUser",
+            "error:UserAlreadyRegistered",
+            "stage:RegisterUser",
+          ],
+        },
+        "User has already registered."
+      );
       await updateSessionStatus(
         req.query.sessionId,
         sessionStatusEnum.VERIFICATION_FAILED,
@@ -524,10 +611,20 @@ async function getCredentialsV2(req, res) {
 
     if (!session) {
       endpointLogger.error(
-        { sessionId: req.query.sessionId },
+        {
+          sessionId: req.query.sessionI,
+          tags: [
+            "action:getVeriffSessionDecision",
+            "error:noSession",
+            "stage:getVeriffSessionDecision",
+          ],
+          d,
+        },
         "Failed to retrieve Verrif session."
       );
-      return res.status(400).json({ error: "Failed to retrieve Verrif session." });
+      return res
+        .status(400)
+        .json({ error: "Failed to retrieve Verrif session." });
     }
 
     const validationResult = validateSession(session, metaSession);
@@ -538,7 +635,16 @@ async function getCredentialsV2(req, res) {
         sessionStatusEnum.VERIFICATION_FAILED,
         validationResult.error
       );
-      return res.status(400).json({ error: validationResult.error });
+      return res.status(400).json({
+        error: validationResult.error,
+        details: {
+          status: session.status,
+          verification: {
+            code: session.verification?.code,
+            status: session.verification?.status,
+          },
+        },
+      });
     }
 
     // Get UUID
@@ -553,24 +659,36 @@ async function getCredentialsV2(req, res) {
       session.verification.person.firstName,
       session.verification.person.lastName,
       session.verification.person.dateOfBirth
-    )
+    );
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ 
-      $or: [
-        { "govId.uuid": uuidOld },
-        { "govId.uuidV2": uuidNew } 
-      ],
+    const user = await UserVerifications.findOne({
+      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
       // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() }
+      _id: { $gt: objectIdElevenMonthsAgo() },
     }).exec();
     if (user) {
-      await saveCollisionMetadata(uuidOld, uuidNew, req.query.sessionId, session);
+      await saveCollisionMetadata(
+        uuidOld,
+        uuidNew,
+        req.query.sessionId,
+        session
+      );
 
-      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+      endpointLogger.error(
+        {
+          uuidV2: uuidNew,
+          tags: [
+            "action:RegisterUser",
+            "error:UserAlreadyRegistered",
+            "stage:RegisterUser",
+          ],
+        },
+        "User has already registered."
+      );
       await updateSessionStatus(
         req.query.sessionId,
         sessionStatusEnum.VERIFICATION_FAILED,
