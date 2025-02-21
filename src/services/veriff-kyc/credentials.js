@@ -602,6 +602,7 @@ async function getCredentialsV2(req, res) {
           error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
         });
       }
+
       return res.status(400).json({
         error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
       });
@@ -610,21 +611,53 @@ async function getCredentialsV2(req, res) {
     const session = await getVeriffSessionDecision(req.query.sessionId);
 
     if (!session) {
+      // Check if this was a temporary error (from the getVeriffSessionDecision function)
+      if (session === null) {
+        // null specifically indicates API/network error
+        const errorMessage =
+          "Unable to check verification status at this moment. Please try again in a few minutes.";
+
+        endpointLogger.error(
+          {
+            sessionId: req.query.sessionId,
+            tags: [
+              "action:getVeriffSessionDecision",
+              "error:temporaryFailure",
+              "stage:getVeriffSessionDecision",
+            ],
+          },
+          "Temporary error retrieving Veriff session."
+        );
+
+        return res.status(503).json({
+          error: errorMessage,
+          retryable: true,
+        });
+      }
+
+      // If session is undefined, it means the session doesn't exist or was deleted
+      const errorMessage =
+        "Verification session not found. Please start a new verification.";
+
       endpointLogger.error(
         {
-          sessionId: req.query.sessionI,
+          sessionId: req.query.sessionId,
           tags: [
             "action:getVeriffSessionDecision",
-            "error:noSession",
+            "error:sessionNotFound",
             "stage:getVeriffSessionDecision",
           ],
-          d,
         },
-        "Failed to retrieve Verrif session."
+        "Veriff session not found."
       );
-      return res
-        .status(400)
-        .json({ error: "Failed to retrieve Verrif session." });
+
+      await updateSessionStatus(
+        req.query.sessionId,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        errorMessage
+      );
+
+      return res.status(400).json({ error: errorMessage });
     }
 
     const validationResult = validateSession(session, metaSession);
@@ -635,6 +668,7 @@ async function getCredentialsV2(req, res) {
         sessionStatusEnum.VERIFICATION_FAILED,
         validationResult.error
       );
+
       return res.status(400).json({
         error: validationResult.error,
         details: {
