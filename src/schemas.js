@@ -306,6 +306,68 @@ const userProofMetadataSchema = new Schema({
   },
 });
 
+// A collection to associate an issuance nullifier to
+// an IDV session ID so that the user can lookup their
+// credentials using their nullifier.
+const NullifierAndCredsSchema = new Schema({
+  holoUserId: String,
+  issuanceNullifier: String,
+  idvSessionIds: {
+    type: {
+      veriff: {
+        type: {
+          sessionId: String,
+        },
+        required: false,
+      },
+      onfido: {
+        type: {
+          check_id: String,
+        },
+        required: false,
+      },
+    },
+    required: false
+  },
+  uuidV2: {
+    type: String,
+    required: false,
+  }
+});
+
+// To allow the user to persist a nullifier so that they can request their
+// signed credentials in more than one browser session.
+const EncryptedNullifiersSchema = new Schema({
+  holoUserId: String,
+  govId: {
+    type: {
+      encryptedNullifier: {
+        type: {
+          ciphertext: String,
+          iv: String,
+        },
+      },
+      // The date the nullifier was created. When the user's credentials
+      // expire and the user needs to reverify, they will need to replace
+      // their old encryptedNullifier with a new one and update the createdAt value.
+      createdAt: Date,
+    },
+    required: false,
+  },
+  phone: {
+    type: {
+      encryptedNullifier: {
+        type: {
+          ciphertext: String,
+          iv: String,
+        },
+      },
+      createdAt: Date,
+    },
+    required: false,
+  }
+});
+
 const DailyVerificationCountSchema = new Schema({
   date: {
     type: String, // use: new Date().toISOString().slice(0, 10)
@@ -426,6 +488,8 @@ export {
   userCredentialsSchema,
   userCredentialsV2Schema,
   userProofMetadataSchema,
+  EncryptedNullifiersSchema,
+  NullifierAndCredsSchema,
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,

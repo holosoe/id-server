@@ -113,6 +113,11 @@ export function objectIdElevenMonthsAgo() {
   return new ObjectId(Math.floor(elevenMonthsAgo.getTime() / 1000).toString(16) + "0000000000000000");
 }
 
+export function objectIdFiveDaysAgo() {
+  const fiveDaysAgo = new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000));
+  return new ObjectId(Math.floor(fiveDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+}
+
 /**
  * 
  * @param {() => Promise<T>} fn 
