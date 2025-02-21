@@ -577,10 +577,208 @@ async function getCredentials(req, res) {
  * Allows user to retrieve their signed verification info
  */
 async function getCredentialsV2(req, res) {
-  const issuanceNullifier = req.params.nullifier;
+  try {
+    const issuanceNullifier = req.params.nullifier;
 
-  if (process.env.ENVIRONMENT == "dev") {
-    const creds = newDummyUserCreds;
+    if (process.env.ENVIRONMENT == "dev") {
+      const creds = newDummyUserCreds;
+      const response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          creds.rawCreds.countryCode.toString(),
+          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+        )
+      );
+      response.metadata = newDummyUserCreds;
+      return res.status(200).json(response);
+    }
+
+    const check_id = req.query.check_id;
+    if (!check_id) {
+      throw {
+        status: 400,
+        error: "No check_id specified",
+        details: null,
+      };
+    }
+
+    const metaSession = await getSession(check_id);
+    if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        endpointLogger.error(
+          {
+            check_id,
+            session_status: metaSession.status,
+            failure_reason: metaSession.verificationFailureReason,
+            tags: ["action:validateSession", "error:verificationFailed"],
+          },
+          "Session verification previously failed"
+        );
+
+        throw {
+          status: 400,
+          error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
+          details: null,
+        };
+      }
+
+      throw {
+        status: 400,
+        error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+        details: null,
+      };
+    }
+
+    const check = await getOnfidoCheck(check_id);
+    const validationResultCheck = validateCheck(check);
+    if (!validationResultCheck.success && !validationResultCheck.hasReports) {
+      endpointLogger.error(
+        validationResultCheck.log.data,
+        validationResultCheck.log.msg
+      );
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        validationResultCheck.error
+      );
+      throw {
+        status: 400,
+        error: validationResultCheck.error,
+        details: validationResultCheck.log.data,
+      };
+    }
+
+    const reports = await getOnfidoReports(check.report_ids);
+    if (!validationResultCheck.success && (!reports || reports.length == 0)) {
+      endpointLogger.error(
+        {
+          check_id,
+          check_status: check.status ?? "unknown",
+          report_ids: check.report_ids,
+          tags: ["action:getReports", "error:noReportsFound"],
+        },
+        "No reports found"
+      );
+
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        "No reports found"
+      );
+      throw {
+        status: 400,
+        error: "No reports found",
+        details: null,
+      };
+    }
+
+    const reportsValidation = validateReports(reports, metaSession);
+    if (validationResultCheck.error || reportsValidation.error) {
+      const userErrorMessage = reportsValidation.reasons?.length
+        ? `Verification failed: ${reportsValidation.reasons
+            .map((reason) => {
+              if (reason.includes("breakdown")) {
+                const breakdownType = reason.match(/result of (\w+) in/)?.[1];
+                return breakdownType
+                  ? `${breakdownType.replace(/_/g, " ")} verification failed`
+                  : "Document verification issue detected";
+              }
+              if (reason.includes("face")) {
+                return "Face verification failed - please ensure your face is clearly visible";
+              }
+              if (reason.includes("quality")) {
+                return "Image quality issue - please ensure photos are clear and well-lit";
+              }
+              if (reason.includes("supported")) {
+                return "Document type not supported - please use a valid ID document";
+              }
+              return "Verification failed - please try again";
+            })
+            .join(". ")}`
+        : validationResultCheck.error || "Verification failed";
+
+      endpointLogger.error(
+        {
+          check_status: check.status ?? "unknown",
+          check_result: check.result ?? "unknown",
+          detailed_reasons: reportsValidation.reasons,
+          tags: ["action:validateVerification", "error:verificationFailed"],
+        },
+        "Verification failed"
+      );
+
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        userErrorMessage
+      );
+
+      throw {
+        status: 400,
+        error: userErrorMessage,
+        details: {
+          check_status: check.status ?? "unknown",
+          reasons: reportsValidation.reasons,
+        },
+      };
+    }
+
+    const documentReport = reports.find((report) => report.name == "document");
+    // Get UUID
+    const uuidConstituents =
+      (documentReport.properties.first_name || "") +
+      (documentReport.properties.last_name || "") +
+      // Getting address info is in beta for Onfido, so we don't include it yet.
+      // See: https://documentation.onfido.com/#document-with-address-information-beta
+      // (documentReport.properties.addresses?.[0]?.postcode || "") +
+      (documentReport.properties.date_of_birth || "");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      documentReport.properties.first_name,
+      documentReport.properties.last_name,
+      documentReport.properties.date_of_birth
+    );
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({
+      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
+      // Filter out documents older than one year
+      _id: { $gt: objectIdElevenMonthsAgo() },
+    }).exec();
+    if (user) {
+      await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
+
+      endpointLogger.error(
+        {
+          uuidV2: uuidNew,
+          tags: [
+            "action:registeredUserCheck",
+            "error:userAlreadyRegistered",
+            "stage:registration",
+          ],
+        },
+        "User has already registered"
+      );
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        `User has already registered. User ID: ${user._id}`
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. User ID: ${user._id}` });
+    }
+
+    // Store UUID for Sybil resistance
+    const dbResponse = await saveUserToDb(uuidNew, check_id);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(documentReport);
 
     const response = JSON.parse(
       issuev2(
@@ -590,236 +788,38 @@ async function getCredentialsV2(req, res) {
         creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
       )
     );
-    response.metadata = newDummyUserCreds;
+    response.metadata = creds;
+
+    await deleteOnfidoApplicant(check.applicant_id);
+
+    endpointLogger.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");
+
+    await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
 
     return res.status(200).json(response);
-  }
-
-  const check_id = req.query.check_id;
-  if (!check_id) {
-    return res.status(400).json({ error: "No check_id specified" });
-  }
-
-  const metaSession = await getSession(check_id);
-  if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
-    if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
-      endpointLogger.error(
-        {
-          check_id,
-          session_status: metaSession.status,
-          failure_reason: metaSession.verificationFailureReason,
-          tags: [
-            "action:validateSession",
-            "error:verificationFailed",
-            "stage:sessionValidation",
-          ],
-        },
-        "Session verification previously failed"
-      );
-
-      return res.status(400).json({
-        error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
-      });
+  } catch (err) {
+    // If this is our custom error, use its properties
+    if (err.status && err.error) {
+      return res.status(err.status).json(err);
     }
 
+    // Otherwise, log the unexpected error
     endpointLogger.error(
       {
-        check_id,
-        session_status: metaSession.status,
-        expected_status: sessionStatusEnum.IN_PROGRESS,
+        error: err,
         tags: [
-          "action:validateSession",
-          "error:invalidSessionStatus",
-          "stage:sessionValidation",
+          "action:getCredentialsV2",
+          "error:unexpectedError",
+          "stage:unknown",
         ],
       },
-      "Invalid session status"
+      "Unexpected error occurred"
     );
 
-    return res.status(400).json({
-      error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+    return res.status(500).json({
+      error: "An unexpected error occurred. Please try again later.",
     });
   }
-
-  const check = await getOnfidoCheck(check_id);
-  const validationResultCheck = validateCheck(check);
-
-  if (!validationResultCheck.success && !validationResultCheck.hasReports) {
-    endpointLogger.error({
-      check_id,
-      check_status: check.status,
-      tags: ["action:validateResultCheck", "stage:validateCheck"],
-    });
-
-    await updateSessionStatus(
-      check_id,
-      sessionStatusEnum.VERIFICATION_FAILED,
-      validationResultCheck.error
-    );
-
-    return res.status(400).json({ error: validationResultCheck.error });
-  }
-
-  const reports = await getOnfidoReports(check.report_ids);
-  if (!validationResultCheck.success && (!reports || reports.length == 0)) {
-    endpointLogger.error(
-      {
-        check_id,
-        check_status,
-        report_ids: check.report_ids,
-        tags: ["action:getReports", "error:noReportsFound"],
-      },
-      "No reports found"
-    );
-
-    await updateSessionStatus(
-      check_id,
-      sessionStatusEnum.VERIFICATION_FAILED,
-      "No reports found"
-    );
-
-    return res.status(400).json({ error: "No reports found" });
-  }
-
-  const reportsValidation = validateReports(reports, metaSession);
-
-  if (validationResultCheck.error || reportsValidation.error) {
-    const errorContext = {
-      check_status,
-      check_id,
-      check_result,
-      failureReasons: reportsValidation,
-      tags: [
-        "action:validateVerification",
-        "error:verificationFailed",
-        "stage:verification",
-      ],
-    };
-
-    // Create a user-friendly error message from the validation reasons
-    const userErrorMessage = reportsValidation.reasons?.length
-      ? `Verification failed: ${reportsValidation.reasons
-          .map((reason) => {
-            // Convert technical reason to user-friendly message
-            if (reason.includes("breakdown")) {
-              const breakdownType = reason.match(/result of (\w+) in/)?.[1];
-              return breakdownType
-                ? `${breakdownType.replace(/_/g, " ")} verification failed`
-                : "Document verification issue detected";
-            }
-            if (reason.includes("face")) {
-              return "Face verification failed - please ensure your face is clearly visible";
-            }
-            if (reason.includes("quality")) {
-              return "Image quality issue - please ensure photos are clear and well-lit";
-            }
-            if (reason.includes("supported")) {
-              return "Document type not supported - please use a valid ID document";
-            }
-            return "Verification failed - please try again";
-          })
-          .join(". ")}`
-      : validationResultCheck.error || "Verification failed";
-
-    // Log the detailed technical error
-    endpointLogger.error(
-      {
-        ...errorContext,
-        detailed_reasons: reportsValidation.reasons,
-      },
-      "Verification failed"
-    );
-
-    await updateSessionStatus(
-      check_id,
-      sessionStatusEnum.VERIFICATION_FAILED,
-      reportsValidation.reasons.join("; ")
-    );
-
-    return res.status(400).json({
-      error: userErrorMessage,
-      details: {
-        check_id,
-        check_status,
-        check_result,
-        reasons: reportsValidation.reasons,
-      },
-    });
-  }
-
-  const documentReport = reports.find((report) => report.name == "document");
-  // Get UUID
-  const uuidConstituents =
-    (documentReport.properties.first_name || "") +
-    (documentReport.properties.last_name || "") +
-    // Getting address info is in beta for Onfido, so we don't include it yet.
-    // See: https://documentation.onfido.com/#document-with-address-information-beta
-    // (documentReport.properties.addresses?.[0]?.postcode || "") +
-    (documentReport.properties.date_of_birth || "");
-  const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-  const uuidNew = govIdUUID(
-    documentReport.properties.first_name,
-    documentReport.properties.last_name,
-    documentReport.properties.date_of_birth
-  );
-
-  // We started using a new UUID generation method on May 24, 2024, but we still
-  // want to check the database for the old UUIDs too.
-
-  // Assert user hasn't registered yet
-  const user = await UserVerifications.findOne({
-    $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
-    // Filter out documents older than one year
-    _id: { $gt: objectIdElevenMonthsAgo() },
-  }).exec();
-  if (user) {
-    await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
-
-    endpointLogger.error(
-      {
-        uuidV2: uuidNew,
-        tags: [
-          "action:registeredUserCheck",
-          "error:userAlreadyRegistered",
-          "stage:registration",
-        ],
-      },
-      "User has already registered"
-    );
-    await updateSessionStatus(
-      check_id,
-      sessionStatusEnum.VERIFICATION_FAILED,
-      `User has already registered. User ID: ${user._id}`
-    );
-    return res
-      .status(400)
-      .json({ error: `User has already registered. User ID: ${user._id}` });
-  }
-
-  // Store UUID for Sybil resistance
-  const dbResponse = await saveUserToDb(uuidNew, check_id);
-  if (dbResponse.error) return res.status(400).json(dbResponse);
-
-  const creds = extractCreds(documentReport);
-
-  const response = JSON.parse(
-    issuev2(
-      process.env.HOLONYM_ISSUER_PRIVKEY,
-      issuanceNullifier,
-      creds.rawCreds.countryCode.toString(),
-      creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-    )
-  );
-  response.metadata = creds;
-
-  await deleteOnfidoApplicant(check.applicant_id);
-
-  endpointLogger.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");
-
-  await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
-
-  return res.status(200).json(response);
 }
 
 export { getCredentials, getCredentialsV2 };
