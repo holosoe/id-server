@@ -1,10 +1,12 @@
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
+import { ObjectId } from "mongodb";
 import {
   Session,
   UserVerifications,
   VerificationCollisionMetadata,
+  NullifierAndCreds,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
@@ -13,6 +15,7 @@ import {
   sha256,
   govIdUUID,
   objectIdElevenMonthsAgo,
+  objectIdFiveDaysAgo,
 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import {
@@ -822,4 +825,311 @@ async function getCredentialsV2(req, res) {
   }
 }
 
-export { getCredentials, getCredentialsV2 };
+/**
+ * ENDPOINT
+ *
+ * Allows user to retrieve their signed verification info.
+ * 
+ * Compared to the v1 and v2 endpoints, this one allows the user to get their
+ * credentials up to 5 days after initial issuance, if they provide the
+ * same nullifier.
+ */
+async function getCredentialsV3(req, res) {
+  try {
+    // Caller must specify a session ID and a nullifier. We first lookup the user's creds
+    // using the nullifier. If no hit, then we lookup the credentials using the session ID.
+    const _id = req.params._id;
+    const issuanceNullifier = req.params.nullifier;
+    
+    try {
+      const _number = BigInt(issuanceNullifier)
+    } catch (err) {
+      return res.status(400).json({
+        error: `Invalid issuance nullifier (${issuanceNullifier}). It must be a number`
+      });
+    }
+
+    // if (process.env.ENVIRONMENT == "dev") {
+    //   const creds = newDummyUserCreds;
+
+    //   const response = JSON.parse(
+    //     issuev2(
+    //       process.env.HOLONYM_ISSUER_PRIVKEY,
+    //       issuanceNullifier,
+    //       creds.rawCreds.countryCode.toString(),
+    //       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+    //     )
+    //   );
+    //   response.metadata = newDummyUserCreds;
+
+    //   return res.status(200).json(response);
+    // }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    // First, check if the user is looking up their credentials using their nullifier
+    const nullifierAndCreds = await NullifierAndCreds.findOne({
+      issuanceNullifier,
+      // Ignore records created more than 5 days ago
+      _id: { $gt: objectIdFiveDaysAgo() }
+    }).exec();
+    const checkIdFromNullifier = nullifierAndCreds?.idvSessionIds?.onfido?.check_id
+    if (checkIdFromNullifier) {
+      const check = await getOnfidoCheck(checkIdFromNullifier);
+      
+      if (!check) {
+        endpointLogger.error(
+          { check_id: checkIdFromNullifier },
+          "Failed to get onfido check."
+        );
+        return res.status(400).json({
+          error: "Unexpected error: Failed to retrieve Onfido check while executing lookup from nullifier branch."
+        });
+      }
+
+      const reports = await getOnfidoReports(check.report_ids);
+
+      if (!reports || reports.length == 0) {
+        endpointLogger.error(
+          { check_id: checkIdFromNullifier },
+          "Failed to get onfido reports"
+        );
+        return res.status(400).json({
+          error: "Unexpected error: Failed to retrieve Onfido reports while executing lookup from nullifier branch."
+        });
+      }
+
+      // Note that validation of the Onfido checks and reports is unnecessary here. The
+      // Onfido check ID should not have been stored if the corresponding checks and
+      // reports didn't pass validation.
+
+      const documentReport = reports.find((report) => report.name == "document");
+
+      if (!documentReport) {
+        endpointLogger.error(
+          { reports },
+          "No documentReport"
+        );
+        return res.status(400).json({
+          error: "Unexpected error: Failed to get Onfido document report while executing lookup from nullifier branch."
+        });
+      }
+
+      // Get UUID
+      const uuidConstituents =
+        (documentReport.properties.first_name || "") +
+        (documentReport.properties.last_name || "") +
+        // Getting address info is in beta for Onfido, so we don't include it yet.
+        // See: https://documentation.onfido.com/#document-with-address-information-beta
+        // (documentReport.properties.addresses?.[0]?.postcode || "") +
+        (documentReport.properties.date_of_birth || "");
+      const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+  
+      const uuidNew = govIdUUID(
+        documentReport.properties.first_name,
+        documentReport.properties.last_name,
+        documentReport.properties.date_of_birth
+      )
+
+      // Assert user hasn't registered yet
+      const user = await UserVerifications.findOne({ 
+        $or: [
+          { "govId.uuid": uuidOld },
+          { "govId.uuidV2": uuidNew } 
+        ],
+        // Filter out documents older than 11 months and younger than 5 days
+        _id: {
+          $gt: objectIdElevenMonthsAgo(),
+          $lt: objectIdFiveDaysAgo()
+        }
+      }).exec();
+      if (user) {
+        await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
+
+        endpointLogger.error({ uuidV2: uuidNew }, "User has already registered");
+        await updateSessionStatus(
+          checkIdFromNullifier,
+          sessionStatusEnum.VERIFICATION_FAILED,
+          `User has already registered. User ID: ${user._id}`
+        );
+        return res
+          .status(400)
+          .json({ error: `User has already registered. User ID: ${user._id}` });
+      }
+
+      const creds = extractCreds(documentReport);
+
+      const response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          creds.rawCreds.countryCode.toString(),
+          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+        )
+      );
+      response.metadata = creds;
+
+      endpointLogger.info({ uuidV2: uuidNew, checkIdFromNullifier }, "Issuing credentials");
+
+      await updateSessionStatus(checkIdFromNullifier, sessionStatusEnum.ISSUED);
+
+      return res.status(200).json(response);
+    }
+
+    const check_id = session.check_id;
+    if (!check_id) {
+      return res.status(400).json({ error: "Unexpected: No onfido check_id in session" });
+    }
+
+    // If the session isn't in progress, we do not issue credentials. If the session is ISSUED,
+    // then the lookup via nullifier should have worked above.
+    if (session.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
+        });
+      }
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
+    }
+
+    const check = await getOnfidoCheck(check_id);
+    const validationResultCheck = validateCheck(check);
+    if (validationResultCheck.error) {
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        validationResultCheck.error
+      );
+      endpointLogger.error(
+        validationResultCheck.log.data,
+        validationResultCheck.log.msg
+      );
+      return res.status(400).json({ error: validationResultCheck.error });
+    }
+
+    const reports = await getOnfidoReports(check.report_ids);
+    if (!reports || reports.length == 0) {
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        "No onfido reports found"
+      );
+      endpointLogger.error("No reports found");
+      return res.status(400).json({ error: "No reports found" });
+    }
+    const validationResult = validateReports(reports, session);
+    if (validationResult.error) {
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      const failureReason = validationResult.reasons
+        ? validationResult.reasons.join(";")
+        : validationResult.error;
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        failureReason
+      );
+      return res
+        .status(400)
+        .json({ error: validationResult.error, reasons: validationResult.reasons });
+    }
+
+    const documentReport = reports.find((report) => report.name == "document");
+    // Get UUID
+    const uuidConstituents =
+      (documentReport.properties.first_name || "") +
+      (documentReport.properties.last_name || "") +
+      // Getting address info is in beta for Onfido, so we don't include it yet.
+      // See: https://documentation.onfido.com/#document-with-address-information-beta
+      // (documentReport.properties.addresses?.[0]?.postcode || "") +
+      (documentReport.properties.date_of_birth || "");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      documentReport.properties.first_name,
+      documentReport.properties.last_name,
+      documentReport.properties.date_of_birth
+    )
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({ 
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ],
+      // Filter out documents older than one year
+      _id: { $gt: objectIdElevenMonthsAgo() }
+    }).exec();
+    if (user) {
+      await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
+
+      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered");
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        `User has already registered. User ID: ${user._id}`
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. User ID: ${user._id}` });
+    }
+
+    // Store UUID for Sybil resistance
+    const dbResponse = await saveUserToDb(uuidNew, check_id);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(documentReport);
+
+    const response = JSON.parse(
+      issuev2(
+        process.env.HOLONYM_ISSUER_PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      )
+    );
+    response.metadata = creds;
+
+    endpointLogger.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");
+
+    // It's important that an Onfido check ID gets associated with a nullifier ONLY
+    // if the Onfido check results in successful issuance. Otherwise, a user might
+    // fail verification with one session, pass with another, and when they query this
+    // endpoint, they might not be able to get creds because their initial session failed.
+    const newNullifierAndCreds = new NullifierAndCreds({
+      holoUserId: session.sigDigest,
+      issuanceNullifier,
+      uuidV2: uuidNew,
+      idvSessionIds: {
+        onfido: {
+          check_id,
+        },
+      },
+    });
+    await newNullifierAndCreds.save();
+
+    await updateSessionStatus(check_id, sessionStatusEnum.ISSUED);
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
+  }
+}
+
+export { getCredentials, getCredentialsV2, getCredentialsV3 };

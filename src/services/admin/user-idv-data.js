@@ -68,10 +68,10 @@ async function deleteUserData(req, res) {
   }
 
   try {
-    // 1. Delete sessions that we know have failed verification. \\
+    // 1. Delete sessions that we know have failed or succeeded verification. \\
     // Get all sessions that:
     // - are older than 10 days AND
-    // - have status of VERIFICATION_FAILED AND
+    // - have status of (VERIFICATION_FAILED or ISSUED) AND
     // - have not already been deleted from IDV provider databases
     const tenDaysAgo = subDays(new Date(), 10);
     const sessions = await Session.find({
@@ -81,7 +81,14 @@ async function deleteUserData(req, res) {
             $lt: dateToObjectId(tenDaysAgo),
           },
         },
-        { status: sessionStatusEnum.VERIFICATION_FAILED },
+        {
+          status: {
+            $in: [
+              sessionStatusEnum.VERIFICATION_FAILED,
+              sessionStatusEnum.ISSUED, 
+            ]
+          }
+        },
         { deletedFromIDVProvider: { $eq: false } },
       ],
     }).exec();

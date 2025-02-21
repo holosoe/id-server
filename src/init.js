@@ -15,6 +15,8 @@ import {
   userCredentialsSchema,
   userCredentialsV2Schema,
   userProofMetadataSchema,
+  EncryptedNullifiersSchema,
+  NullifierAndCredsSchema,
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,
@@ -195,6 +197,16 @@ async function initializeMongoDb() {
     userProofMetadataSchema
   );
 
+  const EncryptedNullifiers = mongoose.model(
+    "EncryptedNullifiers",
+    EncryptedNullifiersSchema
+  )
+
+  const NullifierAndCreds = mongoose.model(
+    "NullifierAndCreds",
+    NullifierAndCredsSchema
+  );
+
   const DailyVerificationCount = mongoose.model(
     "DailyVerificationCount",
     DailyVerificationCountSchema
@@ -231,6 +243,8 @@ async function initializeMongoDb() {
     UserCredentials,
     UserCredentialsV2,
     UserProofMetadata,
+    EncryptedNullifiers,
+    NullifierAndCreds,
     DailyVerificationCount,
     DailyVerificationDeletions,
     VerificationCollisionMetadata,
@@ -249,6 +263,8 @@ let UserVerifications,
   UserCredentials,
   UserCredentialsV2,
   UserProofMetadata,
+  EncryptedNullifiers,
+  NullifierAndCreds,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
@@ -265,6 +281,8 @@ initializeMongoDb().then((result) => {
     UserCredentials = result.UserCredentials;
     UserCredentialsV2 = result.UserCredentialsV2;
     UserProofMetadata = result.UserProofMetadata;
+    EncryptedNullifiers = result.EncryptedNullifiers;
+    NullifierAndCreds = result.NullifierAndCreds;
     DailyVerificationCount = result.DailyVerificationCount;
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
@@ -291,6 +309,8 @@ export {
   UserCredentials,
   UserCredentialsV2,
   UserProofMetadata,
+  EncryptedNullifiers,
+  NullifierAndCreds,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,

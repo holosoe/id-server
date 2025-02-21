@@ -2,10 +2,12 @@ import { strict as assert } from "node:assert";
 import ethersPkg from "ethers";
 const { ethers } = ethersPkg;
 import { poseidon } from "circomlibjs-old";
+import { ObjectId } from "mongodb";
 import {
   Session,
   UserVerifications,
   VerificationCollisionMetadata,
+  NullifierAndCreds,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
@@ -14,6 +16,7 @@ import {
   sha256,
   govIdUUID,
   objectIdElevenMonthsAgo,
+  objectIdFiveDaysAgo
 } from "../../utils/utils.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import {
@@ -813,4 +816,269 @@ async function getCredentialsV2(req, res) {
   }
 }
 
-export { getCredentials, getCredentialsV2 };
+
+/**
+ * ENDPOINT
+ *
+ * Allows user to retrieve their signed verification info.
+ *
+ * This endpoint is for the V3 Holonym architecture. (The version numbers for
+ * the endpoints do not necessarily correspond to the version numbers for the
+ * protocol as a whole.)
+ * 
+ * Compared to the v1 and v2 endpoints, this one allows the user to get their
+ * credentials up to 5 days after initial issuance, if they provide the
+ * same nullifier.
+ */
+async function getCredentialsV3(req, res) {
+  try {
+    // Caller must specify a session ID and a nullifier. We first lookup the user's creds
+    // using the nullifier. If no hit, then we lookup the credentials using the session ID.
+    const _id = req.params._id;
+    const issuanceNullifier = req.params.nullifier;
+    
+    try {
+      const _number = BigInt(issuanceNullifier)
+    } catch (err) {
+      return res.status(400).json({
+        error: `Invalid issuance nullifier (${issuanceNullifier}). It must be a number`
+      });
+    }
+
+    // if (process.env.ENVIRONMENT == "dev") {
+    //   const creds = newDummyUserCreds;
+
+    //   const response = JSON.parse(
+    //     issuev2(
+    //       process.env.HOLONYM_ISSUER_PRIVKEY,
+    //       issuanceNullifier,
+    //       creds.rawCreds.countryCode.toString(),
+    //       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+    //     )
+    //   );
+    //   response.metadata = newDummyUserCreds;
+
+    //   return res.status(200).json(response);
+    // }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await Session.findOne({ _id: objectId }).exec();
+
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    // First, check if the user is looking up their credentials using their nullifier
+    const nullifierAndCreds = await NullifierAndCreds.findOne({
+      issuanceNullifier,
+      // Ignore records created more than 5 days ago
+      _id: { $gt: objectIdFiveDaysAgo() }
+    }).exec();
+    const veriffSessionIdFromNullifier = nullifierAndCreds?.idvSessionIds?.veriff?.sessionId
+    if (veriffSessionIdFromNullifier) {
+      const veriffSession = await getVeriffSessionDecision(veriffSessionIdFromNullifier)
+
+      if (!veriffSession) {
+        endpointLogger.error(
+          { sessionId: veriffSessionIdFromNullifier },
+          "Failed to retrieve Verrif session."
+        );
+        return res.status(400).json({ error: "Unexpected error: Failed to retrieve Verrif session while executing lookup from nullifier branch." });
+      }
+
+      // Note that validation of the Veriff session is unnecessary here. This Veriff session
+      // ID should not have been stored if the corresponding session didn't pass validation.
+
+      // We expect there to be a UserVerification record for this user. If it was created
+      // within the last 5 days, then it is within the buffer period, and we ignore it.
+      const uuidConstituents =
+        (veriffSession.verification.person.firstName || "") +
+        (veriffSession.verification.person.lastName || "") +
+        (veriffSession.verification.person.addresses?.[0]?.postcode || "") +
+        (veriffSession.verification.person.dateOfBirth || "");
+      const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+      const uuidNew = govIdUUID(
+        veriffSession.verification.person.firstName,
+        veriffSession.verification.person.lastName,
+        veriffSession.verification.person.dateOfBirth
+      )
+      // We started using a new UUID generation method on May 24, 2024, but we still
+      // want to check the database for the old UUIDs too.
+      const user = await UserVerifications.findOne({ 
+        $or: [
+          { "govId.uuid": uuidOld },
+          { "govId.uuidV2": uuidNew } 
+        ],
+        // Filter out documents older than 11 months and younger than 5 days
+        _id: {
+          $gt: objectIdElevenMonthsAgo(),
+          $lt: objectIdFiveDaysAgo()
+        }
+      }).exec();
+      if (user) {
+        endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+        await updateSessionStatus(
+          veriffSessionIdFromNullifier,
+          sessionStatusEnum.VERIFICATION_FAILED,
+          `User has already registered. User ID: ${user._id}`
+        );
+        return res
+          .status(400)
+          .json({ error: `User has already registered. User ID: ${user._id}` });
+      }
+
+      const creds = extractCreds(veriffSession);
+
+      const response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          creds.rawCreds.countryCode.toString(),
+          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+        )
+      );
+      response.metadata = creds;
+
+      endpointLogger.info(
+        { uuidV2: uuidNew, sessionId: veriffSessionIdFromNullifier },
+        "Issuing credentials"
+      );
+
+      await updateSessionStatus(veriffSessionIdFromNullifier, sessionStatusEnum.ISSUED);
+
+      return res.status(200).json(response);
+    }
+
+    const veriffSessionIdFromSession = session.sessionId;
+
+    if (!veriffSessionIdFromSession) {
+      return res.status(400).json({ error: "Unexpected: No veriff sessionId in session" });
+    }
+
+    // If the session isn't in progress, we do not issue credentials. If the session is ISSUED,
+    // then the lookup via nullifier should have worked above.
+    if (session.status !== sessionStatusEnum.IN_PROGRESS) {
+      if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        return res.status(400).json({
+          error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
+        });
+      }
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
+    }
+
+    const veriffSession = await getVeriffSessionDecision(veriffSessionIdFromSession);
+
+    if (!veriffSession) {
+      endpointLogger.error(
+        { sessionId: veriffSessionIdFromSession },
+        "Failed to retrieve Verrif session."
+      );
+      return res.status(400).json({ error: "Failed to retrieve Verrif session." });
+    }
+
+    const validationResult = validateSession(veriffSession, session);
+    if (validationResult.error) {
+      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      await updateSessionStatus(
+        veriffSessionIdFromSession,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        validationResult.error
+      );
+      return res.status(400).json({ error: validationResult.error });
+    }
+
+    // Get UUID
+    const uuidConstituents =
+      (veriffSession.verification.person.firstName || "") +
+      (veriffSession.verification.person.lastName || "") +
+      (veriffSession.verification.person.addresses?.[0]?.postcode || "") +
+      (veriffSession.verification.person.dateOfBirth || "");
+    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+    const uuidNew = govIdUUID(
+      veriffSession.verification.person.firstName,
+      veriffSession.verification.person.lastName,
+      veriffSession.verification.person.dateOfBirth
+    )
+
+    // We started using a new UUID generation method on May 24, 2024, but we still
+    // want to check the database for the old UUIDs too.
+
+    // Assert user hasn't registered yet
+    const user = await UserVerifications.findOne({ 
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ],
+      // Filter out documents older than eleven months
+      _id: { $gt: objectIdElevenMonthsAgo() }
+    }).exec();
+    if (user) {
+      await saveCollisionMetadata(uuidOld, uuidNew, veriffSessionIdFromSession, veriffSession);
+
+      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+      await updateSessionStatus(
+        veriffSessionIdFromSession,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        `User has already registered. User ID: ${user._id}`
+      );
+      return res
+        .status(400)
+        .json({ error: `User has already registered. User ID: ${user._id}` });
+    }
+
+    // Store UUID for Sybil resistance
+    const dbResponse = await saveUserToDb(uuidNew, veriffSessionIdFromSession);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds(veriffSession);
+
+    const response = JSON.parse(
+      issuev2(
+        process.env.HOLONYM_ISSUER_PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      )
+    );
+    response.metadata = creds;
+
+    endpointLogger.info(
+      { uuidV2: uuidNew, sessionId: veriffSessionIdFromSession },
+      "Issuing credentials"
+    );
+
+    // It's important that a veriff session ID gets associated with a nullifier ONLY
+    // if the veriff session results in successful issuance. Otherwise, a user might
+    // fail verification with one session, pass with another, and when they query this
+    // endpoint, they might not be able to get creds because their initial session failed.
+    const newNullifierAndCreds = new NullifierAndCreds({
+      holoUserId: session.sigDigest,
+      issuanceNullifier,
+      uuidV2: uuidNew,
+      idvSessionIds: {
+        veriff: {
+          sessionId: veriffSessionIdFromSession,
+        },
+      },
+    });
+    await newNullifierAndCreds.save();
+
+    await updateSessionStatus(veriffSessionIdFromSession, sessionStatusEnum.ISSUED);
+
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
+  }
+}
+
+export { getCredentials, getCredentialsV2, getCredentialsV3 };
