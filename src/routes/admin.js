@@ -14,6 +14,7 @@ import { failCleanHandsSession } from "../services/admin/fail-clean-hands-sessio
 import { refundFailedSession } from "../services/admin/refund-failed-session.js";
 import { refundFailedCleanHandsSession } from "../services/admin/refund-failed-clean-hands-session.js";
 import { issueVeraxAttestation } from "../services/admin/issue-verax-attestation.js";
+import { getUserHasBackedupCredentials } from "../services/admin/user-has-backedup-credentials.js";
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.post("/fail-session", failSession);
 router.post("/refund-unused-transaction", refundUnusedTransaction);
 router.post("/refund-failed-session", refundFailedSession);
 router.post("/issue-verax-attestation", issueVeraxAttestation);
+router.get("/user-has-backedup-credentials", getUserHasBackedupCredentials);
 // ---- Clean hands ----
 router.post("/user-clean-hands-sessions", userCleanHandsSessions);
 router.post("/fail-clean-hands-session", failCleanHandsSession);
