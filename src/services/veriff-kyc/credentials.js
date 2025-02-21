@@ -572,172 +572,10 @@ async function getCredentials(req, res) {
  * protocol as a whole.)
  */
 async function getCredentialsV2(req, res) {
-  try {
-    const issuanceNullifier = req.params.nullifier;
+  const issuanceNullifier = req.params.nullifier;
 
-    if (process.env.ENVIRONMENT == "dev") {
-      const creds = newDummyUserCreds;
-
-      const response = JSON.parse(
-        issuev2(
-          process.env.HOLONYM_ISSUER_PRIVKEY,
-          issuanceNullifier,
-          creds.rawCreds.countryCode.toString(),
-          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-        )
-      );
-      response.metadata = newDummyUserCreds;
-
-      return res.status(200).json(response);
-    }
-
-    if (!req?.query?.sessionId) {
-      return res.status(400).json({ error: "No sessionId specified" });
-    }
-
-    const metaSession = await getSession(req.query.sessionId);
-    if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
-      if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
-        return res.status(400).json({
-          error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
-        });
-      }
-
-      return res.status(400).json({
-        error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
-      });
-    }
-
-    const session = await getVeriffSessionDecision(req.query.sessionId);
-
-    if (!session) {
-      // Check if this was a temporary error (from the getVeriffSessionDecision function)
-      if (session === null) {
-        // null specifically indicates API/network error
-        const errorMessage =
-          "Unable to check verification status at this moment. Please try again in a few minutes.";
-
-        endpointLogger.error(
-          {
-            sessionId: req.query.sessionId,
-            tags: [
-              "action:getVeriffSessionDecision",
-              "error:temporaryFailure",
-              "stage:getVeriffSessionDecision",
-            ],
-          },
-          "Temporary error retrieving Veriff session."
-        );
-
-        return res.status(503).json({
-          error: errorMessage,
-          retryable: true,
-        });
-      }
-
-      // If session is undefined, it means the session doesn't exist or was deleted
-      const errorMessage =
-        "Verification session not found. Please start a new verification.";
-
-      endpointLogger.error(
-        {
-          sessionId: req.query.sessionId,
-          tags: [
-            "action:getVeriffSessionDecision",
-            "error:sessionNotFound",
-            "stage:getVeriffSessionDecision",
-          ],
-        },
-        "Veriff session not found."
-      );
-
-      await updateSessionStatus(
-        req.query.sessionId,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        errorMessage
-      );
-
-      return res.status(400).json({ error: errorMessage });
-    }
-
-    const validationResult = validateSession(session, metaSession);
-    if (validationResult.error) {
-      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
-      await updateSessionStatus(
-        req.query.sessionId,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        validationResult.error
-      );
-
-      return res.status(400).json({
-        error: validationResult.error,
-        details: {
-          status: session.status,
-          verification: {
-            code: session.verification?.code,
-            status: session.verification?.status,
-          },
-        },
-      });
-    }
-
-    // Get UUID
-    const uuidConstituents =
-      (session.verification.person.firstName || "") +
-      (session.verification.person.lastName || "") +
-      (session.verification.person.addresses?.[0]?.postcode || "") +
-      (session.verification.person.dateOfBirth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      session.verification.person.firstName,
-      session.verification.person.lastName,
-      session.verification.person.dateOfBirth
-    );
-
-    // We started using a new UUID generation method on May 24, 2024, but we still
-    // want to check the database for the old UUIDs too.
-
-    // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({
-      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() },
-    }).exec();
-    if (user) {
-      await saveCollisionMetadata(
-        uuidOld,
-        uuidNew,
-        req.query.sessionId,
-        session
-      );
-
-      endpointLogger.error(
-        {
-          uuidV2: uuidNew,
-          tags: [
-            "action:RegisterUser",
-            "error:UserAlreadyRegistered",
-            "stage:RegisterUser",
-          ],
-        },
-        "User has already registered."
-      );
-      await updateSessionStatus(
-        req.query.sessionId,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        `User has already registered. User ID: ${user._id}`
-      );
-      return res
-        .status(400)
-        .json({ error: `User has already registered. User ID: ${user._id}` });
-    }
-
-    // Store UUID for Sybil resistance
-    const dbResponse = await saveUserToDb(uuidNew, req.query.sessionId);
-    if (dbResponse.error) return res.status(400).json(dbResponse);
-
-    const creds = extractCreds(session);
+  if (process.env.ENVIRONMENT == "dev") {
+    const creds = newDummyUserCreds;
 
     const response = JSON.parse(
       issuev2(
@@ -747,31 +585,199 @@ async function getCredentialsV2(req, res) {
         creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
       )
     );
-    response.metadata = creds;
-
-    await deleteVeriffSession(req.query.sessionId);
-
-    // TODO: MAYBE: Update IDVSessions. Set the status to "credentials-issued" and add the UUID.
-    // This will help us ensure that we never display a "completed - click here to retrieve your
-    // credentials" message to the user if their verification is complete but their creds haven't
-    // been signed by Holonym (and returned) yet. It's not necessary to set status to
-    // "credentials-issued" since the frontend can check for the presence of gov ID creds; however,
-    // if there's a bug between the end of this function and credential storage logic in the
-    // frontend, then the user might see "completed - click, etc." even after their creds have
-    // been issued.
-
-    endpointLogger.info(
-      { uuidV2: uuidNew, sessionId: req.query.sessionId },
-      "Issuing credentials"
-    );
-
-    await updateSessionStatus(req.query.sessionId, sessionStatusEnum.ISSUED);
+    response.metadata = newDummyUserCreds;
 
     return res.status(200).json(response);
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send();
   }
+
+  if (!req?.query?.sessionId) {
+    return res.status(400).json({ error: "No sessionId specified" });
+  }
+
+  const metaSession = await getSession(req.query.sessionId);
+  if (metaSession.status !== sessionStatusEnum.IN_PROGRESS) {
+    if (metaSession.status === sessionStatusEnum.VERIFICATION_FAILED) {
+      return res.status(400).json({
+        error: `Verification failed. Reason(s): ${metaSession.verificationFailureReason}`,
+      });
+    }
+
+    return res.status(400).json({
+      error: `Session status is '${metaSession.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+    });
+  }
+
+  const session = await getVeriffSessionDecision(req.query.sessionId);
+
+  if (!session) {
+    // Check if this was a temporary error (from the getVeriffSessionDecision function)
+    if (session === null) {
+      // null specifically indicates API/network error
+      const errorMessage =
+        "Unable to check verification status at this moment. Please try again in a few minutes.";
+
+      endpointLogger.error(
+        {
+          sessionId: req.query.sessionId,
+          reason: errorMessage,
+          tags: [
+            "action:getVeriffSessionDecision",
+            "error:temporaryFailure",
+            "stage:getVeriffSessionDecision",
+          ],
+        },
+        "Temporary error retrieving Veriff session."
+      );
+
+      return res.status(503).json({
+        error: errorMessage,
+        retryable: true,
+      });
+    }
+
+    // If session is undefined, it means the session doesn't exist or was deleted
+    const errorMessage =
+      "Verification session not found. Please start a new verification.";
+
+    endpointLogger.error(
+      {
+        sessionId: req.query.sessionId,
+        reason: errorMessage,
+        tags: [
+          "action:getVeriffSessionDecision",
+          "error:sessionNotFound",
+          "stage:getVeriffSessionDecision",
+        ],
+      },
+      "Veriff session not found."
+    );
+
+    await updateSessionStatus(
+      req.query.sessionId,
+      sessionStatusEnum.VERIFICATION_FAILED,
+      errorMessage
+    );
+
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const validationResult = validateSession(session, metaSession);
+  if (validationResult.error) {
+    endpointLogger.error(
+      {
+        sessionId: req.query.sessionId,
+        reason: validationResult.error,
+        details: {
+          status: session.status,
+          verification: {
+            code: session.verification?.code,
+            status: session.verification?.status,
+          },
+        },
+      },
+      "Verification failed"
+    );
+
+    await updateSessionStatus(
+      req.query.sessionId,
+      sessionStatusEnum.VERIFICATION_FAILED,
+      validationResult.error
+    );
+
+    return res.status(400).json({
+      error: validationResult.error,
+      details: {
+        status: session.status,
+        verification: {
+          code: session.verification?.code,
+          status: session.verification?.status,
+        },
+      },
+    });
+  }
+
+  // Get UUID
+  const uuidConstituents =
+    (session.verification.person.firstName || "") +
+    (session.verification.person.lastName || "") +
+    (session.verification.person.addresses?.[0]?.postcode || "") +
+    (session.verification.person.dateOfBirth || "");
+  const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
+
+  const uuidNew = govIdUUID(
+    session.verification.person.firstName,
+    session.verification.person.lastName,
+    session.verification.person.dateOfBirth
+  );
+
+  // We started using a new UUID generation method on May 24, 2024, but we still
+  // want to check the database for the old UUIDs too.
+
+  // Assert user hasn't registered yet
+  const user = await UserVerifications.findOne({
+    $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
+    // Filter out documents older than one year
+    _id: { $gt: objectIdElevenMonthsAgo() },
+  }).exec();
+  if (user) {
+    await saveCollisionMetadata(uuidOld, uuidNew, req.query.sessionId, session);
+
+    endpointLogger.error(
+      {
+        uuidV2: uuidNew,
+        tags: [
+          "action:RegisterUser",
+          "error:UserAlreadyRegistered",
+          "stage:RegisterUser",
+        ],
+      },
+      "User has already registered."
+    );
+    await updateSessionStatus(
+      req.query.sessionId,
+      sessionStatusEnum.VERIFICATION_FAILED,
+      `User has already registered. User ID: ${user._id}`
+    );
+    return res
+      .status(400)
+      .json({ error: `User has already registered. User ID: ${user._id}` });
+  }
+
+  // Store UUID for Sybil resistance
+  const dbResponse = await saveUserToDb(uuidNew, req.query.sessionId);
+  if (dbResponse.error) return res.status(400).json(dbResponse);
+
+  const creds = extractCreds(session);
+
+  const response = JSON.parse(
+    issuev2(
+      process.env.HOLONYM_ISSUER_PRIVKEY,
+      issuanceNullifier,
+      creds.rawCreds.countryCode.toString(),
+      creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+    )
+  );
+  response.metadata = creds;
+
+  await deleteVeriffSession(req.query.sessionId);
+
+  // TODO: MAYBE: Update IDVSessions. Set the status to "credentials-issued" and add the UUID.
+  // This will help us ensure that we never display a "completed - click here to retrieve your
+  // credentials" message to the user if their verification is complete but their creds haven't
+  // been signed by Holonym (and returned) yet. It's not necessary to set status to
+  // "credentials-issued" since the frontend can check for the presence of gov ID creds; however,
+  // if there's a bug between the end of this function and credential storage logic in the
+  // frontend, then the user might see "completed - click, etc." even after their creds have
+  // been issued.
+
+  endpointLogger.info(
+    { uuidV2: uuidNew, sessionId: req.query.sessionId },
+    "Issuing credentials"
+  );
+
+  await updateSessionStatus(req.query.sessionId, sessionStatusEnum.ISSUED);
+
+  return res.status(200).json(response);
 }
 
 export { getCredentials, getCredentialsV2 };
