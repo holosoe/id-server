@@ -635,7 +635,10 @@ async function getCredentialsV2(req, res) {
     if (!validationResultCheck.success && !validationResultCheck.hasReports) {
       endpointLogger.error(
         validationResultCheck.log.data,
-        validationResultCheck.log.msg
+        validationResultCheck.log.msg,
+        {
+          tags: ["action:validateSession", "error:verificationFailed"],
+        }
       );
       await updateSessionStatus(
         check_id,
@@ -654,8 +657,7 @@ async function getCredentialsV2(req, res) {
       endpointLogger.error(
         {
           check_id,
-          check_status: check.status ?? "unknown",
-          report_ids: check.report_ids,
+          report_ids: check.report_ids ?? "unknown",
           tags: ["action:getReports", "error:noReportsFound"],
         },
         "No reports found"
@@ -700,8 +702,7 @@ async function getCredentialsV2(req, res) {
 
       endpointLogger.error(
         {
-          check_status: check.status ?? "unknown",
-          check_result: check.result ?? "unknown",
+          check_id,
           detailed_reasons: reportsValidation.reasons,
           tags: ["action:validateVerification", "error:verificationFailed"],
         },
@@ -718,7 +719,6 @@ async function getCredentialsV2(req, res) {
         status: 400,
         error: userErrorMessage,
         details: {
-          check_status: check.status ?? "unknown",
           reasons: reportsValidation.reasons,
         },
       };
