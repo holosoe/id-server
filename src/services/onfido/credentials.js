@@ -64,9 +64,9 @@ function validateCheck(check) {
   if (check.result !== "clear") {
     return {
       error: `Check failed. Result is '${check.result}'. Expected 'clear'.`,
+      hasReports: true,
       log: {
         msg: "Check failed. result !== 'clear'",
-        hasReports: true,
         data: {
           result: check.result,
           check_id: check.id,
@@ -103,7 +103,23 @@ function validateReports(reports, metaSession) {
   for (const report of reports) {
     reportIssues[report.name] = [];
 
+    if (report.status !== "complete") {
+      verificationFailed = true;
+      reportIssues[report.name].push({
+        type: "status",
+        message: `Report status is '${report.status}'. Expected 'complete'.`,
+      });
+      failureReasons.push(
+        `Report ${report.name} status is '${report.status}'. Expected 'complete'.`
+      );
+    }
+
     if (report.name === "document") {
+      // if !metaSession.ipCountry, then the session was created before we added
+      // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets,
+      // we can ignore this check for such sessions.
+      // NOTE: May 14, 2024: We are disablign the ipCountry check because it seems to be
+      // turning down honest users while being game-able by sybils.
       if (!countryCodeToPrime[report.properties.issuing_country]) {
         return {
           error: `Verification failed. Unsupported country ${report.properties.issuing_country}`,
@@ -115,34 +131,52 @@ function validateReports(reports, metaSession) {
           },
         };
       }
-      // if !metaSession.ipCountry, then the session was created before we added
-      // the ipCountry attribute. Because this is only ~3k sessions and to reduce tickets,
-      // we can ignore this check for such sessions.
-      // NOTE: May 14, 2024: We are disablign the ipCountry check because it seems to be
-      // turning down honest users while being game-able by sybils.
-      // if (metaSession.ipCountry && (countryCodeToPrime[report.properties.issuing_country] != countryCodeToPrime[metaSession.ipCountry])) {
-      //   return {
-      //     error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${report.properties.issuing_country}'.`,
-      //     log: {
-      //       msg: "Country code mismatch",
-      //       data: {
-      //         expected: countryCodeToPrime[metaSession.ipCountry],
-      //         got: countryCodeToPrime[report.properties.issuing_country]
-      //       },
-      //     },
-      //   };
-      // }
+
+      if (
+        metaSession.ipCountry &&
+        countryCodeToPrime[report.properties.issuing_country] !=
+          countryCodeToPrime[metaSession.ipCountry]
+      ) {
+        return {
+          error: `Country code mismatch. Session country is '${metaSession.ipCountry}', but document country is '${report.properties.issuing_country}'.`,
+          log: {
+            msg: "Country code mismatch",
+            data: {
+              expected: countryCodeToPrime[metaSession.ipCountry],
+              got: countryCodeToPrime[report.properties.issuing_country],
+            },
+          },
+        };
+      }
     }
 
-    if (report.status !== "complete") {
-      verificationFailed = true;
-      reportIssues[report.name].push({
-        type: "status",
-        message: `Report status is '${report.status}'. Expected 'complete'.`,
-      });
-      failureReasons.push(
-        `Report ${report.name} status is '${report.status}'. Expected 'complete'.`
-      );
+    if (report.name === "device_intelligence") {
+      if (report?.properties?.device?.ip_reputation === "HIGH_RISK") {
+        return {
+          error: `Verification failed. IP address is high risk.`,
+          log: {
+            msg: "IP address is high risk",
+            data: {
+              ip: report?.properties?.ip?.address,
+            },
+          },
+        };
+      }
+      if (
+        typeof report?.properties?.device?.device_fingerprint_reuse ===
+          "number" &&
+        report?.properties?.device?.device_fingerprint_reuse > 3
+      ) {
+        return {
+          error: `Verification failed. device_fingerprint_reuse is ${report?.properties?.device?.device_fingerprint_reuse}.`,
+          log: {
+            msg: "device_fingerprint_reuse is greater than 5",
+            data: {
+              ip: report?.properties?.device?.device_fingerprint_reuse,
+            },
+          },
+        };
+      }
     }
 
     if (report.breakdown) {
@@ -171,78 +205,21 @@ function validateReports(reports, metaSession) {
     if (reportIssues[report.name].length === 0) {
       delete reportIssues[report.name];
     }
-
-    // ----------------------------- OLD VALIDATION CODE -----------------------------
-    // if (report.status !== "complete") {
-    //   verificationFailed = true;
-    //   reportIssues[report.name].push({
-    //     type: "status",
-    //     message: `Report status is '${report.status}'. Expected 'complete'.`,
-    //   });
-    //   failureReasons.push(
-    //     `Report ${report.name} status is '${report.status}'. Expected 'complete'.`
-    //   );
-    // }
-
-    // if (report.name === "device_intelligence") {
-    //   if (report?.properties?.device?.ip_reputation === "HIGH_RISK") {
-    //     return {
-    //       error: `Verification failed. IP address is high risk.`,
-    //       log: {
-    //         msg: "IP address is high risk",
-    //         data: {
-    //           ip: report?.properties?.ip?.address,
-    //         },
-    //       },
-    //     };
-    //   }
-    //   if (
-    //     typeof report?.properties?.device?.device_fingerprint_reuse ===
-    //       "number" &&
-    //     report?.properties?.device?.device_fingerprint_reuse > 3
-    //   ) {
-    //     return {
-    //       error: `Verification failed. device_fingerprint_reuse is ${report?.properties?.device?.device_fingerprint_reuse}.`,
-    //       log: {
-    //         msg: "device_fingerprint_reuse is greater than 5",
-    //         data: {
-    //           ip: report?.properties?.device?.device_fingerprint_reuse,
-    //         },
-    //       },
-    //     };
-    //   }
-    // }
-
-    // for (const majorKey of Object.keys(report.breakdown ?? {})) {
-    //   if (report.breakdown[majorKey]?.result !== "clear") {
-    //     for (const minorkey of Object.keys(
-    //       report.breakdown[majorKey]?.breakdown ?? {}
-    //     )) {
-    //       const minorResult =
-    //         report.breakdown[majorKey].breakdown[minorkey].result;
-    //       if (minorResult !== null && minorResult !== "clear") {
-    //         verificationFailed = true;
-    //         failureReasons.push(
-    //           `Result of ${minorkey} in ${majorKey} breakdown is '${minorResult}'. Expected 'clear'.`
-    //         );
-    //       }
-    //     }
-    //   }
-    // }
   }
 
   if (verificationFailed) {
     return {
-      error: `Verification failed.`,
+      error: `Onfido verification failed. Check console logs for more details.`,
       reasons: failureReasons,
       log: {
-        msg: "Verification failed",
+        msg: "Onfido verification failed",
         data: {
           reasons: failureReasons,
         },
       },
     };
   }
+
   return { success: true };
 }
 
@@ -668,18 +645,24 @@ async function getCredentialsV2(req, res) {
     const check = await getOnfidoCheck(check_id);
     const validationResultCheck = validateCheck(check);
 
-    if (!validationResultCheck.success || !validationResultCheck.hasReports) {
+    if (!validationResultCheck.success && !validationResultCheck.hasReports) {
       endpointLogger.error({
         check_id,
         check_status: check.status,
         tags: ["action:validateResultCheck", "stage:validateCheck"],
       });
 
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        validationResultCheck.error
+      );
+
       return res.status(400).json({ error: validationResultCheck.error });
     }
 
     const reports = await getOnfidoReports(check.report_ids);
-    if (!reports || reports.length == 0) {
+    if (!validationResultCheck.success && (!reports || reports.length == 0)) {
       endpointLogger.error(
         {
           check_id,
@@ -689,6 +672,13 @@ async function getCredentialsV2(req, res) {
         },
         "No reports found"
       );
+
+      await updateSessionStatus(
+        check_id,
+        sessionStatusEnum.VERIFICATION_FAILED,
+        "No reports found"
+      );
+
       return res.status(400).json({ error: "No reports found" });
     }
 
@@ -698,7 +688,7 @@ async function getCredentialsV2(req, res) {
       const errorContext = {
         check_status: check.status,
         check_result: check.result,
-        reportsValidation: reportsValidation,
+        failureReasons: reportsValidation,
         tags: [
           "action:validateVerification",
           "error:verificationFailed",
@@ -706,42 +696,51 @@ async function getCredentialsV2(req, res) {
         ],
       };
 
-      endpointLogger.error(errorContext, "Verification failed");
+      // Create a user-friendly error message from the validation reasons
+      const userErrorMessage = reportsValidation.reasons?.length
+        ? `Verification failed: ${reportsValidation.reasons
+            .map((reason) => {
+              // Convert technical reason to user-friendly message
+              if (reason.includes("breakdown")) {
+                const breakdownType = reason.match(/result of (\w+) in/)?.[1];
+                return breakdownType
+                  ? `${breakdownType.replace(/_/g, " ")} verification failed`
+                  : "Document verification issue detected";
+              }
+              if (reason.includes("face")) {
+                return "Face verification failed - please ensure your face is clearly visible";
+              }
+              if (reason.includes("quality")) {
+                return "Image quality issue - please ensure photos are clear and well-lit";
+              }
+              if (reason.includes("supported")) {
+                return "Document type not supported - please use a valid ID document";
+              }
+              return "Verification failed - please try again";
+            })
+            .join(". ")}`
+        : validationResultCheck.error || "Verification failed";
 
-      // Filter only failed reports and their issues
-      const failedReports = reportsValidation.reports
-        .filter(
-          (report) =>
-            report.status !== "complete" ||
-            report.result !== "clear" ||
-            (report.issues && report.issues.length > 0)
-        )
-        .map((report) => ({
-          name: report.name,
-          status: report.status,
-          result: report.result,
-          issues: report.issues || [],
-        }));
-
-      const failureReasons = [
-        // Include check validation error if exists
-        validationResultCheck.error,
-        // Include report validation reasons if they exist
-        ...(reportsValidation.reasons || []),
-      ].filter(Boolean);
+      // Log the detailed technical error
+      endpointLogger.error(
+        {
+          ...errorContext,
+          detailed_reasons: reportsValidation.reasons,
+        },
+        "Verification failed"
+      );
 
       await updateSessionStatus(
         check_id,
         sessionStatusEnum.VERIFICATION_FAILED,
-        failureReasons.join("; ")
+        reportsValidation.reasons.join("; ")
       );
 
       return res.status(400).json({
-        error: "Verification failed",
-        reasons: failureReasons,
+        error: userErrorMessage,
         details: {
           check_status: check.status,
-          failedReports,
+          reasons: reportsValidation.reasons,
         },
       });
     }
