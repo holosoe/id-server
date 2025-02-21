@@ -47,6 +47,8 @@ async function createOrder(req, res) {
         const order = new Order({
             externalOrderId,
             category,
+            txHash,
+            chainId,
             fulfilled: false // order.fulfilled should be false when order is inserted into DB
         });
 
@@ -83,9 +85,8 @@ async function getOrderTransactionStatus(req, res) {
 
     // If TX is not confirmed yet, wait a little bit and check again
     if (!tx.blockHash || tx.confirmations === 0) {
-        setTimeout(async () => {
-            await getOrderTransactionStatus(req, res);
-        }, 1000);
+        // todo: add a timeout
+        // refer to validateTxForSessionCreation
     }
 
     // If TX is confirmed, return the order
