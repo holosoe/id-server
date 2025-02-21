@@ -204,4 +204,4 @@ async function refundMintFeeOnChain(session, to) {
   };
 }
 
-export { validateTxForSessionCreation, refundMintFeeOnChain };
+export { validateTxForSessionCreation, refundMintFeeOnChain, getTransaction };
