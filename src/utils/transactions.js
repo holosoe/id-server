@@ -156,8 +156,7 @@ async function refundMintFeeOnChain(session, to) {
 
   const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
 
-  // Refund 50% of the transaction amount. This approximates the mint cost.
-  const refundAmount = tx.value.mul(5).div(10);
+  const refundAmount = tx.value; //.mul(5).div(10);
 
   // Ensure wallet has enough funds to refund
   const balance = await wallet.getBalance();

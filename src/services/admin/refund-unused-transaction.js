@@ -143,8 +143,7 @@ export async function refundUnusedTransaction(req, res) {
 
     const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
 
-    // Send 90% of tx.value back to sender. We keep some to cover gas
-    const refundAmount = tx.value.mul(9).div(10);
+    const refundAmount = tx.value //.mul(9).div(10);
 
     // Ensure wallet has enough funds to refund
     const balance = await wallet.getBalance();
