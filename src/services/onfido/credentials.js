@@ -29,6 +29,9 @@ import {
   deleteOnfidoApplicant,
 } from "../../utils/onfido.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
+import {
+  findOneUserVerificationLast11Months
+} from "../../utils/user-verifications.js"
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",
@@ -539,11 +542,7 @@ async function getCredentials(req, res) {
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({
-      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() },
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 
@@ -758,11 +757,7 @@ async function getCredentialsV2(req, res) {
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({
-      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() },
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 
@@ -1147,14 +1142,7 @@ async function getCredentialsV3(req, res) {
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ 
-      $or: [
-        { "govId.uuid": uuidOld },
-        { "govId.uuidV2": uuidNew } 
-      ],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() }
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 

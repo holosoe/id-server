@@ -28,6 +28,9 @@ import {
   getVeriffSessionDecision,
   deleteVeriffSession,
 } from "../../utils/veriff.js";
+import {
+  findOneUserVerificationLast11Months
+} from "../../utils/user-verifications.js"
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /veriff/credentials] ",
@@ -510,11 +513,7 @@ async function getCredentials(req, res) {
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({
-      $or: [{ "govId.uuid": uuidOld }, { "govId.uuidV2": uuidNew }],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() },
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
     if (user) {
       await saveCollisionMetadata(
         uuidOld,
@@ -740,14 +739,7 @@ async function getCredentialsV2(req, res) {
     const uuidNew = uuidNewFromVeriffSession(session);
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({
-      $or: [
-        { "govId.uuid": uuidOld },
-        { "govId.uuidV2": uuidNew } 
-      ],
-      // Filter out documents older than one year
-      _id: { $gt: objectIdElevenMonthsAgo() },
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
 
     if (user) {
       endpointLogger.error(
@@ -1077,14 +1069,7 @@ async function getCredentialsV3(req, res) {
     // want to check the database for the old UUIDs too.
 
     // Assert user hasn't registered yet
-    const user = await UserVerifications.findOne({ 
-      $or: [
-        { "govId.uuid": uuidOld },
-        { "govId.uuidV2": uuidNew } 
-      ],
-      // Filter out documents older than eleven months
-      _id: { $gt: objectIdElevenMonthsAgo() }
-    }).exec();
+    const user = await findOneUserVerificationLast11Months(uuidOld, uuidNew);
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, veriffSessionIdFromSession, veriffSession);
 
