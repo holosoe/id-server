@@ -241,6 +241,25 @@ function validateReports(reports, metaSession) {
   return { success: true };
 }
 
+function uuidOldFromOnfidoReport(documentReport) {
+  const uuidConstituents =
+    (documentReport.properties.first_name || "") +
+    (documentReport.properties.last_name || "") +
+    // Getting address info is in beta for Onfido, so we don't include it yet.
+    // See: https://documentation.onfido.com/#document-with-address-information-beta
+    // (documentReport.properties.addresses?.[0]?.postcode || "") +
+    (documentReport.properties.date_of_birth || "");
+  return sha256(Buffer.from(uuidConstituents)).toString("hex");
+}
+
+function uuidNewFromOnfidoReport(documentReport) {
+  return govIdUUID(
+    documentReport.properties.first_name,
+    documentReport.properties.last_name,
+    documentReport.properties.date_of_birth
+  );
+}
+
 function extractCreds(documentReport) {
   const countryCode =
     countryCodeToPrime[documentReport.properties.issuing_country];
@@ -525,20 +544,8 @@ async function getCredentials(req, res) {
 
     const documentReport = reports.find((report) => report.name == "document");
     // Get UUID
-    const uuidConstituents =
-      (documentReport.properties.first_name || "") +
-      (documentReport.properties.last_name || "") +
-      // Getting address info is in beta for Onfido, so we don't include it yet.
-      // See: https://documentation.onfido.com/#document-with-address-information-beta
-      // (documentReport.properties.addresses?.[0]?.postcode || "") +
-      (documentReport.properties.date_of_birth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      documentReport.properties.first_name,
-      documentReport.properties.last_name,
-      documentReport.properties.date_of_birth
-    );
+    const uuidOld = uuidOldFromOnfidoReport(documentReport);
+    const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
@@ -740,20 +747,8 @@ async function getCredentialsV2(req, res) {
 
     const documentReport = reports.find((report) => report.name == "document");
     // Get UUID
-    const uuidConstituents =
-      (documentReport.properties.first_name || "") +
-      (documentReport.properties.last_name || "") +
-      // Getting address info is in beta for Onfido, so we don't include it yet.
-      // See: https://documentation.onfido.com/#document-with-address-information-beta
-      // (documentReport.properties.addresses?.[0]?.postcode || "") +
-      (documentReport.properties.date_of_birth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      documentReport.properties.first_name,
-      documentReport.properties.last_name,
-      documentReport.properties.date_of_birth
-    );
+    const uuidOld = uuidOldFromOnfidoReport(documentReport);
+    const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
@@ -926,20 +921,8 @@ async function getCredentialsV3(req, res) {
       }
 
       // Get UUID
-      const uuidConstituents =
-        (documentReport.properties.first_name || "") +
-        (documentReport.properties.last_name || "") +
-        // Getting address info is in beta for Onfido, so we don't include it yet.
-        // See: https://documentation.onfido.com/#document-with-address-information-beta
-        // (documentReport.properties.addresses?.[0]?.postcode || "") +
-        (documentReport.properties.date_of_birth || "");
-      const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-  
-      const uuidNew = govIdUUID(
-        documentReport.properties.first_name,
-        documentReport.properties.last_name,
-        documentReport.properties.date_of_birth
-      )
+      const uuidOld = uuidOldFromOnfidoReport(documentReport);
+      const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
       // Assert user hasn't registered yet
       const user = await UserVerifications.findOne({ 
@@ -1113,20 +1096,8 @@ async function getCredentialsV3(req, res) {
 
     const documentReport = reports.find((report) => report.name == "document");
     // Get UUID
-    const uuidConstituents =
-      (documentReport.properties.first_name || "") +
-      (documentReport.properties.last_name || "") +
-      // Getting address info is in beta for Onfido, so we don't include it yet.
-      // See: https://documentation.onfido.com/#document-with-address-information-beta
-      // (documentReport.properties.addresses?.[0]?.postcode || "") +
-      (documentReport.properties.date_of_birth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      documentReport.properties.first_name,
-      documentReport.properties.last_name,
-      documentReport.properties.date_of_birth
-    )
+    const uuidOld = uuidOldFromOnfidoReport(documentReport);
+    const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
