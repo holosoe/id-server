@@ -39,6 +39,16 @@ const endpointLogger = logger.child({
   },
 });
 
+const endpointLoggerV3 = logger.child({
+  msgPrefix: "[GET /veriff/v3/credentials] ",
+  base: {
+    ...pinoOptions.base,
+    idvProvider: "veriff",
+    feature: "holonym",
+    subFeature: "gov-id",
+  },
+});
+
 //TODO: Improve dd logs and error messages
 
 function validateSession(session, metaSession) {
@@ -885,7 +895,7 @@ async function getCredentialsV3(req, res) {
       const veriffSession = await getVeriffSessionDecision(veriffSessionIdFromNullifier)
 
       if (!veriffSession) {
-        endpointLogger.error(
+        endpointLoggerV3.error(
           { sessionId: veriffSessionIdFromNullifier },
           "Failed to retrieve Verrif session."
         );
@@ -922,7 +932,7 @@ async function getCredentialsV3(req, res) {
         }
       }).exec();
       if (user) {
-        endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+        endpointLoggerV3.error({ uuidV2: uuidNew }, "User has already registered.");
         await updateSessionStatus(
           veriffSessionIdFromNullifier,
           sessionStatusEnum.VERIFICATION_FAILED,
@@ -945,7 +955,7 @@ async function getCredentialsV3(req, res) {
       );
       response.metadata = creds;
 
-      endpointLogger.info(
+      endpointLoggerV3.info(
         { uuidV2: uuidNew, sessionId: veriffSessionIdFromNullifier },
         "Issuing credentials"
       );
@@ -965,6 +975,15 @@ async function getCredentialsV3(req, res) {
     // then the lookup via nullifier should have worked above.
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
       if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+        endpointLoggerV3.error(
+          {
+            sessionId: veriffSessionIdFromSession,
+            session_status: session.status,
+            failure_reason: session.verificationFailureReason,
+            tags: ["action:validateSession", "error:verificationFailed"],
+          },
+          "Session verification previously failed"
+        );
         return res.status(400).json({
           error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
         });
@@ -977,8 +996,41 @@ async function getCredentialsV3(req, res) {
     const veriffSession = await getVeriffSessionDecision(veriffSessionIdFromSession);
 
     if (!veriffSession) {
-      endpointLogger.error(
-        { sessionId: veriffSessionIdFromSession },
+      // Check if this was a temporary error (from the getVeriffSessionDecision function)
+      if (veriffSession === null) {
+        // null specifically indicates API/network error
+        endpointLoggerV3.error(
+          {
+            sessionId: veriffSessionIdFromSession,
+            tags: [
+              "action:getVeriffSessionDecision",
+              "error:temporaryFailure",
+              "stage:getVeriffSessionDecision",
+            ],
+          },
+          "Temporary error retrieving Veriff session."
+        );
+
+        throw {
+          status: 503,
+          error:
+            "Unable to check verification status at this moment. Please try again in a few minutes.",
+          details: {
+            retryable: true,
+          },
+        };
+      }
+
+      // If session is undefined, it means the session doesn't exist or was deleted
+      endpointLoggerV3.error(
+        {
+          sessionId: veriffSessionIdFromSession,
+          tags: [
+            "action:getVeriffSessionDecision",
+            "error:sessionNotFound",
+            "stage:getVeriffSessionDecision",
+          ],
+        },
         "Failed to retrieve Verrif session."
       );
       return res.status(400).json({ error: "Failed to retrieve Verrif session." });
@@ -986,13 +1038,37 @@ async function getCredentialsV3(req, res) {
 
     const validationResult = validateSession(veriffSession, session);
     if (validationResult.error) {
-      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      endpointLoggerV3.error(
+        {
+          sessionId: veriffSessionIdFromSession,
+          reason: validationResult.error,
+          details: {
+            status: veriffSession.status,
+            verification: {
+              code: veriffSession.verification?.code,
+              status: veriffSession.verification?.status,
+            },
+          },
+          tags: ["action:validateSession", "error:validationFailed"],
+        },
+        "Verification failed"
+      );
       await updateSessionStatus(
         veriffSessionIdFromSession,
         sessionStatusEnum.VERIFICATION_FAILED,
         validationResult.error
       );
-      return res.status(400).json({ error: validationResult.error });
+      throw {
+        status: 400,
+        error: validationResult.error,
+        details: {
+          status: veriffSession.status,
+          verification: {
+            code: veriffSession.verification?.code,
+            status: veriffSession.verification?.status,
+          },
+        },
+      };
     }
 
     // Get UUID
@@ -1024,7 +1100,17 @@ async function getCredentialsV3(req, res) {
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, veriffSessionIdFromSession, veriffSession);
 
-      endpointLogger.error({ uuidV2: uuidNew }, "User has already registered.");
+      endpointLoggerV3.error(
+        {
+          uuidV2: uuidNew,
+          tags: [
+            "action:RegisterUser",
+            "error:UserAlreadyRegistered",
+            "stage:RegisterUser",
+          ],
+        },
+        "User has already registered."
+      );
       await updateSessionStatus(
         veriffSessionIdFromSession,
         sessionStatusEnum.VERIFICATION_FAILED,
@@ -1051,7 +1137,7 @@ async function getCredentialsV3(req, res) {
     );
     response.metadata = creds;
 
-    endpointLogger.info(
+    endpointLoggerV3.info(
       { uuidV2: uuidNew, sessionId: veriffSessionIdFromSession },
       "Issuing credentials"
     );
@@ -1076,7 +1162,23 @@ async function getCredentialsV3(req, res) {
 
     return res.status(200).json(response);
   } catch (err) {
-    console.error(err);
+    // If this is our custom error, use its properties
+    if (err.status && err.error) {
+      return res.status(err.status).json(err);
+    }
+
+    // Otherwise, log the unexpected error
+    endpointLoggerV3.error(
+      {
+        error: err,
+        tags: [
+          "action:getCredentialsV2",
+          "error:unexpectedError",
+          "stage:unknown",
+        ],
+      },
+      "Unexpected error occurred"
+    );
     return res.status(500).send();
   }
 }
