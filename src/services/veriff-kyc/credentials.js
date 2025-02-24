@@ -197,6 +197,23 @@ function validateSession(session, metaSession) {
   return { success: true };
 }
 
+function uuidOldFromVeriffSession(veriffSession) {
+  const uuidConstituents =
+    (veriffSession.verification.person.firstName || "") +
+    (veriffSession.verification.person.lastName || "") +
+    (veriffSession.verification.person.addresses?.[0]?.postcode || "") +
+    (veriffSession.verification.person.dateOfBirth || "");
+  return sha256(Buffer.from(uuidConstituents)).toString("hex");
+}
+
+function uuidNewFromVeriffSession(veriffSession) {
+  return govIdUUID(
+    veriffSession.verification.person.firstName,
+    veriffSession.verification.person.lastName,
+    veriffSession.verification.person.dateOfBirth
+  )
+}
+
 function extractCreds(session) {
   const person = session.verification.person;
   const address = person.addresses?.[0]?.parsedAddress;
@@ -486,18 +503,8 @@ async function getCredentials(req, res) {
     }
 
     // Get UUID
-    const uuidConstituents =
-      (session.verification.person.firstName || "") +
-      (session.verification.person.lastName || "") +
-      (session.verification.person.addresses?.[0]?.postcode || "") +
-      (session.verification.person.dateOfBirth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      session.verification.person.firstName,
-      session.verification.person.lastName,
-      session.verification.person.dateOfBirth
-    );
+    const uuidOld = uuidOldFromVeriffSession(session);
+    const uuidNew = uuidNewFromVeriffSession(session);
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
@@ -729,15 +736,15 @@ async function getCredentialsV2(req, res) {
       };
     }
 
-    const uuidNew = govIdUUID(
-      session.verification.person.firstName,
-      session.verification.person.lastName,
-      session.verification.person.dateOfBirth
-    );
+    const uuidOld = uuidOldFromVeriffSession(session);
+    const uuidNew = uuidNewFromVeriffSession(session);
 
     // Assert user hasn't registered yet
     const user = await UserVerifications.findOne({
-      "govId.uuidV2": uuidNew,
+      $or: [
+        { "govId.uuid": uuidOld },
+        { "govId.uuidV2": uuidNew } 
+      ],
       // Filter out documents older than one year
       _id: { $gt: objectIdElevenMonthsAgo() },
     }).exec();
@@ -907,17 +914,8 @@ async function getCredentialsV3(req, res) {
 
       // We expect there to be a UserVerification record for this user. If it was created
       // within the last 5 days, then it is within the buffer period, and we ignore it.
-      const uuidConstituents =
-        (veriffSession.verification.person.firstName || "") +
-        (veriffSession.verification.person.lastName || "") +
-        (veriffSession.verification.person.addresses?.[0]?.postcode || "") +
-        (veriffSession.verification.person.dateOfBirth || "");
-      const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-      const uuidNew = govIdUUID(
-        veriffSession.verification.person.firstName,
-        veriffSession.verification.person.lastName,
-        veriffSession.verification.person.dateOfBirth
-      )
+      const uuidOld = uuidOldFromVeriffSession(veriffSession);
+      const uuidNew = uuidNewFromVeriffSession(veriffSession);
       // We started using a new UUID generation method on May 24, 2024, but we still
       // want to check the database for the old UUIDs too.
       const user = await UserVerifications.findOne({ 
@@ -1072,18 +1070,8 @@ async function getCredentialsV3(req, res) {
     }
 
     // Get UUID
-    const uuidConstituents =
-      (veriffSession.verification.person.firstName || "") +
-      (veriffSession.verification.person.lastName || "") +
-      (veriffSession.verification.person.addresses?.[0]?.postcode || "") +
-      (veriffSession.verification.person.dateOfBirth || "");
-    const uuidOld = sha256(Buffer.from(uuidConstituents)).toString("hex");
-
-    const uuidNew = govIdUUID(
-      veriffSession.verification.person.firstName,
-      veriffSession.verification.person.lastName,
-      veriffSession.verification.person.dateOfBirth
-    )
+    const uuidOld = uuidOldFromVeriffSession(veriffSession);
+    const uuidNew = uuidNewFromVeriffSession(veriffSession);
 
     // We started using a new UUID generation method on May 24, 2024, but we still
     // want to check the database for the old UUIDs too.
