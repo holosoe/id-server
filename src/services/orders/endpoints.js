@@ -1,16 +1,15 @@
 import {
     handleRefund,
+    getTransaction,
+    handleRefund,
+    validateTx
 } from "./functions.js";
-import { getTransaction } from "../../utils/transactions.js";
 
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 const Order = import('../../schemas/orders.js');
 
 const orderCategoryEnums = {
-    CATEGORY1: "category_1",
-    CATEGORY2: "category_2",
-    CATEGORY3: "category_3",
     MINT_ZERONYM_V3_SBT: "mint_zeronym_v3_sbt",
 }
 
@@ -67,7 +66,8 @@ async function createOrder(req, res) {
 
 // GET /order/:externalOrderId/transaction/status. 
 // To be called by verifier server. 
-// Should query the DB for the tx metadata, wait a little bit for the tx to be confirmed (if it's not already), 
+// Should query the DB for the tx metadata, 
+// wait a little bit for the tx to be confirmed (if it's not already), 
 // and return a success response if all goes well.
 async function getOrderTransactionStatus(req, res) {
     try {
@@ -81,8 +81,14 @@ async function getOrderTransactionStatus(req, res) {
         }
 
         // Check TX if it's confirmed
-        const tx = await getTransaction(order.txHash, order.chainId);
+        // TX might take a while to be confirmed
+        const tx = await retry(async () => {
+            const result = await getTransaction(order.chainId, order.txHash)
+            if (!result) throw new Error(`Could not find transaction with txHash ${order.txHash} on chain ${order.chainId}`)
+            return result
+        }, 5, 5000);
 
+        // If it's still not found, return an error.
         if (!tx) {
             return res.status(404).json({
                 error: `Could not find ${order.txHash} on chain ${order.chainId}.`,
@@ -94,10 +100,10 @@ async function getOrderTransactionStatus(req, res) {
             return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
         }
 
-        // If TX is not confirmed yet, wait a little bit and check again
-        if (!tx.blockHash || tx.confirmations === 0) {
-            // todo: add a timeout
-            // refer to validateTxForSessionCreation
+        const txReceipt = await tx.wait();
+
+        if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
+            return res.status(400).json({ error: "Transaction has not been confirmed yet." });
         }
 
         // If TX is confirmed, return the order
@@ -131,6 +137,10 @@ async function setOrderFulfilled(req, res) {
         if (order.externalOrderId !== tx.data) {
             return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
         }
+
+        // Validate TX
+        // TODO: verification amount should via variable/constant
+        await validateTx(order, 5.0);
 
         // Set the order to fulfilled
         order.fulfilled = true;
