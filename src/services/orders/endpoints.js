@@ -89,6 +89,11 @@ async function getOrderTransactionStatus(req, res) {
             });
         }
 
+        // Validate externalOrderId equals tx.data
+        if (order.externalOrderId !== tx.data) {
+            return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
+        }
+
         // If TX is not confirmed yet, wait a little bit and check again
         if (!tx.blockHash || tx.confirmations === 0) {
             // todo: add a timeout
@@ -122,6 +127,11 @@ async function setOrderFulfilled(req, res) {
             return res.status(404).json({ error: "Order not found" });
         }
 
+        // Validate externalOrderId equals tx.data
+        if (order.externalOrderId !== tx.data) {
+            return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
+        }
+
         // Set the order to fulfilled
         order.fulfilled = true;
         await order.save();
@@ -145,6 +155,11 @@ async function refundOrder(req, res) {
 
         if (!order) {
             return res.status(404).json({ error: "Order not found" });
+        }
+
+        // Validate externalOrderId equals tx.data
+        if (order.externalOrderId !== tx.data) {
+            return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
         }
 
         // Refund the order
