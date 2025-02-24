@@ -22,6 +22,7 @@ import {
   handleIdvSessionCreation,
 } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
+import { getSessionById } from "../../utils/sessions.js";
 
 // const postSessionsLogger = logger.child({
 //   msgPrefix: "[POST /sessions] ",
@@ -154,17 +155,9 @@ async function createPayPalOrder(req, res) {
   try {
     const _id = req.params._id;
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     const accessToken = await getPayPalAccessToken();
@@ -256,17 +249,9 @@ async function createIdvSession(req, res) {
       return res.status(400).json({ error: "txHash is required" });
     }
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
@@ -349,17 +334,9 @@ async function createIdvSessionV2(req, res) {
       return res.status(400).json({ error: "orderId is required" });
     }
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
@@ -471,17 +448,9 @@ async function createIdvSessionV3(req, res) {
       return res.status(400).json({ error: "txHash is required" });
     }
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (session.status !== sessionStatusEnum.NEEDS_PAYMENT) {
@@ -579,18 +548,9 @@ async function setIdvProvider(req, res) {
       return res.status(400).json({ error: "IDV provider can only be either onfido or veriff" });
     }
 
-    let objectId = null;
-
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     // check the session idvProvider
@@ -651,17 +611,9 @@ async function refreshOnfidoToken(req, res) {
   const referrer = req.body.referrer;
 
   try {
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (!session.applicant_id) {
@@ -707,17 +659,9 @@ async function createOnfidoCheckEndpoint(req, res) {
   try {
     const _id = req.params._id;
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (!session.applicant_id) {
@@ -753,24 +697,16 @@ async function refund(req, res) {
   const _id = req.params._id;
   const to = req.body.to;
 
-  let objectId = null;
   try {
-    objectId = new ObjectId(_id);
-  } catch (err) {
-    return res.status(400).json({ error: "Invalid _id" });
-  }
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
+    }
 
-  try {
     if (!to || to.length !== 42) {
       return res.status(400).json({
         error: "to is required and must be a 42-character hexstring (including 0x)",
       });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
     }
 
     if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {
@@ -841,17 +777,9 @@ async function refundV2(req, res) {
   const _id = req.params._id;
 
   try {
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     if (session.status !== sessionStatusEnum.VERIFICATION_FAILED) {

@@ -32,6 +32,7 @@ import { desiredOnfidoReports } from "../../constants/onfido.js";
 import {
   findOneUserVerificationLast11Months
 } from "../../utils/user-verifications.js"
+import { getSessionById } from "../../utils/sessions.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",
@@ -870,17 +871,9 @@ async function getCredentialsV3(req, res) {
     //   return res.status(200).json(response);
     // }
 
-    let objectId = null;
-    try {
-      objectId = new ObjectId(_id);
-    } catch (err) {
-      return res.status(400).json({ error: "Invalid _id" });
-    }
-
-    const session = await Session.findOne({ _id: objectId }).exec();
-
-    if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+    const { session, error: getSessionError } = await getSessionById(_id);
+    if (getSessionError) {
+      return res.status(400).json({ error: getSessionError });
     }
 
     // First, check if the user is looking up their credentials using their nullifier
