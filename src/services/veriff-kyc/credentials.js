@@ -10,7 +10,7 @@ import {
   NullifierAndCreds,
 } from "../../init.js";
 import { issue } from "holonym-wasm-issuer";
-import { issue as issuev2 } from "holonym-wasm-issuer-v2";
+// import { issue as issuev2 } from "holonym-wasm-issuer-v2";
 import {
   getDateAsInt,
   sha256,
@@ -35,6 +35,7 @@ import { getSessionById } from "../../utils/sessions.js"
 import {
   findOneNullifierAndCredsLast5Days
 } from "../../utils/nullifier-and-creds.js"
+import { issuev2 } from "../../utils/issuance.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /veriff/credentials] ",
@@ -600,14 +601,7 @@ async function getCredentialsV2(req, res) {
 
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      const response = JSON.parse(
-        issuev2(
-          process.env.HOLONYM_ISSUER_PRIVKEY,
-          issuanceNullifier,
-          creds.rawCreds.countryCode.toString(),
-          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-        )
-      );
+      const response = issuev2(issuanceNullifier, creds);
       response.metadata = newDummyUserCreds;
       return res.status(200).json(response);
     }
@@ -783,14 +777,7 @@ async function getCredentialsV2(req, res) {
 
     const creds = extractCreds(session);
 
-    const response = JSON.parse(
-      issuev2(
-        process.env.HOLONYM_ISSUER_PRIVKEY,
-        issuanceNullifier,
-        creds.rawCreds.countryCode.toString(),
-        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-      )
-    );
+    const response = issuev2(issuanceNullifier, creds);
     response.metadata = creds;
 
     await deleteVeriffSession(req.query.sessionId);
@@ -861,14 +848,7 @@ async function getCredentialsV3(req, res) {
     // if (process.env.ENVIRONMENT == "dev") {
     //   const creds = newDummyUserCreds;
 
-    //   const response = JSON.parse(
-    //     issuev2(
-    //       process.env.HOLONYM_ISSUER_PRIVKEY,
-    //       issuanceNullifier,
-    //       creds.rawCreds.countryCode.toString(),
-    //       creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-    //     )
-    //   );
+    //   const response = issuev2(issuanceNullifier, creds);
     //   response.metadata = newDummyUserCreds;
 
     //   return res.status(200).json(response);
@@ -927,14 +907,7 @@ async function getCredentialsV3(req, res) {
 
       const creds = extractCreds(veriffSession);
 
-      const response = JSON.parse(
-        issuev2(
-          process.env.HOLONYM_ISSUER_PRIVKEY,
-          issuanceNullifier,
-          creds.rawCreds.countryCode.toString(),
-          creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-        )
-      );
+      const response = issuev2(issuanceNullifier, creds);
       response.metadata = creds;
 
       endpointLoggerV3.info(
@@ -1092,14 +1065,7 @@ async function getCredentialsV3(req, res) {
 
     const creds = extractCreds(veriffSession);
 
-    const response = JSON.parse(
-      issuev2(
-        process.env.HOLONYM_ISSUER_PRIVKEY,
-        issuanceNullifier,
-        creds.rawCreds.countryCode.toString(),
-        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-      )
-    );
+    const response = issuev2(issuanceNullifier, creds);
     response.metadata = creds;
 
     endpointLoggerV3.info(
