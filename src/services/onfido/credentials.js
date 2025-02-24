@@ -33,6 +33,7 @@ import {
   findOneUserVerificationLast11Months
 } from "../../utils/user-verifications.js"
 import { getSessionById } from "../../utils/sessions.js";
+import { findOneNullifierAndCredsLast5Days } from "../../utils/nullifier-and-creds.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",
@@ -877,11 +878,7 @@ async function getCredentialsV3(req, res) {
     }
 
     // First, check if the user is looking up their credentials using their nullifier
-    const nullifierAndCreds = await NullifierAndCreds.findOne({
-      issuanceNullifier,
-      // Ignore records created more than 5 days ago
-      _id: { $gt: objectIdFiveDaysAgo() }
-    }).exec();
+    const nullifierAndCreds = await findOneNullifierAndCredsLast5Days(issuanceNullifier);
     const checkIdFromNullifier = nullifierAndCreds?.idvSessionIds?.onfido?.check_id
     if (checkIdFromNullifier) {
       const check = await getOnfidoCheck(checkIdFromNullifier);
