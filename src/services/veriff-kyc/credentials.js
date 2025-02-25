@@ -885,6 +885,16 @@ async function getCredentialsV3(req, res) {
       return res.status(400).json({ error: getSessionError });
     }
 
+    if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+      endpointLoggerV3.verificationPreviouslyFailed(
+        session.sessionId,
+        session
+      )
+      return res.status(400).json({
+        error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
+      });
+    }
+
     // First, check if the user is looking up their credentials using their nullifier
     const nullifierAndCreds = await findOneNullifierAndCredsLast5Days(issuanceNullifier);
     const veriffSessionIdFromNullifier = nullifierAndCreds?.idvSessionIds?.veriff?.sessionId
@@ -905,6 +915,11 @@ async function getCredentialsV3(req, res) {
       const uuidNew = uuidNewFromVeriffSession(veriffSession);
       // We started using a new UUID generation method on May 24, 2024, but we still
       // want to check the database for the old UUIDs too.
+
+      // This step is not strictly necessary since we are only considering nullifiers
+      // from the last 5 days (in the nullifierAndCreds query above) and the user
+      // is only getting the credentials+nullifier that they were already issued.
+      // However, we keep it here to be extra safe.
       const user = await findOneUserVerification11Months5Days(uuidOld, uuidNew);
       if (user) {
         endpointLoggerV3.error({ uuidV2: uuidNew }, "User has already registered.");
@@ -935,15 +950,6 @@ async function getCredentialsV3(req, res) {
     // If the session isn't in progress, we do not issue credentials. If the session is ISSUED,
     // then the lookup via nullifier should have worked above.
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
-      if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
-        endpointLoggerV3.verificationPreviouslyFailed(
-          veriffSessionIdFromSession,
-          session
-        )
-        return res.status(400).json({
-          error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
-        });
-      }
       return res.status(400).json({
         error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
       });

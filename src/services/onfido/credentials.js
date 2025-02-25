@@ -863,6 +863,13 @@ async function getCredentialsV3(req, res) {
       return res.status(400).json({ error: getSessionError });
     }
 
+    if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+      endpointLoggerV3.verificationPreviouslyFailed(session.check_id, session)
+      return res.status(400).json({
+        error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
+      });
+    }
+
     // First, check if the user is looking up their credentials using their nullifier
     const nullifierAndCreds = await findOneNullifierAndCredsLast5Days(issuanceNullifier);
     const checkIdFromNullifier = nullifierAndCreds?.idvSessionIds?.onfido?.check_id
@@ -902,11 +909,14 @@ async function getCredentialsV3(req, res) {
       const uuidOld = uuidOldFromOnfidoReport(documentReport);
       const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
-      // Assert user hasn't registered yet
+      // Assert user hasn't registered yet.
+      // This step is not strictly necessary since we are only considering nullifiers
+      // from the last 5 days (in the nullifierAndCreds query above) and the user
+      // is only getting the credentials+nullifier that they were already issued.
+      // However, we keep it here to be extra safe.
       const user = await findOneUserVerification11Months5Days(uuidOld, uuidNew);
       if (user) {
         await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
-
         endpointLoggerV3.alreadyRegistered(uuidNew);
         await failSession(session, toAlreadyRegisteredStr(user._id))
         return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
@@ -931,12 +941,6 @@ async function getCredentialsV3(req, res) {
     // If the session isn't in progress, we do not issue credentials. If the session is ISSUED,
     // then the lookup via nullifier should have worked above.
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
-      if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
-        endpointLoggerV3.verificationPreviouslyFailed(check_id, session)
-        return res.status(400).json({
-          error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
-        });
-      }
       return res.status(400).json({
         error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
       });
