@@ -33,10 +33,11 @@ import {
   findOneUserVerificationLast11Months,
   findOneUserVerification11Months5Days
 } from "../../utils/user-verifications.js"
-import { getSessionById } from "../../utils/sessions.js";
+import { getSessionById, failSession } from "../../utils/sessions.js";
 import { findOneNullifierAndCredsLast5Days } from "../../utils/nullifier-and-creds.js";
 import { issuev2 } from "../../utils/issuance.js";
 import { toAlreadyRegisteredStr } from "../../utils/errors.js"
+import { upgradeV3Logger } from "./error-logger.js";
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",
@@ -48,7 +49,7 @@ const endpointLogger = logger.child({
   },
 });
 
-const endpointLoggerV3 = logger.child({
+const endpointLoggerV3 = upgradeV3Logger(logger.child({
   msgPrefix: "[GET /onfido/v3/credentials] ",
   base: {
     ...pinoOptions.base,
@@ -56,7 +57,7 @@ const endpointLoggerV3 = logger.child({
     feature: "holonym",
     subFeature: "gov-id",
   },
-});
+}));
 
 function validateCheck(check) {
   if (!check?.report_ids || check.report_ids.length == 0) {
@@ -242,6 +243,34 @@ function validateReports(reports, metaSession) {
   }
 
   return { success: true };
+}
+
+function onfidoValidationToUserErrorMessage(
+  reportsValidation,
+  validationResultCheck
+) {
+  return reportsValidation.reasons?.length
+    ? `Verification failed: ${reportsValidation.reasons
+      .map((reason) => {
+        if (reason.includes("breakdown")) {
+          const breakdownType = reason.match(/result of (\w+) in/)?.[1];
+          return breakdownType
+            ? `${breakdownType.replace(/_/g, " ")} verification failed`
+            : "Document verification issue detected";
+        }
+        if (reason.includes("face")) {
+          return "Face verification failed - please ensure your face is clearly visible";
+        }
+        if (reason.includes("quality")) {
+          return "Image quality issue - please ensure photos are clear and well-lit";
+        }
+        if (reason.includes("supported")) {
+          return "Document type not supported - please use a valid ID document";
+        }
+        return "Verification failed - please try again";
+      })
+      .join(". ")}`
+    : validationResultCheck.error || "Verification failed";
 }
 
 function uuidOldFromOnfidoReport(documentReport) {
@@ -694,28 +723,10 @@ async function getCredentialsV2(req, res) {
 
     const reportsValidation = validateReports(reports, metaSession);
     if (validationResultCheck.error || reportsValidation.error) {
-      const userErrorMessage = reportsValidation.reasons?.length
-        ? `Verification failed: ${reportsValidation.reasons
-            .map((reason) => {
-              if (reason.includes("breakdown")) {
-                const breakdownType = reason.match(/result of (\w+) in/)?.[1];
-                return breakdownType
-                  ? `${breakdownType.replace(/_/g, " ")} verification failed`
-                  : "Document verification issue detected";
-              }
-              if (reason.includes("face")) {
-                return "Face verification failed - please ensure your face is clearly visible";
-              }
-              if (reason.includes("quality")) {
-                return "Image quality issue - please ensure photos are clear and well-lit";
-              }
-              if (reason.includes("supported")) {
-                return "Document type not supported - please use a valid ID document";
-              }
-              return "Verification failed - please try again";
-            })
-            .join(". ")}`
-        : validationResultCheck.error || "Verification failed";
+      const userErrorMessage = onfidoValidationToUserErrorMessage(
+        reportsValidation,
+        validationResultCheck
+      )
 
       endpointLogger.error(
         {
@@ -842,10 +853,8 @@ async function getCredentialsV3(req, res) {
 
     // if (process.env.ENVIRONMENT == "dev") {
     //   const creds = newDummyUserCreds;
-
     //   const response = issuev2(issuanceNullifier, creds);
     //   response.metadata = newDummyUserCreds;
-
     //   return res.status(200).json(response);
     // }
 
@@ -861,10 +870,7 @@ async function getCredentialsV3(req, res) {
       const check = await getOnfidoCheck(checkIdFromNullifier);
       
       if (!check) {
-        endpointLoggerV3.error(
-          { check_id: checkIdFromNullifier },
-          "Failed to get onfido check."
-        );
+        endpointLoggerV3.failedToGetCheck(checkIdFromNullifier);
         return res.status(400).json({
           error: "Unexpected error: Failed to retrieve Onfido check while executing lookup from nullifier branch."
         });
@@ -873,14 +879,7 @@ async function getCredentialsV3(req, res) {
       const reports = await getOnfidoReports(check.report_ids);
 
       if (!reports || reports.length == 0) {
-        endpointLoggerV3.error(
-          {
-            check_id: checkIdFromNullifier,
-            report_ids: check.report_ids ?? "unknown",
-            tags: ["action:getReports", "error:noReportsFound"],
-          },
-          "Failed to get onfido reports"
-        );
+        endpointLoggerV3.failedToGetReports(checkIdFromNullifier, check.report_ids);
         return res.status(400).json({
           error: "Unexpected error: Failed to retrieve Onfido reports while executing lookup from nullifier branch."
         });
@@ -893,10 +892,7 @@ async function getCredentialsV3(req, res) {
       const documentReport = reports.find((report) => report.name == "document");
 
       if (!documentReport) {
-        endpointLoggerV3.error(
-          { reports },
-          "No documentReport"
-        );
+        endpointLoggerV3.noDocumentReport(reports)
         return res.status(400).json({
           error: "Unexpected error: Failed to get Onfido document report while executing lookup from nullifier branch."
         });
@@ -911,27 +907,12 @@ async function getCredentialsV3(req, res) {
       if (user) {
         await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
 
-        endpointLoggerV3.error(
-          {
-            uuidV2: uuidNew,
-            tags: [
-              "action:registeredUserCheck",
-              "error:userAlreadyRegistered",
-              "stage:registration",
-            ],
-          },
-          "User has already registered"
-        );
-        await updateSessionStatus(
-          checkIdFromNullifier,
-          sessionStatusEnum.VERIFICATION_FAILED,
-          toAlreadyRegisteredStr(user._id)
-        );
+        endpointLoggerV3.alreadyRegistered(uuidNew);
+        await failSession(session, toAlreadyRegisteredStr(user._id))
         return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
       }
 
       const creds = extractCreds(documentReport);
-
       const response = issuev2(issuanceNullifier, creds);
       response.metadata = creds;
 
@@ -951,15 +932,7 @@ async function getCredentialsV3(req, res) {
     // then the lookup via nullifier should have worked above.
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
       if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
-        endpointLoggerV3.error(
-          {
-            check_id,
-            session_status: session.status,
-            failure_reason: session.verificationFailureReason,
-            tags: ["action:validateSession", "error:verificationFailed"],
-          },
-          "Session verification previously failed"
-        );
+        endpointLoggerV3.verificationPreviouslyFailed(check_id, session)
         return res.status(400).json({
           error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
         });
@@ -972,18 +945,8 @@ async function getCredentialsV3(req, res) {
     const check = await getOnfidoCheck(check_id);
     const validationResultCheck = validateCheck(check);
     if (!validationResultCheck.success && !validationResultCheck.hasReports) {
-      endpointLoggerV3.error(
-        validationResultCheck.log.data,
-        validationResultCheck.log.msg,
-        {
-          tags: ["action:validateSession", "error:verificationFailed"],
-        }
-      );
-      await updateSessionStatus(
-        check_id,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        validationResultCheck.error
-      );
+      endpointLoggerV3.checkValidationFailed(validationResultCheck)
+      await failSession(session, validationResultCheck.error)
       return res.status(400).json({
         error: validationResultCheck.error,
         details: validationResultCheck.log.data
@@ -992,61 +955,19 @@ async function getCredentialsV3(req, res) {
 
     const reports = await getOnfidoReports(check.report_ids);
     if (!validationResultCheck.success && (!reports || reports.length == 0)) {
-      endpointLoggerV3.error(
-        {
-          check_id,
-          report_ids: check.report_ids ?? "unknown",
-          tags: ["action:getReports", "error:noReportsFound"],
-        },
-        "No reports found"
-      );
+      endpointLoggerV3.noReportsFound(check_id, check.report_ids)
 
-      await updateSessionStatus(
-        check_id,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        "No onfido reports found"
-      );
+      await failSession(session, "No onfido reports found")
       return res.status(400).json({ error: "No reports found" });
     }
     const reportsValidation = validateReports(reports, session);
     if (validationResultCheck.error || reportsValidation.error) {
-      const userErrorMessage = reportsValidation.reasons?.length
-        ? `Verification failed: ${reportsValidation.reasons
-            .map((reason) => {
-              if (reason.includes("breakdown")) {
-                const breakdownType = reason.match(/result of (\w+) in/)?.[1];
-                return breakdownType
-                  ? `${breakdownType.replace(/_/g, " ")} verification failed`
-                  : "Document verification issue detected";
-              }
-              if (reason.includes("face")) {
-                return "Face verification failed - please ensure your face is clearly visible";
-              }
-              if (reason.includes("quality")) {
-                return "Image quality issue - please ensure photos are clear and well-lit";
-              }
-              if (reason.includes("supported")) {
-                return "Document type not supported - please use a valid ID document";
-              }
-              return "Verification failed - please try again";
-            })
-            .join(". ")}`
-        : validationResultCheck.error || "Verification failed";
-
-      endpointLoggerV3.error(
-        {
-          check_id,
-          detailed_reasons: reportsValidation.reasons,
-          tags: ["action:validateVerification", "error:verificationFailed"],
-        },
-        "Verification failed"
-      );
-
-      await updateSessionStatus(
-        check_id,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        userErrorMessage
-      );
+      const userErrorMessage = onfidoValidationToUserErrorMessage(
+        reportsValidation,
+        validationResultCheck
+      )
+      endpointLoggerV3.verificationFailed(check_id, reportsValidation)
+      await failSession(session, userErrorMessage)
 
       throw {
         status: 400,
@@ -1070,22 +991,8 @@ async function getCredentialsV3(req, res) {
     if (user) {
       await saveCollisionMetadata(uuidOld, uuidNew, check_id, documentReport);
 
-      endpointLoggerV3.error(
-        {
-          uuidV2: uuidNew,
-          tags: [
-            "action:registeredUserCheck",
-            "error:userAlreadyRegistered",
-            "stage:registration",
-          ],
-        },
-        "User has already registered"
-      );
-      await updateSessionStatus(
-        check_id,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        toAlreadyRegisteredStr(user._id)
-      );
+      endpointLoggerV3.alreadyRegistered(uuidNew);
+      await failSession(session, toAlreadyRegisteredStr(user._id))
       return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
     }
 
@@ -1094,7 +1001,6 @@ async function getCredentialsV3(req, res) {
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(documentReport);
-
     const response = issuev2(issuanceNullifier, creds);
     response.metadata = creds;
 
@@ -1126,17 +1032,7 @@ async function getCredentialsV3(req, res) {
     }
 
     // Otherwise, log the unexpected error
-    endpointLoggerV3.error(
-      {
-        error: err,
-        tags: [
-          "action:getCredentialsV3",
-          "error:unexpectedError",
-          "stage:unknown",
-        ],
-      },
-      "Unexpected error occurred"
-    );
+    endpointLoggerV3.unexpected(err)
 
     return res.status(500).json({
       error: "An unexpected error occurred.",
