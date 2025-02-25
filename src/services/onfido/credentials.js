@@ -36,6 +36,7 @@ import {
 import { getSessionById } from "../../utils/sessions.js";
 import { findOneNullifierAndCredsLast5Days } from "../../utils/nullifier-and-creds.js";
 import { issuev2 } from "../../utils/issuance.js";
+import { toAlreadyRegisteredStr } from "../../utils/errors.js"
 
 const endpointLogger = logger.child({
   msgPrefix: "[GET /onfido/credentials] ",
@@ -924,11 +925,9 @@ async function getCredentialsV3(req, res) {
         await updateSessionStatus(
           checkIdFromNullifier,
           sessionStatusEnum.VERIFICATION_FAILED,
-          `User has already registered. User ID: ${user._id}`
+          toAlreadyRegisteredStr(user._id)
         );
-        return res
-          .status(400)
-          .json({ error: `User has already registered. User ID: ${user._id}` });
+        return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
       }
 
       const creds = extractCreds(documentReport);
@@ -1085,11 +1084,9 @@ async function getCredentialsV3(req, res) {
       await updateSessionStatus(
         check_id,
         sessionStatusEnum.VERIFICATION_FAILED,
-        `User has already registered. User ID: ${user._id}`
+        toAlreadyRegisteredStr(user._id)
       );
-      return res
-        .status(400)
-        .json({ error: `User has already registered. User ID: ${user._id}` });
+      return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
     }
 
     // Store UUID for Sybil resistance

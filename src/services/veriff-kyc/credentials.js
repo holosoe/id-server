@@ -32,11 +32,12 @@ import {
   findOneUserVerificationLast11Months,
   findOneUserVerification11Months5Days
 } from "../../utils/user-verifications.js"
-import { getSessionById } from "../../utils/sessions.js"
+import { getSessionById, failSession } from "../../utils/sessions.js"
 import {
   findOneNullifierAndCredsLast5Days
 } from "../../utils/nullifier-and-creds.js"
 import { issuev2 } from "../../utils/issuance.js";
+import { toAlreadyRegisteredStr } from "../../utils/errors.js"
 import { upgradeV3Logger } from "./error-logger.js"
 
 const endpointLogger = logger.child({
@@ -849,10 +850,8 @@ async function getCredentialsV3(req, res) {
 
     // if (process.env.ENVIRONMENT == "dev") {
     //   const creds = newDummyUserCreds;
-
     //   const response = issuev2(issuanceNullifier, creds);
     //   response.metadata = newDummyUserCreds;
-
     //   return res.status(200).json(response);
     // }
 
@@ -884,14 +883,8 @@ async function getCredentialsV3(req, res) {
       const user = await findOneUserVerification11Months5Days(uuidOld, uuidNew);
       if (user) {
         endpointLoggerV3.error({ uuidV2: uuidNew }, "User has already registered.");
-        await updateSessionStatus(
-          veriffSessionIdFromNullifier,
-          sessionStatusEnum.VERIFICATION_FAILED,
-          `User has already registered. User ID: ${user._id}`
-        );
-        return res
-          .status(400)
-          .json({ error: `User has already registered. User ID: ${user._id}` });
+        await failSession(session, toAlreadyRegisteredStr(user._id));
+        return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
       }
 
       const creds = extractCreds(veriffSession);
@@ -964,11 +957,7 @@ async function getCredentialsV3(req, res) {
         veriffSession,
         validationResult
       )
-      await updateSessionStatus(
-        veriffSessionIdFromSession,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        validationResult.error
-      );
+      await failSession(session, validationResult.error);
       throw {
         status: 400,
         error: validationResult.error,
@@ -995,14 +984,8 @@ async function getCredentialsV3(req, res) {
       await saveCollisionMetadata(uuidOld, uuidNew, veriffSessionIdFromSession, veriffSession);
 
       endpointLoggerV3.alreadyRegistered(uuidNew)
-      await updateSessionStatus(
-        veriffSessionIdFromSession,
-        sessionStatusEnum.VERIFICATION_FAILED,
-        `User has already registered. User ID: ${user._id}`
-      );
-      return res
-        .status(400)
-        .json({ error: `User has already registered. User ID: ${user._id}` });
+      await failSession(session, toAlreadyRegisteredStr(user._id));
+      return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
     }
 
     // Store UUID for Sybil resistance

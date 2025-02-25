@@ -17,3 +17,9 @@ export async function getSessionById(_id) {
 
   return { session }
 }
+
+export async function failSession(session, failureReason) {
+  session.status = sessionStatusEnum.VERIFICATION_FAILED;
+  if (failureReason) session.verificationFailureReason = failureReason;
+  await session.save() 
+}
