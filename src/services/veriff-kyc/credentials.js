@@ -208,6 +208,31 @@ function validateSession(session, metaSession) {
   return { success: true };
 }
 
+function throwVeriffSessionValidationError(validationResult, veriffSession) {
+  throw {
+    status: 400,
+    error: validationResult.error,
+    details: {
+      status: veriffSession.status,
+      verification: {
+        code: veriffSession.verification?.code,
+        status: veriffSession.verification?.status,
+      },
+    },
+  };
+}
+
+function throwVeriffSessionTempUnavailable() {
+  throw {
+    status: 503,
+    error:
+      "Unable to check verification status at this moment. Please try again in a few minutes.",
+    details: {
+      retryable: true,
+    },
+  };
+}
+
 function uuidOldFromVeriffSession(veriffSession) {
   const uuidConstituents =
     (veriffSession.verification.person.firstName || "") +
@@ -888,7 +913,6 @@ async function getCredentialsV3(req, res) {
       }
 
       const creds = extractCreds(veriffSession);
-
       const response = issuev2(issuanceNullifier, creds);
       response.metadata = creds;
 
@@ -935,14 +959,7 @@ async function getCredentialsV3(req, res) {
           veriffSessionIdFromSession
         )
 
-        throw {
-          status: 503,
-          error:
-            "Unable to check verification status at this moment. Please try again in a few minutes.",
-          details: {
-            retryable: true,
-          },
-        };
+        throwVeriffSessionTempUnavailable()
       }
 
       // If session is undefined, it means the session doesn't exist or was deleted
@@ -958,17 +975,7 @@ async function getCredentialsV3(req, res) {
         validationResult
       )
       await failSession(session, validationResult.error);
-      throw {
-        status: 400,
-        error: validationResult.error,
-        details: {
-          status: veriffSession.status,
-          verification: {
-            code: veriffSession.verification?.code,
-            status: veriffSession.verification?.status,
-          },
-        },
-      };
+      throwVeriffSessionValidationError(validationResult, veriffSession);
     }
 
     // Get UUID
@@ -993,7 +1000,6 @@ async function getCredentialsV3(req, res) {
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(veriffSession);
-
     const response = issuev2(issuanceNullifier, creds);
     response.metadata = creds;
 
