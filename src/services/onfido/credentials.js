@@ -30,7 +30,8 @@ import {
 } from "../../utils/onfido.js";
 import { desiredOnfidoReports } from "../../constants/onfido.js";
 import {
-  findOneUserVerificationLast11Months
+  findOneUserVerificationLast11Months,
+  findOneUserVerification11Months5Days
 } from "../../utils/user-verifications.js"
 import { getSessionById } from "../../utils/sessions.js";
 import { findOneNullifierAndCredsLast5Days } from "../../utils/nullifier-and-creds.js";
@@ -905,17 +906,7 @@ async function getCredentialsV3(req, res) {
       const uuidNew = uuidNewFromOnfidoReport(documentReport);
 
       // Assert user hasn't registered yet
-      const user = await UserVerifications.findOne({ 
-        $or: [
-          { "govId.uuid": uuidOld },
-          { "govId.uuidV2": uuidNew } 
-        ],
-        // Filter out documents older than 11 months and younger than 5 days
-        _id: {
-          $gt: objectIdElevenMonthsAgo(),
-          $lt: objectIdFiveDaysAgo()
-        }
-      }).exec();
+      const user = await findOneUserVerification11Months5Days(uuidOld, uuidNew);
       if (user) {
         await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
 

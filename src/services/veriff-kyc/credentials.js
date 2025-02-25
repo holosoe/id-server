@@ -29,7 +29,8 @@ import {
   deleteVeriffSession,
 } from "../../utils/veriff.js";
 import {
-  findOneUserVerificationLast11Months
+  findOneUserVerificationLast11Months,
+  findOneUserVerification11Months5Days
 } from "../../utils/user-verifications.js"
 import { getSessionById } from "../../utils/sessions.js"
 import {
@@ -867,10 +868,7 @@ async function getCredentialsV3(req, res) {
       const veriffSession = await getVeriffSessionDecision(veriffSessionIdFromNullifier)
 
       if (!veriffSession) {
-        endpointLoggerV3.error(
-          { sessionId: veriffSessionIdFromNullifier },
-          "Failed to retrieve Verrif session."
-        );
+        endpointLoggerV3.veriffSessionNotFound(veriffSessionIdFromNullifier)
         return res.status(400).json({ error: "Unexpected error: Failed to retrieve Verrif session while executing lookup from nullifier branch." });
       }
 
@@ -883,17 +881,7 @@ async function getCredentialsV3(req, res) {
       const uuidNew = uuidNewFromVeriffSession(veriffSession);
       // We started using a new UUID generation method on May 24, 2024, but we still
       // want to check the database for the old UUIDs too.
-      const user = await UserVerifications.findOne({ 
-        $or: [
-          { "govId.uuid": uuidOld },
-          { "govId.uuidV2": uuidNew } 
-        ],
-        // Filter out documents older than 11 months and younger than 5 days
-        _id: {
-          $gt: objectIdElevenMonthsAgo(),
-          $lt: objectIdFiveDaysAgo()
-        }
-      }).exec();
+      const user = await findOneUserVerification11Months5Days(uuidOld, uuidNew);
       if (user) {
         endpointLoggerV3.error({ uuidV2: uuidNew }, "User has already registered.");
         await updateSessionStatus(
