@@ -124,22 +124,23 @@ async function deleteUserData(req, res) {
     }
 
     // Delete records from our FaceTec Server
-    try {
-      const resp = await axios.delete(`${facetecServerBaseURL}/old-enrollments`, {
-        headers: {
-          "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
-        },
-      });
-      // For now, we log the result. Probably not necessary long-term.
-      if (!resp.data?.deleted) {
-        console.log("deleteUserData: No data deleted after calling DELETE /old-enrollments on FaceTec Server. Response from server:", resp.data);
-      }
-    } catch (err) {
-      console.log("deleteUserData: Error encountered while calling DELETE /old-enrollments on FaceTec Server (a)", err.message);
-      if (err?.response?.data)
-        console.log("deleteUserData: Error encountered (b)", err?.response?.data);
-      else console.log("deleteUserData: Error encountered (b)", err);
-    }
+    // TODO: Uncomment once we finish facetec issuer
+    // try {
+    //   const resp = await axios.delete(`${facetecServerBaseURL}/old-enrollments`, {
+    //     headers: {
+    //       "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
+    //     },
+    //   });
+    //   // For now, we log the result. Probably not necessary long-term.
+    //   if (!resp.data?.deleted) {
+    //     console.log("deleteUserData: No data deleted after calling DELETE /old-enrollments on FaceTec Server. Response from server:", resp.data);
+    //   }
+    // } catch (err) {
+    //   console.log("deleteUserData: Error encountered while calling DELETE /old-enrollments on FaceTec Server (a)", err.message);
+    //   if (err?.response?.data)
+    //     console.log("deleteUserData: Error encountered (b)", err?.response?.data);
+    //   else console.log("deleteUserData: Error encountered (b)", err);
+    // }
 
     return res.status(200).json({ message: "Success" });
   } catch (err) {
