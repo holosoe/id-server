@@ -89,7 +89,7 @@ export function upgradeV3Logger(logger) {
   logger.unexpected = (err) => {
     logger.error(
       {
-        error: err,
+        error: err.message ?? err.toString(),
         tags: [
           "action:getCredentialsV3",
           "error:unexpectedError",
