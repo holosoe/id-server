@@ -334,7 +334,7 @@ async function createIdvSessionV2(req, res) {
       return res.status(400).json({ error: "orderId is required" });
     }
 
-    const { session, error: getSessionError } = await getSessionById(_id);
+    const { session, error: getSessionError, objectId } = await getSessionById(_id);
     if (getSessionError) {
       return res.status(400).json({ error: getSessionError });
     }
@@ -698,7 +698,7 @@ async function refund(req, res) {
   const to = req.body.to;
 
   try {
-    const { session, error: getSessionError } = await getSessionById(_id);
+    const { session, error: getSessionError, objectId } = await getSessionById(_id);
     if (getSessionError) {
       return res.status(400).json({ error: getSessionError });
     }
@@ -745,7 +745,7 @@ async function refund(req, res) {
   } catch (err) {
     // Delete mutex. We have this here in case an unknown error occurs above.
     try {
-      await SessionRefundMutex.deleteOne({ _id: objectId }).exec();
+      await SessionRefundMutex.deleteOne({ _id: new Object(_id) }).exec();
     } catch (err) {
       console.log(
         "POST /sessions/:_id/idv-session/refund/v2: Error encountered while deleting mutex",

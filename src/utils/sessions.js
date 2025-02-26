@@ -15,7 +15,7 @@ export async function getSessionById(_id) {
     return { error: "Session not found" };
   }
 
-  return { session }
+  return { session, objectId }
 }
 
 export async function failSession(session, failureReason) {
