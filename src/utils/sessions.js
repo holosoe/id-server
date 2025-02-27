@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { Session } from "../init.js";
+import { sessionStatusEnum } from "../constants/misc.js";
 
 export async function getSessionById(_id) {
   let objectId = null;
