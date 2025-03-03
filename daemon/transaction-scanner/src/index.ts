@@ -126,7 +126,22 @@ async function processPhoneServerTransactions() {
 
   logAndPersistLogUpdate("(phone) Getting phone sessions")
 
-  const phoneSessions = await getAllPhoneSessions()
+  const allPhoneSessions = await getAllPhoneSessions()
+
+  // On Feb 25, 2025, we started using mongodb ObjectIds for phone session IDs. Prior to that,
+  // phone sessions did not have any timestamp in them.
+
+  // Filter out sessions that are older than 24 hours
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+  const phoneSessions = allPhoneSessions.filter((session) => {
+    try {
+      const oid = new ObjectId(session.id);
+      return oid.getTimestamp() >= twentyFourHoursAgo;
+    } catch (err) {
+      return false;
+    }
+  })
 
   logAndPersistLogUpdate('(phone) phoneSessions.length', phoneSessions.length)
 
