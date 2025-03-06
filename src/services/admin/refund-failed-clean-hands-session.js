@@ -91,8 +91,7 @@ export async function refundFailedCleanHandsSession(req, res) {
 
     const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
 
-    // Refund 80% of the transaction amount. This approximates the mint cost.
-    const refundAmount = tx.value.mul(8).div(10);
+    const refundAmount = tx.value //.mul(8).div(10);
 
     // Ensure wallet has enough funds to refund
     const balance = await wallet.getBalance();

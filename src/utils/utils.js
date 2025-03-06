@@ -112,3 +112,36 @@ export function objectIdElevenMonthsAgo() {
   const elevenMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, now.getDate())
   return new ObjectId(Math.floor(elevenMonthsAgo.getTime() / 1000).toString(16) + "0000000000000000");
 }
+
+export function objectIdFiveDaysAgo() {
+  const fiveDaysAgo = new Date(new Date().getTime() - (5 * 24 * 60 * 60 * 1000));
+  return new ObjectId(Math.floor(fiveDaysAgo.getTime() / 1000).toString(16) + "0000000000000000");
+}
+
+/**
+ * 
+ * @param {() => Promise<T>} fn 
+ * @param {number} retries 
+ * @param {number} delay 
+ * @returns 
+ */
+export async function retry(
+  fn,
+  retries,
+  delay
+) {
+  try {
+    return await fn()
+  } catch (err) {
+    if (retries === 0) {
+      throw err
+    }
+
+    console.log('retry encountered error "', err.message, '" retries left:', retries)
+
+    // console.log(`Retrying... Attempts left: ${retries}`)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+
+    return await retry(fn, retries - 1, delay)
+  }
+}

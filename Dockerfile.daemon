@@ -1,4 +1,4 @@
-FROM rustlang/rust:nightly as builder
+FROM rustlang/rust:nightly AS rust_builder
 
 WORKDIR /usr/src/daemon
 
@@ -6,16 +6,25 @@ COPY ./daemon .
 
 RUN cargo install --path .
 
-# FROM debian:bullseye-slim
-# # RUN apt-get update && rm -rf /var/lib/apt/lists/*
-# RUN apt-get update
-# # RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
-# RUN apt-get install -y ca-certificates libssl3
-
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install -y libssl3 ca-certificates
+RUN apt-get update && apt-get install -y curl wget libssl3 ca-certificates
 
-COPY --from=builder /usr/local/cargo/bin/daemon /usr/local/bin/daemon
+SHELL ["/bin/bash", "--login", "-i", "-c"]
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+RUN source /$HOME/.bashrc && nvm install v18.9.0
+SHELL ["/bin/bash", "--login", "-c"]
+
+# Build transaction-scanner
+COPY ./daemon/transaction-scanner ./transaction-scanner
+WORKDIR /transaction-scanner
+RUN wget https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
+ENV PATH="/root/.nvm/versions/node/v18.9.0/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+RUN npm i
+RUN npm run build
+
+ENV PATH_TO_TRANSACTION_SCANNER_DIR=/transaction-scanner
+
+COPY --from=rust_builder /usr/local/cargo/bin/daemon /usr/local/bin/daemon
 
 CMD ["daemon"]

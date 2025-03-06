@@ -2,7 +2,7 @@ import { mongoose } from "./init.js";
 import { app } from "./index.js";
 import logger from "./utils/logger.js";
 
-const PORT = 3000;
+const PORT = process.env.ENVIRONMENT == "dev" ? 3031 : 3000;
 const server = app.listen(PORT, (err) => {
   if (err) throw err;
   logger.info(`Server running, exposed at http://127.0.0.1:${PORT}`);

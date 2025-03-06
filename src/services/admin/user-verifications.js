@@ -23,23 +23,36 @@ async function getUserVerification(req, res) {
 
     const id = req.query.id;
     const uuid = req.query.uuid;
+    const uuidV2 = req.query.uuidV2;
     const idvProviderSessionId = req.query.idvProviderSessionId;
 
-    if (!id && !uuid && !idvProviderSessionId) {
+    if (!id && !uuid && !uuidV2 && !idvProviderSessionId) {
       return res.status(400).json({ error: "No user ID provided." });
     }
 
+    // Whatever parameters were included in the request to this endpoint, include them.
+    // Leave out any null/undefined values.
+    const orInQuery = []
+    if (id) {
+      orInQuery.push({ _id: id });
+    }
+    if (uuid) {
+      orInQuery.push({ "govId.uuid": uuid });
+    }
+    if (uuidV2) {
+      orInQuery.push({ "govId.uuidV2": uuidV2 });
+    }
+    if (idvProviderSessionId) {
+      orInQuery.push({ "govId.sessionId": idvProviderSessionId });
+    }
+
     // const user = await UserVerifications.findOne({ _id: id }).exec();
-    const user = await UserVerifications.findOne({
-      $or: [
-        { _id: id },
-        { "govId.uuid": uuid },
-        { "govId.sessionId": idvProviderSessionId },
-      ],
+    const users = await UserVerifications.find({
+      $or: orInQuery,
     }).exec();
-    if (user) {
-      getEndpointLogger.info({ _id: id, uuid }, "Found user ");
-      return res.status(200).json(user);
+    if (users) {
+      getEndpointLogger.info({ _id: id, uuid }, "Found users");
+      return res.status(200).json(users);
     } else {
       getEndpointLogger.info({ _id: id, uuid }, "No user found");
       return res.status(404).json({ error: "No user found." });
@@ -64,9 +77,11 @@ async function deleteUserVerification(req, res) {
 
     const id = req.query.id;
     const uuid = req.query.uuid;
+    const uuidV2 = req.query.uuidV2;
+    const idvProviderSessionId = req.query.idvProviderSessionId;
 
-    if (!id && !uuid) {
-      return res.status(400).json({ error: "No user ID or UUID provided." });
+    if (!id && !uuid && !uuidV2 && !idvProviderSessionId) {
+      return res.status(400).json({ error: "No user ID provided." });
     }
 
     // Limit the number of deletions per day to 2% of the number of verifications per day
@@ -83,19 +98,38 @@ async function deleteUserVerification(req, res) {
     }).exec();
     const deletionCountToday = deletionCountDoc?.deletionCount ?? 0;
     // if (deletionCountToday >= sessionCountToday * 0.02) {
-    if (deletionCountToday > 2) {
+    if (deletionCountToday > 50) {
       deleteEndpointLogger.info("Deletion limit reached for today. Exiting.");
       return res
         .status(429)
         .json({ error: "Deletion limit reached for today. Try again tomorrow." });
     }
 
+    // Whatever parameters were included in the request to this endpoint, include them.
+    // Leave out any null/undefined values.
+    const orInQuery = []
+    if (id) {
+      orInQuery.push({ _id: id });
+    }
+    if (uuid) {
+      orInQuery.push({ "govId.uuid": uuid });
+    }
+    if (uuidV2) {
+      orInQuery.push({ "govId.uuidV2": uuidV2 });
+    }
+    if (idvProviderSessionId) {
+      orInQuery.push({ "govId.sessionId": idvProviderSessionId });
+    }
+
     // const result = await UserVerifications.deleteOne({ _id: id }).exec();
     const result = await UserVerifications.deleteOne({
-      $or: [{ _id: id }, { "govId.uuid": uuid }],
+      $or: orInQuery,
     }).exec();
     if (result.acknowledged && result.deletedCount >= 1) {
-      deleteEndpointLogger.info({ _id: id, uuid }, "Deleted user");
+      deleteEndpointLogger.info(
+        { _id: id, uuid, uuidV2, idvProviderSessionId },
+        "Deleted user"
+      );
 
       // Increment the deletion count for today
       await DailyVerificationDeletions.updateOne(
