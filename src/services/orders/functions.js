@@ -8,8 +8,8 @@ import {
     avalancheProvider,
     auroraProvider,
     baseProvider,
-} from "../constants/misc.js";
-import { usdToETH, usdToFTM, usdToAVAX } from "./cmc.js";
+} from "../../constants/misc.js";
+import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
 function getProvider(chainId) {
     let provider;

@@ -1,13 +1,12 @@
 import {
-    handleRefund,
     getTransaction,
+    validateTx,
     handleRefund,
-    validateTx
 } from "./functions.js";
 
 import { pinoOptions, logger } from "../../utils/logger.js";
 
-const Order = import('../../schemas/orders.js');
+import { Order } from "../../init.js";
 
 const orderCategoryEnums = {
     MINT_ZERONYM_V3_SBT: "mint_zeronym_v3_sbt",
@@ -23,29 +22,30 @@ const orderCategoryEnums = {
 async function createOrder(req, res) {
     try {
 
-        const { externalOrderId, category, txHash, chainId } = req.body;
+        const { holoUserId, externalOrderId, category, txHash, chainId } = req.body;
 
         // Validate category against whitelist of payment categories
         if (!category || !Object.values(orderCategoryEnums).includes(category)) {
             return res.status(400).json({ error: "Invalid category" });
         }
 
-        const tx = await getTransaction(chainId, txHash);
+        // const tx = await getTransaction(chainId, txHash);
 
-        if (!tx) {
-            return res.status(404).json({
-                error: `Could not find ${txHash} on chain ${chainId}.`,
-            });
-        }
+        // if (!tx) {
+        //     return res.status(404).json({
+        //         error: `Could not find ${txHash} on chain ${chainId}.`,
+        //     });
+        // }
 
-        // Validate externalOrderId equals tx.data
-        if (externalOrderId !== tx.data) {
-            return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
-        }
+        // // Validate externalOrderId equals tx.data
+        // if (externalOrderId !== tx.data) {
+        //     return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
+        // }
 
         try {
             // Create the order
             const order = new Order({
+                holoUserId,
                 externalOrderId,
                 category,
                 txHash,
@@ -82,31 +82,32 @@ async function getOrderTransactionStatus(req, res) {
 
         // Check TX if it's confirmed
         // TX might take a while to be confirmed
-        const tx = await retry(async () => {
-            const result = await getTransaction(order.chainId, order.txHash)
-            if (!result) throw new Error(`Could not find transaction with txHash ${order.txHash} on chain ${order.chainId}`)
-            return result
-        }, 5, 5000);
+        // const tx = await retry(async () => {
+        //     const result = await getTransaction(order.chainId, order.txHash)
+        //     if (!result) throw new Error(`Could not find transaction with txHash ${order.txHash} on chain ${order.chainId}`)
+        //     return result
+        // }, 5, 5000);
 
         // If it's still not found, return an error.
-        if (!tx) {
-            return res.status(404).json({
-                error: `Could not find ${order.txHash} on chain ${order.chainId}.`,
-            });
-        }
+        // if (!tx) {
+        //     return res.status(404).json({
+        //         error: `Could not find ${order.txHash} on chain ${order.chainId}.`,
+        //     });
+        // }
 
-        // Validate externalOrderId equals tx.data
-        if (order.externalOrderId !== tx.data) {
-            return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
-        }
+        // // Validate externalOrderId equals tx.data
+        // if (order.externalOrderId !== tx.data) {
+        //     return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
+        // }
 
-        const txReceipt = await tx.wait();
+        // const txReceipt = await tx.wait();
 
-        if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
-            return res.status(400).json({ error: "Transaction has not been confirmed yet." });
-        }
+        // if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
+        //     return res.status(400).json({ error: "Transaction has not been confirmed yet." });
+        // }
 
         // If TX is confirmed, return the order
+        // TODO: return TX status or receipt?
         return res.status(200).json({ order });
     } catch (error) {
         return res.status(500).json({ error: error.message });
