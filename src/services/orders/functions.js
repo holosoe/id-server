@@ -49,18 +49,18 @@ function getTransaction(chainId, txHash) {
  * - Ensure tx is confirmed.
  * - Ensure tx is on a supported chain.
  */
-async function validateTx(order, desiredAmount) {
+async function validateTx(chainId, txHash, externalOrderId, desiredAmount) {
     // Transactions on L2s mostly go through within a few seconds.
     // Mainnet can take 15s or possibly even longer.
     const tx = await retry(async () => {
-        const result = await getTransaction(order.chainId, order.txHash)
-        if (!result) throw new Error(`Could not find transaction with txHash ${order.txHash} on chain ${order.chainId}`)
+        const result = await getTransaction(chainId, txHash)
+        if (!result) throw new Error(`Could not find transaction with txHash ${txHash} on chain ${chainId}`)
         return result
     }, 5, 5000);
 
     // If it's still not found, return an error.
     if (!tx) {
-        throw new Error(`Session creation error: Could not find transaction with txHash ${order.txHash} on chain ${chainId}`);
+        throw new Error(`Session creation error: Could not find transaction with txHash ${txHash} on chain ${chainId}`);
     }
 
     if (idServerPaymentAddress !== tx.to.toLowerCase()) {
@@ -72,20 +72,20 @@ async function validateTx(order, desiredAmount) {
     const expectedAmountInUSD = desiredAmount * 0.95;
 
     let expectedAmountInToken;
-    if ([1, 10, 1313161554, 8453].includes(order.chainId)) {
+    if ([1, 10, 1313161554, 8453].includes(chainId)) {
         expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    } else if (order.chainId === 250) {
+    } else if (chainId === 250) {
         expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
-    } else if (order.chainId === 43114) {
+    } else if (chainId === 43114) {
         expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
     }
-    // else if (process.env.NODE_ENV === "development" && order.chainId === 420) {
+    // else if (process.env.NODE_ENV === "development" && chainId === 420) {
     //   expectedAmount = ethers.BigNumber.from("0");
     // }
-    else if (process.env.NODE_ENV === "development" && order.chainId === 420) {
+    else if (process.env.NODE_ENV === "development" && chainId === 420) {
         expectedAmountInToken = await usdToETH(expectedAmountInUSD);
     } else {
-        throw new Error(`Unsupported chain ID: ${order.chainId}`);
+        throw new Error(`Unsupported chain ID: ${chainId}`);
     }
 
     // Round to 18 decimal places to avoid this underflow error from ethers:
@@ -98,11 +98,11 @@ async function validateTx(order, desiredAmount) {
 
     if (tx.value.lt(expectedAmount)) {
         throw new Error(
-            `Invalid transaction amount. Expected: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${order.chainId})`
+            `Invalid transaction amount. Expected: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`
         );
     }
 
-    const externalOrderIdDigest = ethers.utils.keccak256(order.externalOrderId);
+    const externalOrderIdDigest = ethers.utils.keccak256(externalOrderId);
     if (tx.data !== externalOrderIdDigest) {
         throw new Error("Invalid transaction data");
     }

@@ -37,7 +37,7 @@ async function createOrder(req, res) {
         }
 
         // check if tx is valid (not confirmation yet)
-        const validTx = await validateTx(order, idvSessionUSDPrice);
+        const validTx = await validateTx(chainId, txHash, externalOrderId, idvSessionUSDPrice);
 
         try {
             // Create the order
@@ -78,14 +78,14 @@ async function getOrderTransactionStatus(req, res) {
             return res.status(404).json({ error: "Order not found" });
         }
 
-        const validTx = await validateTx(order, idvSessionUSDPrice);
+        const validTx = await validateTx(order.chainId, order.txHash, order.externalOrderId, idvSessionUSDPrice);
         const validTxConfirmation = await validateTxConfirmation(validTx);
 
         console.log("validTxConfirmation", validTxConfirmation);
 
         // If TX is confirmed, return the order
         // TODO: return order or tx receipt?
-        return res.status(200).json({ order });
+        return res.status(200).json({ txReceipt: validTxConfirmation, order: order });
     } catch (error) {
         console.log("error", error);
         return res.status(500).json({ error: error.message });
