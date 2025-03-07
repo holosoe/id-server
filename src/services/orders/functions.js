@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { retry } from "../../utils/utils.js";
 import {
     idServerPaymentAddress,
     ethereumProvider,
@@ -13,19 +14,19 @@ import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 
 function getProvider(chainId) {
     let provider;
-    if (order.chainId === 1) {
+    if (chainId === 1) {
         provider = ethereumProvider;
-    } else if (order.chainId === 10) {
+    } else if (chainId === 10) {
         provider = optimismProvider;
-    } else if (order.chainId === 250) {
+    } else if (chainId === 250) {
         provider = fantomProvider;
-    } else if (order.chainId === 8453) {
+    } else if (chainId === 8453) {
         provider = baseProvider;
-    } else if (order.chainId === 43114) {
+    } else if (chainId === 43114) {
         provider = avalancheProvider;
-    } else if (order.chainId === 1313161554) {
+    } else if (chainId === 1313161554) {
         provider = auroraProvider;
-    } else if (process.env.NODE_ENV === "development" && order.chainId === 420) {
+    } else if (process.env.NODE_ENV === "development" && chainId === 420) {
         provider = optimismGoerliProvider;
     }
 
@@ -33,6 +34,7 @@ function getProvider(chainId) {
 }
 
 function getTransaction(chainId, txHash) {
+    console.log("getTransaction", chainId, txHash);
 
     let provider = getProvider(chainId);
 
@@ -58,19 +60,11 @@ async function validateTx(order, desiredAmount) {
 
     // If it's still not found, return an error.
     if (!tx) {
-        return {
-            status: 400,
-            error: `Session creation error: Could not find transaction with txHash ${order.txHash} on chain ${chainId}`,
-        };
+        throw new Error(`Session creation error: Could not find transaction with txHash ${order.txHash} on chain ${chainId}`);
     }
 
-    const txReceipt = await tx.wait();
-
     if (idServerPaymentAddress !== tx.to.toLowerCase()) {
-        return {
-            status: 400,
-            error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
-        };
+        throw new Error(`Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`);
     }
 
     // NOTE: This const must stay in sync with the frontend.
@@ -78,30 +72,20 @@ async function validateTx(order, desiredAmount) {
     const expectedAmountInUSD = desiredAmount * 0.95;
 
     let expectedAmountInToken;
-    if ([1, 10, 1313161554, 8453].includes(chainId)) {
+    if ([1, 10, 1313161554, 8453].includes(order.chainId)) {
         expectedAmountInToken = await usdToETH(expectedAmountInUSD);
-    } else if (chainId === 250) {
+    } else if (order.chainId === 250) {
         expectedAmountInToken = await usdToFTM(expectedAmountInUSD);
-    } else if (chainId === 43114) {
+    } else if (order.chainId === 43114) {
         expectedAmountInToken = await usdToAVAX(expectedAmountInUSD);
     }
-    // else if (process.env.NODE_ENV === "development" && chainId === 420) {
+    // else if (process.env.NODE_ENV === "development" && order.chainId === 420) {
     //   expectedAmount = ethers.BigNumber.from("0");
     // }
     else if (process.env.NODE_ENV === "development" && order.chainId === 420) {
         expectedAmountInToken = await usdToETH(expectedAmountInUSD);
     } else {
-        return {
-            status: 400,
-            error: `Unsupported chain ID: ${order.chainId}`,
-        }
-    }
-
-    if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
-        return {
-            status: 400,
-            error: "Transaction has not been confirmed yet.",
-        };
+        throw new Error(`Unsupported chain ID: ${order.chainId}`);
     }
 
     // Round to 18 decimal places to avoid this underflow error from ethers:
@@ -113,22 +97,27 @@ async function validateTx(order, desiredAmount) {
     const expectedAmount = ethers.utils.parseEther(rounded.toString());
 
     if (tx.value.lt(expectedAmount)) {
-        return {
-            status: 400,
-            error: `Invalid transaction amount. Expected: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${chainId})`,
-        };
+        throw new Error(
+            `Invalid transaction amount. Expected: ${expectedAmount.toString()}. Found: ${tx.value.toString()}. (chain ID: ${order.chainId})`
+        );
     }
 
-    // TODO: check this logic again 
-    const sidDigest = ethers.utils.keccak256("0x" + order.externalOrderId);
-    if (tx.data !== sidDigest) {
-        return {
-            status: 400,
-            error: "Invalid transaction data",
-        };
+    const externalOrderIdDigest = ethers.utils.keccak256(order.externalOrderId);
+    if (tx.data !== externalOrderIdDigest) {
+        throw new Error("Invalid transaction data");
     }
 
-    return {};
+    return tx;
+}
+
+async function validateTxConfirmation(tx) {
+    const txReceipt = await tx.wait();
+
+    if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
+        throw new Error("Transaction has not been confirmed yet.");
+    }
+
+    return txReceipt;
 }
 
 /**
@@ -201,4 +190,4 @@ async function handleRefund(order, to) {
     };
 }
 
-export { getTransaction, getProvider, handleRefund, validateTx };
+export { getTransaction, getProvider, validateTx, validateTxConfirmation, handleRefund };

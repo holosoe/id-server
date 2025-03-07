@@ -1,9 +1,11 @@
 import {
+    getProvider,
     getTransaction,
     validateTx,
+    validateTxConfirmation,
     handleRefund,
 } from "./functions.js";
-
+import { idvSessionUSDPrice } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 import { Order } from "../../init.js";
@@ -29,18 +31,13 @@ async function createOrder(req, res) {
             return res.status(400).json({ error: "Invalid category" });
         }
 
-        // const tx = await getTransaction(chainId, txHash);
+        // check if txHash and chainId are passed
+        if (!txHash || !chainId) {
+            return res.status(400).json({ error: "txHash and chainId are required" });
+        }
 
-        // if (!tx) {
-        //     return res.status(404).json({
-        //         error: `Could not find ${txHash} on chain ${chainId}.`,
-        //     });
-        // }
-
-        // // Validate externalOrderId equals tx.data
-        // if (externalOrderId !== tx.data) {
-        //     return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
-        // }
+        // check if tx is valid (not confirmation yet)
+        const validTx = await validateTx(order, idvSessionUSDPrice);
 
         try {
             // Create the order
@@ -60,6 +57,7 @@ async function createOrder(req, res) {
             throw new Error(`Error creating order: ${error.message}`);
         }
     } catch (error) {
+        console.log("error", error);
         return res.status(500).json({ error: error.message });
     }
 }
@@ -80,36 +78,16 @@ async function getOrderTransactionStatus(req, res) {
             return res.status(404).json({ error: "Order not found" });
         }
 
-        // Check TX if it's confirmed
-        // TX might take a while to be confirmed
-        // const tx = await retry(async () => {
-        //     const result = await getTransaction(order.chainId, order.txHash)
-        //     if (!result) throw new Error(`Could not find transaction with txHash ${order.txHash} on chain ${order.chainId}`)
-        //     return result
-        // }, 5, 5000);
+        const validTx = await validateTx(order, idvSessionUSDPrice);
+        const validTxConfirmation = await validateTxConfirmation(validTx);
 
-        // If it's still not found, return an error.
-        // if (!tx) {
-        //     return res.status(404).json({
-        //         error: `Could not find ${order.txHash} on chain ${order.chainId}.`,
-        //     });
-        // }
-
-        // // Validate externalOrderId equals tx.data
-        // if (order.externalOrderId !== tx.data) {
-        //     return res.status(400).json({ error: "Invalid externalOrderId, does not match tx.data" });
-        // }
-
-        // const txReceipt = await tx.wait();
-
-        // if (!txReceipt.blockHash || txReceipt.confirmations === 0) {
-        //     return res.status(400).json({ error: "Transaction has not been confirmed yet." });
-        // }
+        console.log("validTxConfirmation", validTxConfirmation);
 
         // If TX is confirmed, return the order
-        // TODO: return TX status or receipt?
+        // TODO: return order or tx receipt?
         return res.status(200).json({ order });
     } catch (error) {
+        console.log("error", error);
         return res.status(500).json({ error: error.message });
     }
 }
