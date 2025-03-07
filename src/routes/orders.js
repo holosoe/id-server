@@ -13,9 +13,9 @@ const router = express.Router();
 // GET /order/:externalOrderId/transaction/status. To be called by verifier server. Should query the DB for the tx metadata, wait a little bit for the tx to be confirmed (if it's not already), and return a success response if all goes well.
 // POST /order/:externalOrderId/fulfilled. API key gated endpoint. To be called by verifier server after minting the SBT. Sets order.fulfilled to true.
 // POST /order/refund. Body could be { txHash, chainId }. Refunds an unfulfilled order.
-router.post("/order", createOrder);
-router.get("/order/:externalOrderId/transaction/status", getOrderTransactionStatus);
-router.post("/order/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
-router.post("/order/refund", refundOrder);
+router.post("/", createOrder);
+router.get("/:externalOrderId/transaction/status", getOrderTransactionStatus);
+router.post("/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
+router.post("/refund", refundOrder);
 
 export default router;
