@@ -93,10 +93,81 @@ const createOnfidoCheckLogger = logger.child({
 // - Gets a session or array of sessions.
 // - Helpful for frontend to check whether a session has been paid for
 
+// POST /sessions
+// - Creates a session
+// - body: { sigDigest, idvProvider }
+
+// POST /sessions/:_id/idv-session
+// - Allows a user to create an IDV session by associating a transaction with an id-server session
+
+// GET /sessions?id=<id>&sigDigest=<sigDigest>
+// - id or sigDigest or both must be provided.
+// - Gets a session or array of sessions.
+// - Helpful for frontend to check whether a session has been paid for
+
 /**
  * Creates a session.
  */
 async function postSession(req, res) {
+  try {
+    const sigDigest = req.body.sigDigest;
+    const idvProvider = req.body.idvProvider;
+    if (!sigDigest) {
+      return res.status(400).json({ error: "sigDigest is required" });
+    }
+    if (!idvProvider || ["veriff", "onfido", "facetec"].indexOf(idvProvider) === -1) {
+      return res
+        .status(400)
+        .json({ error: "idvProvider must be one of 'veriff' or 'onfido'" });
+    }
+
+    let domain = null;
+    if (req.body.domain === "app.holonym.id") {
+      domain = "app.holonym.id";
+    } else if (req.body.domain === "silksecure.net") {
+      domain = "silksecure.net";
+    }
+
+    let silkDiffWallet = null;
+    if (req.body.silkDiffWallet === "silk") {
+      silkDiffWallet = "silk";
+    } else if (req.body.silkDiffWallet === "diff-wallet") {
+      silkDiffWallet = "diff-wallet";
+    }
+
+    // Get country from IP address
+    const userIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const resp = await axios.get(
+      `https://ipapi.co/${userIp}/json?key=${process.env.IPAPI_SECRET_KEY}`
+    );
+    const ipCountry = resp?.data?.country;
+
+    if (!ipCountry && process.env.NODE_ENV != 'development') {
+      return res.status(500).json({ error: "Could not determine country from IP" });
+    }
+
+    const session = new Session({
+      sigDigest: sigDigest,
+      idvProvider: idvProvider,
+      status: sessionStatusEnum.NEEDS_PAYMENT,
+      frontendDomain: domain,
+      silkDiffWallet,
+      ipCountry: ipCountry,
+    });
+    await session.save();
+
+    return res.status(201).json({ session });
+  } catch (err) {
+    console.log("POST /sessions: Error encountered", err.message);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * Creates a session V2.
+ * allows Skip Payment
+ */
+async function postSessionV2(req, res) {
   try {
     const sigDigest = req.body.sigDigest;
     const idvProvider = req.body.idvProvider;
