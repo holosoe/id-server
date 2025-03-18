@@ -103,7 +103,7 @@ async function transferFunds(req, res) {
     const balanceBase = await baseWallet.getBalance();
     // If balance is less than 0.2 ETH, don't transfer. Otherwise, send 0.15 ETH.
     // We keep some ETH to pay for refunds.
-    if (balanceBase.gte(ethers.utils.parseEther("0.2"))) {
+    if (balanceBase.gte(ethers.utils.parseEther("0.4"))) {
       const tx = await baseWallet.sendTransaction({
         to: companyAddressBase,
         value: ethers.utils.parseEther("0.15"),
