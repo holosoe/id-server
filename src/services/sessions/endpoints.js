@@ -974,6 +974,7 @@ async function getSessions(req, res) {
 
 export {
   postSession,
+  postSessionV2,
   createPayPalOrder,
   createIdvSession,
   createIdvSessionV2,

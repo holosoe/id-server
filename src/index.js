@@ -13,8 +13,8 @@ import sessions from "./routes/sessions.js";
 import amlSessions from "./routes/aml-sessions.js";
 import silk from "./routes/silk.js";
 import facetec from "./routes/facetec.js";
+import nullifiers from "./routes/nullifiers.js";
 import orders from "./routes/orders.js";
-import nullifiers from "./routes/nullifiers.js"
 
 const app = express();
 
@@ -41,8 +41,8 @@ app.use("/aml-sessions", amlSessions);
 app.use("/prices", prices);
 app.use("/silk", silk); // temporary
 app.use("/facetec", facetec);
-app.use("/orders", orders);
 app.use("/nullifiers", nullifiers);
+app.use("/orders", orders);
 
 // Trust the X-Forwarded-For header from the load balancer or the user's proxy
 app.set("trust proxy", true);
