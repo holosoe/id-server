@@ -80,7 +80,8 @@ export const baseProvider = new ethers.providers.JsonRpcProvider(
   process.env.BASE_RPC_URL
 );
 export const fantomProvider = new ethers.providers.JsonRpcProvider(
-  "https://rpc.ftm.tools"
+  // "https://rpc.ftm.tools"
+  "https://rpcapi.fantom.network/"
 );
 export const avalancheProvider = new ethers.providers.JsonRpcProvider(
   "https://api.avax.network/ext/bc/C/rpc"
