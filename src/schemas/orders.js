@@ -14,6 +14,9 @@ export const OrderSchema = new Schema({
     txHash: { type: String, required: true },
     chainId: { type: Number, required: true },
 
+    refunded: { type: Boolean, default: false },
+    refundTxHash: { type: String },
+
     // createdAt: { type: Date, default: Date.now },
     // updatedAt: { type: Date, default: Date.now },
 });
