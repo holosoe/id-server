@@ -56,7 +56,17 @@ async function createOrder(req, res) {
 
       await order.save();
 
-      return res.status(200).json({ order });
+      return res.status(200).json({
+        order: {
+          externalOrderId: order.externalOrderId,
+          category: order.category,
+          fulfilled: order.fulfilled,
+          txHash: order.txHash,
+          chainId: order.chainId,
+          refunded: order.refunded,
+          refundTxHash: order.refundTxHash,
+        }
+      });
     } catch (error) {
       throw new Error(`Error creating order: ${error.message}`);
     }
@@ -96,7 +106,18 @@ async function getOrderTransactionStatus(req, res) {
     // If TX is confirmed, return both order and tx receipt
     return res
       .status(200)
-      .json({ txReceipt: validTxConfirmation, order: order });
+      .json({
+        txReceipt: validTxConfirmation,
+        order: {
+          externalOrderId: order.externalOrderId,
+          category: order.category,
+          fulfilled: order.fulfilled,
+          txHash: order.txHash,
+          chainId: order.chainId,
+          refunded: order.refunded,
+          refundTxHash: order.refundTxHash,
+        }
+      });
   } catch (error) {
     console.log("error", error);
     return res.status(500).json({ error: error.message, externalOrderId });
