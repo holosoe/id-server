@@ -164,14 +164,12 @@ async function postSession(req, res) {
 }
 
 /**
- * Creates a session V2.
- * allows Skip Payment
+ * Creates a session V2. Identical to v1, except it immediately sets session status to IN_PROGRESS.
  */
 async function postSessionV2(req, res) {
   try {
     const sigDigest = req.body.sigDigest;
     const idvProvider = req.body.idvProvider;
-    const skipPayment = req.body.skipPayment;
     if (!sigDigest) {
       return res.status(400).json({ error: "sigDigest is required" });
     }
@@ -209,29 +207,14 @@ async function postSessionV2(req, res) {
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
-      status: skipPayment ? sessionStatusEnum.IN_PROGRESS : sessionStatusEnum.NEEDS_PAYMENT,
+      status: sessionStatusEnum.IN_PROGRESS,
       frontendDomain: domain,
       silkDiffWallet,
       ipCountry: ipCountry,
     });
 
-    if (skipPayment) {
-      // session is only saved if idvSessionCreation is successful
-      const idvSession = await handleIdvSessionCreation(session, createIdvSessionLogger);
-
-      if (idvSession.id && idvSession.url) {
-        session.sessionId = idvSession.id;
-        session.veriffUrl = idvSession.url;
-      }
-
-      if (idvSession.applicant_id && idvSession.sdk_token) {
-        session.applicant_id = idvSession.applicant_id;
-        session.onfido_sdk_token = idvSession.sdk_token;
-      }
-
-    } else {
-      await session.save();
-    }
+    // session is only saved if idvSessionCreation is successful
+    const _idvSession = await handleIdvSessionCreation(session, createIdvSessionLogger);
 
     return res.status(201).json({ session });
   } catch (err) {
