@@ -16,6 +16,6 @@ const router = express.Router();
 router.post("/", createOrder);
 router.get("/:externalOrderId/transaction/status", getOrderTransactionStatus);
 router.get("/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
-router.get("/:externalOrderId/refund", refundOrder);
+router.post("/admin/refund", refundOrder);
 
 export default router;

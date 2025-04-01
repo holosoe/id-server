@@ -169,14 +169,27 @@ async function setOrderFulfilled(req, res) {
 }
 
 // GET /:externalOrderId/refund.
-// Body could be { txHash, chainId }.
 // Refunds an unfulfilled order.
+// Gated by admin API key. Why? Because if an order is unfulfilled, a user could trigger
+// SBT minting and a refund at the same time, to effectively not pay for the SBT.
 async function refundOrder(req, res) {
   try {
-    const { externalOrderId } = req.params;
+    const { txHash, chainId } = req.body;
+
+    if (!txHash || !chainId) {
+      return res
+        .status(400)
+        .json({ error: "txHash and chainId are required for refund" });
+    }
+
+    const apiKey = req.headers["x-api-key"];
+
+    if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
+      return res.status(401).json({ error: "Invalid API key." });
+    }
 
     // Query the DB for the order
-    const order = await Order.findOne({ externalOrderId });
+    const order = await Order.findOne({ txHash, chainId });
 
     if (!order) {
       return res.status(404).json({ error: "Order not found" });

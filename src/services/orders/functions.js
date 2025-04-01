@@ -164,7 +164,7 @@ async function handleRefund(order) {
     return {
       status: 400,
       data: {
-        error: "The orderhas already been fulfilled, cannot refund.",
+        error: "The order has already been fulfilled, cannot refund.",
       },
     };
   }
@@ -182,7 +182,9 @@ async function handleRefund(order) {
   const wallet = new ethers.Wallet(process.env.PAYMENTS_PRIVATE_KEY, provider);
 
   // Refund 50% of the transaction amount. This approximates the mint cost.
-  const refundAmount = tx.value.mul(5).div(10);
+  // const refundAmount = tx.value.mul(5).div(10);
+  // In Feb 2025, we changed the refund amount be the full tx amount.
+  const refundAmount = tx.value
 
   // Ensure wallet has enough funds to refund
   const balance = await wallet.getBalance();
