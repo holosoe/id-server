@@ -207,37 +207,37 @@ async function processPhoneServerTransactions() {
   }
 }
 
-const command = process.argv[2]
+// const command = process.argv[2]
 
-if (command === 'id-server') {
-  processIdServerTransactions()
-    .then(() => {
-      logAndPersistLogUpdate('done')
-      process.exit(0)
-    })
-    .catch((err) => {
-      logAndPersistLogUpdate(err)
-      process.exit(1)
-    })
-} else if (command === 'phone-number-server') {
-  processPhoneServerTransactions()
-    .then(() => {
-      logAndPersistLogUpdate('done')
-      process.exit(0)
-    })
-    .catch((err) => {
-      logAndPersistLogUpdate(err)
-      process.exit(1)
-    })
-} else if (command === 'id-and-phone') {
-  await Promise.all([
-    processIdServerTransactions(),
-    processPhoneServerTransactions()
-  ])
-  logAndPersistLogUpdate('done')
-  process.exit(0)
-} else {
-  console.log(`unknown command "${command}`)
-  process.exit(1)
-}
+// if (command === 'id-server') {
+//   processIdServerTransactions()
+//     .then(() => {
+//       logAndPersistLogUpdate('done')
+//       process.exit(0)
+//     })
+//     .catch((err) => {
+//       logAndPersistLogUpdate(err)
+//       process.exit(1)
+//     })
+// } else if (command === 'phone-number-server') {
+//   processPhoneServerTransactions()
+//     .then(() => {
+//       logAndPersistLogUpdate('done')
+//       process.exit(0)
+//     })
+//     .catch((err) => {
+//       logAndPersistLogUpdate(err)
+//       process.exit(1)
+//     })
+// } else if (command === 'id-and-phone') {
+//   await Promise.all([
+//     processIdServerTransactions(),
+//     processPhoneServerTransactions()
+//   ])
+//   logAndPersistLogUpdate('done')
+//   process.exit(0)
+// } else {
+//   console.log(`unknown command "${command}`)
+//   process.exit(1)
+// }
 
