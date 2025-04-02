@@ -213,6 +213,24 @@ async function postSessionV2(req, res) {
       ipCountry: ipCountry,
     });
 
+    // Only a user to create up to 3 sessions
+    const existingSessions = await Session.find({
+      sigDigest: sigDigest,
+      status: {
+        "$in": [
+          sessionStatusEnum.IN_PROGRESS,
+          sessionStatusEnum.VERIFICATION_FAILED,
+          sessionStatusEnum.ISSUED
+        ]
+      }
+    }).exec();
+
+    if (existingSessions.length >= 3) {
+      return res.status(400).json({
+        error: "User has reached the maximum number of sessions (3)"
+      });
+    }
+
     // session is only saved if idvSessionCreation is successful
     const _idvSession = await handleIdvSessionCreation(session, createIdvSessionLogger);
 
