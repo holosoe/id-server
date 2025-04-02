@@ -213,7 +213,7 @@ async function postSessionV2(req, res) {
       ipCountry: ipCountry,
     });
 
-    // Only a user to create up to 3 sessions
+    // Only allow a user to create up to 3 sessions
     const existingSessions = await Session.find({
       sigDigest: sigDigest,
       status: {
