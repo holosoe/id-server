@@ -776,7 +776,8 @@ async function issueCreds(req, res) {
     const sanctionsUrl = 'https://api.sanctions.io/search/' +
       '?min_score=0.85' +
       // TODO: Create a constant for the data sources
-      `&data_source=${encodeURIComponent('PEP,SDN,HM Treasury,CCMC,CFSP,FATF,FBI,FINCEN,INTERPOL,MEU')}` +
+      // `&data_source=${encodeURIComponent('CFSP')}` +
+      `&data_source=${encodeURIComponent('CAP,CCMC,CMIC,DPL,DTC,EL,FATF,FBI,FINCEN,FSE,INTERPOL,ISN,MEU,NONSDN,NS-MBS LIST,OFAC-COMPREHENSIVE,OFAC-MILITARY,OFAC-OTHERS,PEP,PLC,SDN,SSI,US-DOS-CRS')}` +
       `&name=${encodeURIComponent(`${firstName} ${lastName}`)}` +
       `&date_of_birth=${encodeURIComponent(dateOfBirth)}` +
       '&entity_type=individual';
