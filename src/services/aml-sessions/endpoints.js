@@ -771,13 +771,15 @@ async function issueCreds(req, res) {
       return res.status(400).json({ error: "Credentials have expired" });
     }
 
-    const sanctionsUrl = new URL('https://api.sanctions.io/search')
-    sanctionsUrl.searchParams.append('min_score', '0.85')
-    // TODO: Create a constant for the data sources
-    sanctionsUrl.searchParams.append('data_source', 'PEP,SDN,HM Treasury,CCMC,CFSP,FATF,FBI,FINCEN,INTERPOL,MEU')
-    sanctionsUrl.searchParams.append('name', `${firstName} ${lastName}`)
-    sanctionsUrl.searchParams.append('date_of_birth', dateOfBirth)
-    sanctionsUrl.searchParams.append('entity_type', 'individual')
+    // sanctions.io returns 301 if we query "<base-url>/search" but returns the actual result
+    // when we query "<base-url>/search/" (with trailing slash).
+    const sanctionsUrl = 'https://api.sanctions.io/search/' +
+      '?min_score=0.85' +
+      // TODO: Create a constant for the data sources
+      `&data_source=${encodeURIComponent('PEP,SDN,HM Treasury,CCMC,CFSP,FATF,FBI,FINCEN,INTERPOL,MEU')}` +
+      `&name=${encodeURIComponent(`${firstName} ${lastName}`)}` +
+      `&date_of_birth=${encodeURIComponent(dateOfBirth)}` +
+      '&entity_type=individual';
     // TODO: Add country_residence to zkp
     // sanctionsUrl.searchParams.append('country_residence', 'us')
     const config = {
