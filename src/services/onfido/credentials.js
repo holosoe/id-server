@@ -270,7 +270,11 @@ function onfidoValidationToUserErrorMessage(
         return "Verification failed - please try again";
       })
       .join(". ")}`
-    : validationResultCheck.error || "Verification failed";
+    : (
+      reportsValidation?.error ??
+      validationResultCheck.error ??
+      "Verification failed"
+    );
 }
 
 function uuidOldFromOnfidoReport(documentReport) {
