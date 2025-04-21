@@ -336,6 +336,27 @@ const NullifierAndCredsSchema = new Schema({
   }
 });
 
+// A collection to associate an issuance nullifier to the
+// user's Clean Hands creds so that the user can lookup their
+// credentials using their nullifier.
+const CleanHandsNullifierAndCredsSchema = new Schema({
+  holoUserId: String,
+  issuanceNullifier: String,
+  govIdCreds: {
+    type: {
+      firstName: String,
+      lastName: String,
+      dateOfBirth: String,
+      expiry: Date
+    },
+    required: false
+  },
+  uuid: {
+    type: String,
+    required: false,
+  }
+});
+
 // To allow the user to persist a nullifier so that they can request their
 // signed credentials in more than one browser session.
 const EncryptedNullifiersSchema = new Schema({
@@ -356,6 +377,18 @@ const EncryptedNullifiersSchema = new Schema({
     required: false,
   },
   phone: {
+    type: {
+      encryptedNullifier: {
+        type: {
+          ciphertext: String,
+          iv: String,
+        },
+      },
+      createdAt: Date,
+    },
+    required: false,
+  },
+  cleanHands: {
     type: {
       encryptedNullifier: {
         type: {
@@ -491,6 +524,7 @@ export {
   userProofMetadataSchema,
   EncryptedNullifiersSchema,
   NullifierAndCredsSchema,
+  CleanHandsNullifierAndCredsSchema,
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,

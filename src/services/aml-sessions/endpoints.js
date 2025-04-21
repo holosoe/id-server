@@ -7,7 +7,8 @@ import { groth16 } from "snarkjs";
 import { 
   UserVerifications, 
   AMLChecksSession, 
-  SessionRefundMutex 
+  SessionRefundMutex,
+  CleanHandsNullifierAndCreds
 } from "../../init.js";
 import { 
   getAccessToken as getPayPalAccessToken,
@@ -21,6 +22,13 @@ import {
 import { cleanHandsDummyUserCreds } from "../../utils/constants.js";
 import { getDateAsInt, govIdUUID } from "../../utils/utils.js";
 import {
+  findOneNullifierAndCredsLast5Days
+} from "../../utils/clean-hands-nullifier-and-creds.js";
+import {
+  findOneCleanHandsUserVerification11Months5Days
+} from "../../utils/user-verifications.js";
+import { toAlreadyRegisteredStr } from "../../utils/errors.js";
+import {
   supportedChainIds,
   amlSessionUSDPrice,
   payPalApiUrlBase,
@@ -28,13 +36,16 @@ import {
 } from "../../constants/misc.js";
 import V3NameDOBVKey from "../../constants/zk/V3NameDOB.verification_key.json" assert { type: "json" };
 import { pinoOptions, logger } from "../../utils/logger.js";
+import { upgradeLogger } from "./error-logger.js";
 
-// const postSessionsLogger = logger.child({
-//   msgPrefix: "[POST /sessions] ",
-//   base: {
-//     ...pinoOptions.base,
-//   },
-// });
+const issueCredsV2Logger = upgradeLogger(logger.child({
+  msgPrefix: "[GET /aml-sessions/credentials/v2] ",
+  base: {
+    ...pinoOptions.base,
+    feature: "holonym",
+    subFeature: "clean-hands",
+  },
+}));
 
 /**
  * ENDPOINT.
@@ -440,17 +451,17 @@ async function payForSessionV3(req, res) {
   } catch (err) {
     console.log("err.message", err.message);
     if (err.response) {
-      createIdvSessionLogger.error(
+      console.error(
         { error: err.response.data },
         "Error creating IDV session"
       );
     } else if (err.request) {
-      createIdvSessionLogger.error(
+      console.error(
         { error: err.request.data },
         "Error creating IDV session"
       );
     } else {
-      createIdvSessionLogger.error({ error: err }, "Error creating IDV session");
+      console.error({ error: err }, "Error creating IDV session");
     }
 
     return res.status(500).json({ error: "An unknown error occurred", err });
@@ -685,7 +696,7 @@ async function saveUserToDb(uuid) {
   try {
     await userVerificationsDoc.save();
   } catch (err) {
-    endpointLogger.error(
+    console.error(
       { error: err },
       "An error occurred while saving user verification to database"
     );
@@ -695,6 +706,20 @@ async function saveUserToDb(uuid) {
     };
   }
   return { success: true };
+}
+
+/**
+ * Util function that wraps issuev2 from holonym-wasm-issuer
+ */
+function issuev2CleanHands(issuanceNullifier, creds) {
+  return JSON.parse(
+    issuev2(
+      process.env.HOLONYM_ISSUER_CLEAN_HANDS_PRIVKEY,
+      issuanceNullifier,
+      getDateAsInt(creds.rawCreds.birthdate).toString(),
+      creds.derivedCreds.nameHash.value,
+    )
+  );
 }
 
 async function issueCreds(req, res) {
@@ -798,7 +823,7 @@ async function issueCreds(req, res) {
   
     const validationResult = validateScreeningResult(data);
     if (validationResult.error) {
-      endpointLogger.error(validationResult.log.data, validationResult.log.msg);
+      console.error(validationResult.log.data, validationResult.log.msg);
 
       session.status = sessionStatusEnum.VERIFICATION_FAILED;
       session.verificationFailureReason = validationResult.error;
@@ -832,6 +857,234 @@ async function issueCreds(req, res) {
     );
     response.metadata = creds;
     
+    session.status = sessionStatusEnum.ISSUED;
+    await session.save()
+  
+    return res.status(200).json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * Allows user to retrieve their signed verification info.
+ * 
+ * Compared to the v1 endpoint, this one allows the user to get their
+ * credentials up to 5 days after initial issuance, if they provide the
+ * same nullifier.
+ */
+async function issueCredsV2(req, res) {
+  try {
+    // Caller must specify a session ID and a nullifier. We first lookup the user's creds
+    // using the nullifier. If no hit, then we lookup the credentials using the session ID.
+    const issuanceNullifier = req.params.nullifier;
+    const _id = req.params._id;
+
+    try {
+      const _number = BigInt(issuanceNullifier)
+    } catch (err) {
+      return res.status(400).json({
+        error: `Invalid issuance nullifier (${issuanceNullifier}). It must be a number`
+      });
+    }
+
+    // if (process.env.ENVIRONMENT == "dev") {
+    //   const creds = cleanHandsDummyUserCreds;
+    //   const response = issuev2CleanHands(issuanceNullifier, creds);
+    //   response.metadata = cleanHandsDummyUserCreds;
+    //   return res.status(200).json(response);
+    // }
+
+    let objectId = null;
+    try {
+      objectId = new ObjectId(_id);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid _id" });
+    }
+
+    const session = await AMLChecksSession.findOne({ _id: objectId }).exec();
+  
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    if (session.status === sessionStatusEnum.VERIFICATION_FAILED) {
+      return res.status(400).json({
+        error: `Verification failed. Reason(s): ${session.verificationFailureReason}`,
+      });
+    }
+
+    // First, check if the user is looking up their credentials using their nullifier
+    const nullifierAndCreds = await findOneNullifierAndCredsLast5Days(issuanceNullifier);
+    const govIdCreds = nullifierAndCreds?.govIdCreds
+    if (govIdCreds?.firstName && govIdCreds?.lastName && govIdCreds?.dateOfBirth) {
+      // Note that we don't need to validate the ZKP or creds here. If the creds are in
+      // the database, validation has passed.
+
+      if (govIdCreds?.expiry < new Date()) {
+        return res.status(400).json({
+          error: "Gov ID credentials have expired. Cannot issue Clean Hands credentials."
+        });
+      }
+
+      // Get UUID
+      const uuid = govIdUUID(
+        govIdCreds.firstName, 
+        govIdCreds.lastName, 
+        govIdCreds.dateOfBirth, 
+      );
+
+      // Assert user hasn't registered yet.
+      // This step is not strictly necessary since we are only considering nullifiers
+      // from the last 5 days (in the nullifierAndCreds query above) and the user
+      // is only getting the credentials+nullifier that they were already issued.
+      // However, we keep it here to be extra safe.
+      const user = await findOneCleanHandsUserVerification11Months5Days(uuid);
+      if (user) {
+        // await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
+        issueCredsV2Logger.alreadyRegistered(uuid);
+        // Fail session and return
+        session.status = sessionStatusEnum.VERIFICATION_FAILED;
+        session.verificationFailureReason = toAlreadyRegisteredStr(user._id);
+        await session.save() 
+        return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
+      }
+
+      const creds = extractCreds({
+        firstName: govIdCreds.firstName, 
+        lastName: govIdCreds.lastName,
+        dateOfBirth: govIdCreds.dateOfBirth,
+      });
+      const response = issuev2CleanHands(issuanceNullifier, creds);
+      response.metadata = creds;
+
+      issueCredsV2Logger.info({ uuid }, "Issuing credentials");
+
+      session.status = sessionStatusEnum.ISSUED;
+      await session.save();
+
+      return res.status(200).json(response);
+    }
+
+    // If the session isn't in progress, we do not issue credentials. If the session is ISSUED,
+    // then the lookup via nullifier should have worked above.
+    if (session.status !== sessionStatusEnum.IN_PROGRESS) {
+      return res.status(400).json({
+        error: `Session status is '${session.status}'. Expected '${sessionStatusEnum.IN_PROGRESS}'`,
+      });
+    }
+
+    // zkp should be of type Groth16FullProveResult (a proof generated with snarkjs.groth16)
+    // it should be stringified
+    let zkp = null;
+    try {
+      zkp = JSON.parse(req.query.zkp);
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid zkp" });
+    }
+    
+    if (!zkp?.proof || !zkp?.publicSignals) {
+      return res.status(400).json({ error: "No zkp found" });
+    }
+  
+    const zkpVerified = await groth16.verify(V3NameDOBVKey, zkp.publicSignals, zkp.proof);
+    if (!zkpVerified) {
+      return res.status(400).json({ error: "ZKP verification failed" });
+    }
+  
+    const { 
+      expiry,
+      firstName, 
+      lastName, 
+      dateOfBirth, 
+    } = parsePublicSignals(zkp.publicSignals);
+  
+    if (expiry < new Date()) {
+      return res.status(400).json({ error: "Credentials have expired" });
+    }
+
+    // sanctions.io returns 301 if we query "<base-url>/search" but returns the actual result
+    // when we query "<base-url>/search/" (with trailing slash).
+    const sanctionsUrl = 'https://api.sanctions.io/search/' +
+      '?min_score=0.85' +
+      // TODO: Create a constant for the data sources
+      // `&data_source=${encodeURIComponent('CFSP')}` +
+      `&data_source=${encodeURIComponent('CAP,CCMC,CMIC,DPL,DTC,EL,FATF,FBI,FINCEN,FSE,INTERPOL,ISN,MEU,NONSDN,NS-MBS LIST,OFAC-COMPREHENSIVE,OFAC-MILITARY,OFAC-OTHERS,PEP,PLC,SDN,SSI,US-DOS-CRS')}` +
+      `&name=${encodeURIComponent(`${firstName} ${lastName}`)}` +
+      `&date_of_birth=${encodeURIComponent(dateOfBirth)}` +
+      '&entity_type=individual';
+    // TODO: Add country_residence to zkp
+    // sanctionsUrl.searchParams.append('country_residence', 'us')
+    const config = {
+      headers: {
+        'Accept': 'application/json; version=2.2',
+        'Authorization': 'Bearer ' + process.env.SANCTIONS_API_KEY
+      }
+    }
+    const resp = await fetch(sanctionsUrl, config)
+    const data = await resp.json()
+
+    if (data.count > 0) {
+      return res.status(400).json({ error: 'Sanctions match found' });
+    }
+  
+    const validationResult = validateScreeningResult(data);
+    if (validationResult.error) {
+      issueCredsV2Logger.error(validationResult.log.data, validationResult.log.msg);
+
+      session.status = sessionStatusEnum.VERIFICATION_FAILED;
+      session.verificationFailureReason = validationResult.error;
+      await session.save()
+
+      return res.status(400).json({ error: validationResult.error });
+    }
+  
+    const uuid = govIdUUID(
+      firstName, 
+      lastName, 
+      dateOfBirth, 
+    );
+
+    // Assert user hasn't registered yet
+    const user = await findOneCleanHandsUserVerification11Months5Days(uuid);
+    if (user) {
+      // await saveCollisionMetadata(uuidOld, uuidNew, checkIdFromNullifier, documentReport);
+      issueCredsV2Logger.alreadyRegistered(uuid);
+      // Fail session and return
+      session.status = sessionStatusEnum.VERIFICATION_FAILED;
+      session.verificationFailureReason = toAlreadyRegisteredStr(user._id);
+      await session.save()
+      return res.status(400).json({ error: toAlreadyRegisteredStr(user._id) });
+    }
+
+    const dbResponse = await saveUserToDb(uuid);
+    if (dbResponse.error) return res.status(400).json(dbResponse);
+
+    const creds = extractCreds({
+      firstName, 
+      lastName, 
+      dateOfBirth,
+    });
+  
+    const response = issuev2CleanHands(issuanceNullifier, creds);
+    response.metadata = creds;
+    
+    issueCredsV2Logger.info({ uuid }, "Issuing credentials");
+
+    const newNullifierAndCreds = new CleanHandsNullifierAndCreds({
+      holoUserId: session.sigDigest,
+      issuanceNullifier,
+      uuid,
+      govIdCreds: {
+        firstName,
+        lastName,
+        dateOfBirth,
+        expiry
+      },
+    });
+    await newNullifierAndCreds.save();
+
     session.status = sessionStatusEnum.ISSUED;
     await session.save()
   
@@ -883,5 +1136,6 @@ export {
   refund,
   refundV2,
   issueCreds,
+  issueCredsV2,
   getSessions,
 };

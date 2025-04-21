@@ -8,6 +8,7 @@ import {
   refund,
   refundV2,
   issueCreds,
+  issueCredsV2,
   getSessions,
 } from "../services/aml-sessions/endpoints.js";
 
@@ -23,5 +24,6 @@ router.post("/:_id/v3", payForSessionV3);
 // router.post("/:_id/refund", refund); // TODO: Uncomment
 router.post("/:_id/refund/v2", refundV2);
 router.get("/:_id/credentials/:nullifier", issueCreds);
+router.get("/:_id/credentials/v2/:nullifier", issueCredsV2);
 
 export default router;
