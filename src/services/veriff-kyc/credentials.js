@@ -36,7 +36,7 @@ import { getSessionById, failSession } from "../../utils/sessions.js"
 import {
   findOneNullifierAndCredsLast5Days
 } from "../../utils/nullifier-and-creds.js"
-import { issuev2 } from "../../utils/issuance.js";
+import { issuev2KYC } from "../../utils/issuance.js";
 import { toAlreadyRegisteredStr } from "../../utils/errors.js"
 import { upgradeV3Logger } from "./error-logger.js"
 
@@ -629,7 +629,7 @@ async function getCredentialsV2(req, res) {
 
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      const response = issuev2(issuanceNullifier, creds);
+      const response = issuev2KYC(issuanceNullifier, creds);
       response.metadata = newDummyUserCreds;
       return res.status(200).json(response);
     }
@@ -805,7 +805,7 @@ async function getCredentialsV2(req, res) {
 
     const creds = extractCreds(session);
 
-    const response = issuev2(issuanceNullifier, creds);
+    const response = issuev2KYC(issuanceNullifier, creds);
     response.metadata = creds;
 
     await deleteVeriffSession(req.query.sessionId);
@@ -875,7 +875,7 @@ async function getCredentialsV3(req, res) {
 
     // if (process.env.ENVIRONMENT == "dev") {
     //   const creds = newDummyUserCreds;
-    //   const response = issuev2(issuanceNullifier, creds);
+    //   const response = issuev2KYC(issuanceNullifier, creds);
     //   response.metadata = newDummyUserCreds;
     //   return res.status(200).json(response);
     // }
@@ -928,7 +928,7 @@ async function getCredentialsV3(req, res) {
       }
 
       const creds = extractCreds(veriffSession);
-      const response = issuev2(issuanceNullifier, creds);
+      const response = issuev2KYC(issuanceNullifier, creds);
       response.metadata = creds;
 
       endpointLoggerV3.info(
@@ -1006,7 +1006,7 @@ async function getCredentialsV3(req, res) {
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(veriffSession);
-    const response = issuev2(issuanceNullifier, creds);
+    const response = issuev2KYC(issuanceNullifier, creds);
     response.metadata = creds;
 
     endpointLoggerV3.info(
