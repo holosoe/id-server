@@ -1,6 +1,7 @@
 import express from "express";
 import {
   postSession,
+  postSessionv2,
   createPayPalOrder,
   payForSession,
   payForSessionV2,
@@ -15,6 +16,7 @@ import {
 const router = express.Router();
 
 router.post("/", postSession);
+router.post("/v2", postSessionv2);
 router.get("/", getSessions);
 router.post("/:_id/pay", payForSession);
 router.post("/:_id/pay/v2", payForSessionV2);

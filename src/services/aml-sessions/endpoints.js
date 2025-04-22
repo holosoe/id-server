@@ -81,6 +81,57 @@ async function postSession(req, res) {
 
 /**
  * ENDPOINT.
+ * Creates a session. Immediately sets session status to IN_PROGRESS to
+ * bypass payment requirement.
+ */
+async function postSessionv2(req, res) {
+  try {
+    const sigDigest = req.body.sigDigest;
+    if (!sigDigest) {
+      return res.status(400).json({ error: "sigDigest is required" });
+    }
+
+    let silkDiffWallet = null;
+    if (req.body.silkDiffWallet === "silk") {
+      silkDiffWallet = "silk";
+    } else if (req.body.silkDiffWallet === "diff-wallet") {
+      silkDiffWallet = "diff-wallet";
+    }
+
+    // Only allow a user to create up to 3 sessions
+    const existingSessions = await AMLChecksSession.find({
+      sigDigest: sigDigest,
+      status: {
+        "$in": [
+          sessionStatusEnum.IN_PROGRESS,
+          sessionStatusEnum.VERIFICATION_FAILED,
+          sessionStatusEnum.ISSUED
+        ]
+      }
+    }).exec();
+
+    if (existingSessions.length >= 3) {
+      return res.status(400).json({
+        error: "User has reached the maximum number of sessions (3)"
+      });
+    }
+
+    const session = new AMLChecksSession({
+      sigDigest: sigDigest,
+      status: sessionStatusEnum.IN_PROGRESS,
+      silkDiffWallet,
+    });
+    await session.save();
+
+    return res.status(201).json({ session });
+  } catch (err) {
+    console.log("POST /aml-sessions/v2: Error encountered", err.message);
+    return res.status(500).json({ error: "An unknown error occurred" });
+  }
+}
+
+/**
+ * ENDPOINT.
  */
 async function createPayPalOrder(req, res) {
   try {
@@ -1129,6 +1180,7 @@ async function getSessions(req, res) {
 
 export {
   postSession,
+  postSessionv2,
   createPayPalOrder,
   payForSession,
   payForSessionV2,
