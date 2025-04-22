@@ -62,7 +62,7 @@ async function validateTx(chainId, txHash, externalOrderId, desiredAmount) {
         );
       return result;
     },
-    5,
+    10,
     5000
   );
 
