@@ -82,9 +82,9 @@ async function createOrder(req, res) {
 // wait a little bit for the tx to be confirmed (if it's not already),
 // and return a success response if all goes well.
 async function getOrderTransactionStatus(req, res) {
-  try {
-    const { externalOrderId } = req.params;
+  const { externalOrderId } = req.params;
 
+  try {
     // Query the DB for the tx metadata
     const order = await Order.findOne({ externalOrderId });
 
