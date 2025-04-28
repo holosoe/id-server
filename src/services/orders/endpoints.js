@@ -14,6 +14,15 @@ const orderCategoryEnums = {
   MINT_ZERONYM_V3_SBT: "mint_zeronym_v3_sbt",
 };
 
+const ordersLogger = logger.child({
+  // msgPrefix: "[GET /orders] ",
+  base: {
+    ...pinoOptions.base,
+    feature: "holonym",
+    subFeature: "orders",
+  },
+});
+
 // POST /.
 // Creates an order and associates payment metadata with it.
 // To be called by client when user submits a tx.
@@ -56,6 +65,13 @@ async function createOrder(req, res) {
 
       await order.save();
 
+      ordersLogger.info(
+        {
+          order
+        },
+        "Created order"
+      );
+
       return res.status(200).json({
         order: {
           externalOrderId: order.externalOrderId,
@@ -72,6 +88,12 @@ async function createOrder(req, res) {
     }
   } catch (error) {
     console.log("error", error);
+    ordersLogger.error(
+      {
+        error
+      },
+      "Error creating order: " + error.message
+    );
     return res.status(500).json({ error: error.message });
   }
 }
@@ -82,9 +104,9 @@ async function createOrder(req, res) {
 // wait a little bit for the tx to be confirmed (if it's not already),
 // and return a success response if all goes well.
 async function getOrderTransactionStatus(req, res) {
-  try {
-    const { externalOrderId } = req.params;
+  const { externalOrderId } = req.params;
 
+  try {
     // Query the DB for the tx metadata
     const order = await Order.findOne({ externalOrderId });
 

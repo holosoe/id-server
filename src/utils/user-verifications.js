@@ -31,3 +31,19 @@ export async function findOneUserVerification11Months5Days(
     }
   }).exec();
 }
+
+/**
+ * Lookup a clean hands user verification that is older than 11 months and younger than 5 days.
+ */
+export async function findOneCleanHandsUserVerification11Months5Days(uuid) {
+  return UserVerifications.findOne({ 
+    $or: [
+      { "aml.uuid": uuid },
+    ],
+    // Filter out documents older than 11 months and younger than 5 days
+    _id: {
+      $gt: objectIdElevenMonthsAgo(),
+      $lt: objectIdFiveDaysAgo()
+    }
+  }).exec();
+}

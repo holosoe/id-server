@@ -81,7 +81,12 @@ export async function createOnfidoCheck(applicant_id) {
     );
     return resp.data;
   } catch (err) {
-    console.error("Error creating Onfido check", err.message, err.response?.data);
+    console.error("Error creating Onfido check",
+      err.message,
+      JSON.stringify(err.response?.data ?? {}, null, 2)
+    );
+    const details = err.response?.data?.error?.message ?? ''
+    throw new Error("Error creating Onfido check" + ". " + details);
   }
 }
 

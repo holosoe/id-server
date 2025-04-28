@@ -35,7 +35,7 @@ import {
 } from "../../utils/user-verifications.js"
 import { getSessionById, failSession } from "../../utils/sessions.js";
 import { findOneNullifierAndCredsLast5Days } from "../../utils/nullifier-and-creds.js";
-import { issuev2 } from "../../utils/issuance.js";
+import { issuev2KYC } from "../../utils/issuance.js";
 import { toAlreadyRegisteredStr } from "../../utils/errors.js"
 import { upgradeV3Logger } from "./error-logger.js";
 
@@ -270,7 +270,11 @@ function onfidoValidationToUserErrorMessage(
         return "Verification failed - please try again";
       })
       .join(". ")}`
-    : validationResultCheck.error || "Verification failed";
+    : (
+      reportsValidation?.error ??
+      validationResultCheck.error ??
+      "Verification failed"
+    );
 }
 
 function uuidOldFromOnfidoReport(documentReport) {
@@ -635,7 +639,7 @@ async function getCredentialsV2(req, res) {
 
     if (process.env.ENVIRONMENT == "dev") {
       const creds = newDummyUserCreds;
-      const response = issuev2(issuanceNullifier, creds);
+      const response = issuev2KYC(issuanceNullifier, creds);
       response.metadata = newDummyUserCreds;
       return res.status(200).json(response);
     }
@@ -792,7 +796,7 @@ async function getCredentialsV2(req, res) {
 
     const creds = extractCreds(documentReport);
 
-    const response = issuev2(issuanceNullifier, creds);
+    const response = issuev2KYC(issuanceNullifier, creds);
     response.metadata = creds;
 
     await deleteOnfidoApplicant(check.applicant_id);
@@ -853,7 +857,7 @@ async function getCredentialsV3(req, res) {
 
     // if (process.env.ENVIRONMENT == "dev") {
     //   const creds = newDummyUserCreds;
-    //   const response = issuev2(issuanceNullifier, creds);
+    //   const response = issuev2KYC(issuanceNullifier, creds);
     //   response.metadata = newDummyUserCreds;
     //   return res.status(200).json(response);
     // }
@@ -923,7 +927,7 @@ async function getCredentialsV3(req, res) {
       }
 
       const creds = extractCreds(documentReport);
-      const response = issuev2(issuanceNullifier, creds);
+      const response = issuev2KYC(issuanceNullifier, creds);
       response.metadata = creds;
 
       endpointLoggerV3.info({ uuidV2: uuidNew, check_id: checkIdFromNullifier }, "Issuing credentials");
@@ -1005,7 +1009,7 @@ async function getCredentialsV3(req, res) {
     if (dbResponse.error) return res.status(400).json(dbResponse);
 
     const creds = extractCreds(documentReport);
-    const response = issuev2(issuanceNullifier, creds);
+    const response = issuev2KYC(issuanceNullifier, creds);
     response.metadata = creds;
 
     endpointLoggerV3.info({ uuidV2: uuidNew, check_id }, "Issuing credentials");

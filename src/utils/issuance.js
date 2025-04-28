@@ -13,7 +13,7 @@ import { issue as holonymIssueV2 } from "holonym-wasm-issuer-v2";
  * @param {string} issuanceNullifier 
  * @param {Creds} creds
  */
-export function issuev2(issuanceNullifier, creds) {
+export function issuev2KYC(issuanceNullifier, creds) {
   return JSON.parse(
     holonymIssueV2(
       process.env.HOLONYM_ISSUER_PRIVKEY,

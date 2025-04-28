@@ -1,7 +1,11 @@
 import axios from "axios";
 import { ObjectId } from "mongodb";
 import { subDays } from "date-fns";
-import { Session } from "../../init.js";
+import {
+  Session,
+  NullifierAndCreds,
+  CleanHandsNullifierAndCreds
+} from "../../init.js";
 import { sessionStatusEnum, facetecServerBaseURL } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { deleteVeriffSession } from "../../utils/veriff.js";
@@ -141,6 +145,14 @@ async function deleteUserData(req, res) {
     //     console.log("deleteUserData: Error encountered (b)", err?.response?.data);
     //   else console.log("deleteUserData: Error encountered (b)", err);
     // }
+
+    // 3. Delete NullifierAndCreds documents older than 30 days \\
+    await NullifierAndCreds.deleteMany({
+      _id: { $lt: dateToObjectId(thirtyDaysAgo) },
+    }).exec();
+    await CleanHandsNullifierAndCreds.deleteMany({
+      _id: { $lt: dateToObjectId(thirtyDaysAgo) },
+    }).exec();
 
     return res.status(200).json({ message: "Success" });
   } catch (err) {
