@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node src/server",
+    "start": "nodemon src/server",
     "start:dev": "bash scripts/run.sh dev",
     "start:prod": "bash scripts/run.sh prod",
     "build:prod": "bash scripts/build.sh prod",
@@ -24,6 +24,7 @@
     "express": "^4.18.1",
     "holonym-wasm-issuer": "^0.2.2",
     "holonym-wasm-issuer-v2": "npm:holonym-wasm-issuer@^2.0.0",
+    "moment": "^2.30.1",
     "mongodb": "^4.11.0",
     "mongoose": "^6.7.2",
     "next": "^15.1.7",

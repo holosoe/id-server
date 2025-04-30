@@ -96,6 +96,16 @@ async function handleIdvSessionCreation(session, logger) {
     await session.save();
 
     return {
+      // TODO: facetec: not really needed but to check again
+      message: 'todo: integrate facetec in backend',
+    };
+  } else if (session.idvProvider === "personhood") {
+    session.num_facetec_liveness_checks = 0;
+
+    await session.save();
+
+    return {
+      // TODO: facetec: not really needed but to check again
       message: 'todo: integrate facetec in backend',
     };
   } else {
