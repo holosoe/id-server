@@ -52,6 +52,7 @@ export async function sessionToken(req, res) {
         message: 'starting verification session'
       });
 
+      console.log("facetecServerBaseURL", facetecServerBaseURL);
       const resp = await axios.get(
         `${facetecServerBaseURL}/session-token`,
         {
