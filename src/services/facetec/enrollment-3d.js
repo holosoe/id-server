@@ -110,7 +110,7 @@ export async function enrollment3d(req, res) {
       if (!enrollmentResponse.data.success) {
         // YES, session is still IN_PROGRESS
         // TODO: facetec: user should be able to retry enrollment
-        let falseChecks = Object.values(obj).filter(
+        let falseChecks = Object.values(enrollmentResponse.data.faceScanSecurityChecks).filter(
           (value) => value === false
         ).length;
 
@@ -167,6 +167,7 @@ export async function enrollment3d(req, res) {
       { $inc: { num_facetec_liveness_checks: 1 } }
     );
 
+    console.log("sessionType", sessionType);
     console.log("facetec POST /enrollment-3d response:", data);
 
     if (sessionType === "personhood") {
@@ -176,12 +177,17 @@ export async function enrollment3d(req, res) {
         message: "duplicates check: sending to server",
       });
 
+      console.log("/3d-db/search", {
+        externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
+        minMatchLevel: 15,
+        groupName: "soe-personhood20",
+      });
       const faceDbSearchResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/search`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
           minMatchLevel: 15,
-          groupName: "soe-personhood19",
+          groupName: "soe-personhood20",
         },
         {
           headers: {
@@ -262,13 +268,13 @@ export async function enrollment3d(req, res) {
       // do /3d-db/enroll
       console.log("/3d-db/enroll", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-        groupName: "soe-personhood19",
+        groupName: "soe-personhood20",
       });
       const faceDbEnrollResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/enroll`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-          groupName: "soe-personhood19",
+          groupName: "soe-personhood20",
         },
         {
           headers: {
