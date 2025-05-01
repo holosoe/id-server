@@ -36,8 +36,9 @@ export async function enrollment3d(req, res) {
     const issuanceNullifier = req.params.nullifier;
 
     // sessionType = "kyc" | "personhood"
-    // if sessionType === "personhood", use FaceVector and do duplicate check here
-    const sessionType = req.query.sessionType;
+    const sessionType = issuanceNullifier ? "personhood" : "kyc";
+
+    console.log("sessionType", sessionType, "issuanceNullifier", issuanceNullifier);
 
     if (!sid) {
       return res.status(400).json({ error: "sid is required" });
