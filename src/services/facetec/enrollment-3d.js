@@ -180,14 +180,14 @@ export async function enrollment3d(req, res) {
       console.log("/3d-db/search", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
         minMatchLevel: 15,
-        groupName: "soe-personhood22",
+        groupName: "soe-personhood23",
       });
       const faceDbSearchResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/search`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
           minMatchLevel: 15,
-          groupName: "soe-personhood22",
+          groupName: "soe-personhood23",
         },
         {
           headers: {
@@ -266,13 +266,13 @@ export async function enrollment3d(req, res) {
       // do /3d-db/enroll
       console.log("/3d-db/enroll", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-        groupName: "soe-personhood22",
+        groupName: "soe-personhood23",
       });
       const faceDbEnrollResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/enroll`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-          groupName: "soe-personhood22",
+          groupName: "soe-personhood23",
         },
         {
           headers: {
