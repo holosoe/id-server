@@ -1,5 +1,11 @@
 import axios from "axios";
-import { ethereumCMCID, fantomCMCID, avalancheCMCID, idToSlug } from "../constants/cmc.js";
+import {
+  ethereumCMCID,
+  fantomCMCID,
+  avalancheCMCID,
+  idToSlug,
+  xlmCMCID
+} from "../constants/cmc.js";
 
 // TODO: Use redis instead. This is a temporary solution to avoid hitting
 // CMC's rate limit. key-value pair is { slug: { price: number, lastUpdatedAt: Date } }
@@ -66,4 +72,10 @@ export async function usdToAVAX(usdAmount) {
   const avalanchePrice = await getPriceFromCacheOrAPI(avalancheCMCID)
   const ftmAmount = usdAmount / avalanchePrice;
   return ftmAmount;
+}
+
+export async function usdToXLM(usdAmount) {
+  const xlmPrice = await getPriceFromCacheOrAPI(xlmCMCID)
+  const xlmAmount = usdAmount / xlmPrice;
+  return xlmAmount;
 }
