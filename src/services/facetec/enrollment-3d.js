@@ -168,7 +168,6 @@ export async function enrollment3d(req, res) {
       { $inc: { num_facetec_liveness_checks: 1 } }
     );
 
-    console.log("sessionType", sessionType);
     console.log("facetec POST /enrollment-3d response:", data);
 
     if (sessionType === "personhood") {
@@ -181,14 +180,14 @@ export async function enrollment3d(req, res) {
       console.log("/3d-db/search", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
         minMatchLevel: 15,
-        groupName: "soe-personhood20",
+        groupName: "soe-personhood21",
       });
       const faceDbSearchResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/search`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
           minMatchLevel: 15,
-          groupName: "soe-personhood20",
+          groupName: "soe-personhood21",
         },
         {
           headers: {
@@ -202,8 +201,7 @@ export async function enrollment3d(req, res) {
       console.log("faceDbSearchResponse.data", faceDbSearchResponse.data);
 
       if (!faceDbSearchResponse.data.success) {
-        return res
-          .status(400)
+        return res.status(400)
           .json({ error: "duplicate check: search failed" });
       }
 
@@ -219,8 +217,7 @@ export async function enrollment3d(req, res) {
           `Proof of personhood failed as highly matching duplicates are found.`
         );
 
-        return res
-          .status(400)
+        return res.status(400)
           .json({ error: "duplicate check: found duplicates" });
       }
 
@@ -269,13 +266,13 @@ export async function enrollment3d(req, res) {
       // do /3d-db/enroll
       console.log("/3d-db/enroll", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-        groupName: "soe-personhood20",
+        groupName: "soe-personhood21",
       });
       const faceDbEnrollResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/enroll`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-          groupName: "soe-personhood20",
+          groupName: "soe-personhood21",
         },
         {
           headers: {
