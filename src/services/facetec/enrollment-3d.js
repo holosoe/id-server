@@ -115,6 +115,7 @@ export async function enrollment3d(req, res) {
           (value) => value === false
         ).length;
 
+        console.log('falseChecks', falseChecks, enrollmentResponse.data.faceScanSecurityChecks)
         if (falseChecks > 0) {
           return res
             .status(400)

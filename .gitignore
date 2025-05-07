@@ -13,3 +13,4 @@ rds-combined-ca-bundle.pem
 global-bundle.pem
 
 FaceTecSDK-standard-server*
+*-old/
