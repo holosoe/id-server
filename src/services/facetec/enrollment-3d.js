@@ -38,11 +38,25 @@ export async function enrollment3d(req, res) {
     // sessionType = "kyc" | "personhood"
     const sessionType = issuanceNullifier ? "personhood" : "kyc";
 
+    let groupName = "";
+    if (sessionType === "personhood") {
+      groupName = process.env.FACETEC_GROUP_NAME_FOR_PERSONHOOD;
+    } else if (sessionType === "kyc") {
+      groupName = process.env.FACETEC_GROUP_NAME_FOR_KYC;
+    }
+
+    let duplicationCheck = false;
+    if (sessionType === "personhood" || sessionType === "kyc") {
+      duplicationCheck = true;
+    }
+
     console.log(
       "sessionType",
       sessionType,
       "issuanceNullifier",
-      issuanceNullifier
+      issuanceNullifier,
+      "groupName",
+      groupName
     );
 
     if (!sid) {
@@ -196,16 +210,16 @@ export async function enrollment3d(req, res) {
         console.error("err");
         console.error({ error: err }, "Error during FaceTec enrollment-3d");
         return res.status(500).json({
-            error: true,
-            errorMessage: "An unknown error occurred",
-            triggerRetry: true,
-          });
+          error: true,
+          errorMessage: "An unknown error occurred",
+          triggerRetry: true,
+        });
       }
     }
 
     console.log("facetec POST /enrollment-3d response:", data);
 
-    if (sessionType === "personhood") {
+    if (duplicationCheck) {
       // do duplication check here
       req.app.locals.sseManager.sendToClient(sid, {
         status: "in_progress",
@@ -215,14 +229,14 @@ export async function enrollment3d(req, res) {
       console.log("/3d-db/search", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
         minMatchLevel: 15,
-        groupName: "soe-personhood23",
+        groupName: groupName,
       });
       const faceDbSearchResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/search`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
           minMatchLevel: 15,
-          groupName: "soe-personhood23",
+          groupName: groupName,
         },
         {
           headers: {
@@ -236,9 +250,11 @@ export async function enrollment3d(req, res) {
       console.log("faceDbSearchResponse.data", faceDbSearchResponse.data);
 
       if (!faceDbSearchResponse.data.success) {
-        return res
-          .status(400)
-          .json({ error: true, errorMessage: "duplicate check: search failed", triggerRetry: true });
+        return res.status(400).json({
+          error: true,
+          errorMessage: "duplicate check: search failed",
+          triggerRetry: true,
+        });
       }
 
       if (faceDbSearchResponse.data.results.length > 0) {
@@ -253,11 +269,15 @@ export async function enrollment3d(req, res) {
           `Proof of personhood failed as highly matching duplicates are found.`
         );
 
-        return res
-          .status(400)
-          .json({ error: true, errorMessage: "duplicate check: found duplicates", triggerRetry: false });
+        return res.status(400).json({
+          error: true,
+          errorMessage: "duplicate check: found duplicates",
+          triggerRetry: false,
+        });
       }
+    }
 
+    if (sessionType === "personhood") {
       // here we are all good to issue proof of personhood credential
       const uuidNew = govIdUUID(data.externalDatabaseRefID, "", "");
 
@@ -301,17 +321,19 @@ export async function enrollment3d(req, res) {
         status: "completed",
         message: "proof of personhood: issued credentials, proceed to mint SBT",
       });
+    }
 
+    if (duplicationCheck) {
       // do /3d-db/enroll
       console.log("/3d-db/enroll", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-        groupName: "soe-personhood23",
+        groupName: groupName,
       });
       const faceDbEnrollResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/enroll`,
         {
           externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-          groupName: "soe-personhood23",
+          groupName: groupName,
         },
         {
           headers: {
@@ -330,9 +352,11 @@ export async function enrollment3d(req, res) {
           .status(400)
           .json({ error: "duplicate check: enrollment failed" });
       }
+    }
 
-      // NOTE: This response shape is different from the veriff and onfido issuance
-      // endpoints. This one includes some of the response from FaceTec
+    // NOTE: This response shape is different from the veriff and onfido issuance
+    // endpoints. This one includes some of the response from FaceTec
+    if (sessionType === "personhood") {
       return res.status(200).json({
         issuedCreds: issueV2Response,
         scanResultBlob: data.scanResultBlob,
@@ -346,6 +370,10 @@ export async function enrollment3d(req, res) {
     else return res.status(500).json({ error: "An unknown error occurred" });
   } catch (err) {
     console.log("POST /enrollment-3d: Error encountered", err.message);
-    return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
+    return res.status(500).json({
+      error: true,
+      errorMessage: "An unknown error occurred",
+      triggerRetry: true,
+    });
   }
 }

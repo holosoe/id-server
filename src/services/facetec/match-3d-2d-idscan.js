@@ -22,7 +22,7 @@ import {
   extractCreds,
   saveCollisionMetadata,
   saveUserToDb,
-  updateSessionStatus
+  updateSessionStatus,
 } from "./functions-creds.js";
 import { issue as issuev2 } from "holonym-wasm-issuer-v2";
 
@@ -40,10 +40,14 @@ export async function match3d2dIdScan(req, res) {
     const issuanceNullifier = req.params.nullifier;
 
     if (!sid) {
-      return res.status(400).json({ error: true, errorMessage: "sid is required" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "sid is required" });
     }
     if (!faceTecParams) {
-      return res.status(400).json({ error: true, errorMessage: "faceTecParams is required" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "faceTecParams is required" });
     }
 
     // --- Validate id-server session ---
@@ -57,18 +61,22 @@ export async function match3d2dIdScan(req, res) {
     const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
-      return res.status(404).json({ error: true, errorMessage: "Session not found" });
+      return res
+        .status(404)
+        .json({ error: true, errorMessage: "Session not found" });
     }
 
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
-      return res.status(400).json({ error: true, errorMessage: "Session is not in progress" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "Session is not in progress" });
     }
 
     // --- Forward request to FaceTec server ---
 
     let data = null;
     try {
-      console.log('idscan faceTecParams', faceTecParams)
+      console.log("idscan faceTecParams", faceTecParams);
       // set minMatchLevel from id-server
       faceTecParams.minMatchLevel =
         process.env.FACETEC_3D_2D_IDSCAN_MIN_MATCH_LEVEL;
@@ -183,7 +191,13 @@ export async function match3d2dIdScan(req, res) {
         creds.rawCreds.lastName,
         creds.rawCreds.birthdate
       );
-      console.log('uuidNew', uuidNew, creds.rawCreds.firstName, creds.rawCreds.lastName, creds.rawCreds.birthdate)
+      console.log(
+        "uuidNew",
+        uuidNew,
+        creds.rawCreds.firstName,
+        creds.rawCreds.lastName,
+        creds.rawCreds.birthdate
+      );
 
       // We started using a new UUID generation method on May 24, 2024, but we still
       // want to check the database for the old UUIDs too.
@@ -210,9 +224,11 @@ export async function match3d2dIdScan(req, res) {
           sessionStatusEnum.VERIFICATION_FAILED,
           `User has already registered. User ID: ${user._id}`
         );
-        return res
-          .status(400)
-          .json({ error: true, errorMessage: `User has already registered. User ID: ${user._id}`, triggerRetry: false });
+        return res.status(400).json({
+          error: true,
+          errorMessage: `User has already registered. User ID: ${user._id}`,
+          triggerRetry: false,
+        });
       }
 
       // Store UUID for Sybil resistance
@@ -222,7 +238,13 @@ export async function match3d2dIdScan(req, res) {
       );
       if (dbResponse.error) return res.status(400).json(dbResponse);
 
-      console.log("issuev2", process.env.HOLONYM_ISSUER_PRIVKEY, issuanceNullifier, creds.rawCreds.countryCode.toString(), creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value)
+      console.log(
+        "issuev2",
+        process.env.HOLONYM_ISSUER_PRIVKEY,
+        issuanceNullifier,
+        creds.rawCreds.countryCode.toString(),
+        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
+      );
       const response = JSON.parse(
         issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,
@@ -263,9 +285,18 @@ export async function match3d2dIdScan(req, res) {
 
     // --- Forward response from FaceTec server ---
     if (data) return res.status(200).json(data);
-    else return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
+    else
+      return res.status(500).json({
+        error: true,
+        errorMessage: "An unknown error occurred",
+        triggerRetry: true,
+      });
   } catch (err) {
     console.log("POST /match-3d-2d-idscan: Error encountered", err.message);
-    return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
+    return res.status(500).json({
+      error: true,
+      errorMessage: "An unknown error occurred",
+      triggerRetry: true,
+    });
   }
 }
