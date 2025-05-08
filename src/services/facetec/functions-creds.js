@@ -107,7 +107,7 @@ export function validateFaceTecResponse(data) {
   // }
   const documentData = JSON.parse(data?.documentData ?? "{}");
   const scannedValues = documentData.scannedValues;
-  console.log("documentData.scannedValues", JSON.stringify(scannedValues));
+  // console.log("documentData.scannedValues", JSON.stringify(scannedValues));
 
   if (!scannedValues) {
     return {
@@ -162,7 +162,7 @@ export function extractCreds(data) {
       faceTecCountryNameToCode[documentData.templateInfo.documentCountry]
     ];
   assert.ok(countryCode, "Unsupported country");
-  console.log("extractCreds flattenedScannedValues", flattenedScannedValues);
+  // console.log("extractCreds flattenedScannedValues", flattenedScannedValues);
 
   // DOING, with parseOCRStringToDate it gets better, but FaceTec returned date format should be checked too
   // TODO: facetec: check for dateOfBirth
@@ -170,7 +170,7 @@ export function extractCreds(data) {
   let dobIsValid = true;
   let parsedDOB = null;
   try {
-    console.log("extractCreds flattenedScannedValues.dateOfBirth", flattenedScannedValues.dateOfBirth)
+    // console.log("extractCreds flattenedScannedValues.dateOfBirth", flattenedScannedValues.dateOfBirth)
     parsedDOB = parseOCRStringToDate(flattenedScannedValues.dateOfBirth);
   } catch (err) {
     console.log("extractCreds err", err)
@@ -199,7 +199,7 @@ export function extractCreds(data) {
     _lastName = fullName.slice(-1)[0];
     _firstName = fullName.slice(0, -1).join(" ");
   }
-  console.log("after fullName", _firstName, _lastName);
+  // console.log("after fullName", _firstName, _lastName);
 
   const firstNameStr = flattenedScannedValues.firstName
     ? flattenedScannedValues.firstName
