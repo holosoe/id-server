@@ -247,7 +247,8 @@ export async function enrollment3d(req, res) {
         // duplicates found, return error
         console.log(
           "duplicate check: found duplicates",
-          faceDbSearchResponse.data.results.length
+          faceDbSearchResponse.data.results.length,
+          faceDbSearchResponse.data.results
         );
         await updateSessionStatus(
           session,
