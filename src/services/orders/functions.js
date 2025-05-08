@@ -73,9 +73,9 @@ async function validateTx(chainId, txHash, externalOrderId, desiredAmount) {
     );
   }
 
-  if (idServerPaymentAddress !== tx.to.toLowerCase()) {
+  if (idServerPaymentAddress.toLowerCase() !== tx.to.toLowerCase()) {
     throw new Error(
-      `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`
+      `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress.toLowerCase()} vs ${tx.to.toLowerCase()}`
     );
   }
 

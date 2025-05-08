@@ -77,9 +77,9 @@ export async function refundFailedSession(req, res) {
       });
     }
 
-    if (idServerPaymentAddress !== tx.to.toLowerCase()) {
+    if (idServerPaymentAddress.toLowerCase() !== tx.to.toLowerCase()) {
       return res.status(400).json({
-        error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
+        error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress.toLowerCase()} vs ${tx.to.toLowerCase()}`,
       });
     }
 

@@ -57,10 +57,10 @@ async function validateTxForSessionCreation(session, chainId, txHash, desiredAmo
 
   const txReceipt = await tx.wait();
 
-  if (idServerPaymentAddress !== tx.to.toLowerCase()) {
+  if (idServerPaymentAddress.toLowerCase() !== tx.to.toLowerCase()) {
     return {
       status: 400,
-      error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress}`,
+      error: `Invalid transaction recipient. Recipient must be ${idServerPaymentAddress.toLowerCase()} vs ${tx.to.toLowerCase()}`,
     };
   }
 
