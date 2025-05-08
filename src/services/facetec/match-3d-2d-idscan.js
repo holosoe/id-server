@@ -76,7 +76,7 @@ export async function match3d2dIdScan(req, res) {
 
     let data = null;
     try {
-      console.log("idscan faceTecParams", faceTecParams);
+      // console.log("idscan faceTecParams", faceTecParams);
       // set minMatchLevel from id-server
       faceTecParams.minMatchLevel =
         process.env.FACETEC_3D_2D_IDSCAN_MIN_MATCH_LEVEL;
@@ -141,7 +141,21 @@ export async function match3d2dIdScan(req, res) {
       }
     }
 
-    console.log("facetec POST /match-3d-2d-idscan response:", data);
+    // console.log("facetec POST /match-3d-2d-idscan response:", data);
+    let {
+      documentData,
+      ocrResults,
+      photoIDBackCrop,
+      photoIDFaceCrop,
+      photoIDFrontCrop,
+      scanResultBlob,
+      photoIDPrimarySignatureCrop,
+      photoIDSecondarySignatureCrop,
+      photoIDTamperingEvidenceBackImage,
+      photoIDTamperingEvidenceFrontImage,
+      ...cleanData
+    } = data;
+    console.log("facetec POST /match-3d-2d-idscan cleaned response:", cleanData);
 
     // skip user confirmation and get credentials
     if (
@@ -191,13 +205,6 @@ export async function match3d2dIdScan(req, res) {
         creds.rawCreds.lastName,
         creds.rawCreds.birthdate
       );
-      console.log(
-        "uuidNew",
-        uuidNew,
-        creds.rawCreds.firstName,
-        creds.rawCreds.lastName,
-        creds.rawCreds.birthdate
-      );
 
       // We started using a new UUID generation method on May 24, 2024, but we still
       // want to check the database for the old UUIDs too.
@@ -238,13 +245,6 @@ export async function match3d2dIdScan(req, res) {
       );
       if (dbResponse.error) return res.status(400).json(dbResponse);
 
-      console.log(
-        "issuev2",
-        process.env.HOLONYM_ISSUER_PRIVKEY,
-        issuanceNullifier,
-        creds.rawCreds.countryCode.toString(),
-        creds.derivedCreds.nameDobCitySubdivisionZipStreetExpireHash.value
-      );
       const response = JSON.parse(
         issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,

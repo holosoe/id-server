@@ -50,15 +50,6 @@ export async function enrollment3d(req, res) {
       duplicationCheck = true;
     }
 
-    console.log(
-      "sessionType",
-      sessionType,
-      "issuanceNullifier",
-      issuanceNullifier,
-      "groupName",
-      groupName
-    );
-
     if (!sid) {
       return res
         .status(400)
@@ -153,11 +144,6 @@ export async function enrollment3d(req, res) {
           enrollmentResponse.data.faceScanSecurityChecks
         ).filter((value) => value === false).length;
 
-        console.log(
-          "falseChecks",
-          falseChecks,
-          enrollmentResponse.data.faceScanSecurityChecks
-        );
         if (falseChecks > 0) {
           return res.status(400).json({
             error: true,
@@ -217,7 +203,7 @@ export async function enrollment3d(req, res) {
       }
     }
 
-    console.log("facetec POST /enrollment-3d response:", data);
+    // console.log("facetec POST /enrollment-3d response:", data);
 
     if (duplicationCheck) {
       // do duplication check here
@@ -277,6 +263,7 @@ export async function enrollment3d(req, res) {
       }
     }
 
+    let issueV2Response = null;
     if (sessionType === "personhood") {
       // here we are all good to issue proof of personhood credential
       const uuidNew = govIdUUID(data.externalDatabaseRefID, "", "");
@@ -298,7 +285,7 @@ export async function enrollment3d(req, res) {
       );
       const referenceHash = ethers.BigNumber.from(poseidon(refArgs)).toString();
 
-      const issueV2Response = JSON.parse(
+      issueV2Response = JSON.parse(
         issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,
           issuanceNullifier,
@@ -365,7 +352,6 @@ export async function enrollment3d(req, res) {
 
     // --- Forward response from FaceTec server ---
 
-    // console.log("data", data);
     if (data) return res.status(200).json(data);
     else return res.status(500).json({ error: "An unknown error occurred" });
   } catch (err) {
