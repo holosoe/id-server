@@ -1,10 +1,14 @@
 import express from "express";
 import { 
-    createOrder, 
-    getOrderTransactionStatus, 
-    setOrderFulfilled, 
-    refundOrder,
+  createOrder, 
+  getOrderTransactionStatus, 
+  setOrderFulfilled, 
+  refundOrder,
 } from "../services/orders/endpoints.js";
+import {
+  createOrder as createStellarOrder,
+  getOrderTransactionStatus as getStellarOrderTransactionStatus,
+} from "../services/orders/stellar/endpoints.js"
 const router = express.Router();
 
 // ---- Order ----
@@ -17,5 +21,8 @@ router.post("/", createOrder);
 router.get("/:externalOrderId/transaction/status", getOrderTransactionStatus);
 router.get("/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
 router.post("/admin/refund", refundOrder);
+
+router.post("/stellar", createStellarOrder);
+router.get("/stellar/:externalOrderId/transaction/status", getStellarOrderTransactionStatus);
 
 export default router;

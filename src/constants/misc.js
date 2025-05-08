@@ -1,3 +1,4 @@
+import * as StellarSdk from '@stellar/stellar-sdk'
 import { ethers } from "ethers";
 
 export const idServerPaymentAddress = "0xdca2e9ae8423d7b0f94d7f9fc09e698a45f3c851";
@@ -116,3 +117,8 @@ export const v3PhoneSybilResistanceCircuitId =
   "0xbce052cf723dca06a21bd3cf838bc518931730fb3db7859fc9cc86f0d5483495";
 export const v3EPassportSybilResistanceCircuitId =
   "0xf2ce248b529343e105f7b3c16459da619281c5f81cf716d28f7df9f87667364d";
+
+// ---------------- Stellar stuff ----------------
+export const horizonServer = new StellarSdk.Horizon.Server("https://horizon.stellar.org");
+
+export const idServerStellarPaymentAddress = "GCAF6MZL2MJTLEIPICKJ2ET7YY2KZ2TFVULASX6XEVILPJDHNZE7LJFX";

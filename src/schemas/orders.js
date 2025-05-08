@@ -6,17 +6,31 @@ const { Schema } = mongoose;
 if (process.env.ENVIRONMENT == "dev") mongoose.set("debug", true);
 
 export const OrderSchema = new Schema({
-    holoUserId: { type: String, required: true },
-    externalOrderId: { type: String, required: true },
-    category: { type: String, required: true },
-    fulfilled: { type: Boolean, default: false,required: true },
-    
-    txHash: { type: String, required: true },
-    chainId: { type: Number, required: true },
+  holoUserId: { type: String, required: true },
+  externalOrderId: { type: String, required: true },
+  category: { type: String, required: true },
+  fulfilled: { type: Boolean, default: false,required: true },
+  
+  // For EVM payments
+  txHash: { type: String, required: false },
+  chainId: { type: Number, required: false },
 
-    refunded: { type: Boolean, default: false },
-    refundTxHash: { type: String },
+  // For EVM payments
+  refunded: { type: Boolean, default: false },
+  refundTxHash: { type: String, required: false },
 
-    // createdAt: { type: Date, default: Date.now },
-    // updatedAt: { type: Date, default: Date.now },
+  // For Stellar payments
+  stellar: {
+    type: {
+      txHash: String,
+      refundTxHash: {
+        type: String,
+        required: false
+      }
+    },
+    required: false
+  }
+
+  // createdAt: { type: Date, default: Date.now },
+  // updatedAt: { type: Date, default: Date.now },
 });

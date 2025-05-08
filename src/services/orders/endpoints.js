@@ -9,10 +9,7 @@ import { idvSessionUSDPrice } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 
 import { Order } from "../../init.js";
-
-const orderCategoryEnums = {
-  MINT_ZERONYM_V3_SBT: "mint_zeronym_v3_sbt",
-};
+import { orderCategoryEnums } from './constants.js';
 
 const ordersLogger = logger.child({
   // msgPrefix: "[GET /orders] ",
