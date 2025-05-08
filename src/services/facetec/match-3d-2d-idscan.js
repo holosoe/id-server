@@ -103,7 +103,9 @@ export async function match3d2dIdScan(req, res) {
         );
 
         return res.status(502).json({
-          error: "Did not receive a response from the FaceTec server",
+          error: true,
+          errorMessage: "Did not receive a response from the FaceTec server",
+          triggerRetry: true,
         });
       } else if (err.response) {
         console.error(
@@ -112,8 +114,10 @@ export async function match3d2dIdScan(req, res) {
         );
 
         return res.status(err.response.status).json({
-          error: "FaceTec server returned an error",
+          error: true,
+          errorMessage: "FaceTec server returned an error",
           data: err.response.data,
+          triggerRetry: true,
         });
       } else {
         console.error("err");
@@ -121,7 +125,11 @@ export async function match3d2dIdScan(req, res) {
           { error: err },
           "Error during FaceTec match-3d-2d-idscan"
         );
-        return res.status(500).json({ error: "An unknown error occurred" });
+        return res.status(500).json({
+          error: true,
+          errorMessage: "An unknown error occurred",
+          triggerRetry: true,
+        });
       }
     }
 
@@ -204,7 +212,7 @@ export async function match3d2dIdScan(req, res) {
         );
         return res
           .status(400)
-          .json({ error: true, errorMessage: `User has already registered. User ID: ${user._id}` });
+          .json({ error: true, errorMessage: `User has already registered. User ID: ${user._id}`, triggerRetry: false });
       }
 
       // Store UUID for Sybil resistance
@@ -255,9 +263,9 @@ export async function match3d2dIdScan(req, res) {
 
     // --- Forward response from FaceTec server ---
     if (data) return res.status(200).json(data);
-    else return res.status(500).json({ error: "An unknown error occurred" });
+    else return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
   } catch (err) {
     console.log("POST /match-3d-2d-idscan: Error encountered", err.message);
-    return res.status(500).json({ error: "An unknown error occurred" });
+    return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
   }
 }

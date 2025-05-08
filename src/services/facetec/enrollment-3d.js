@@ -38,13 +38,22 @@ export async function enrollment3d(req, res) {
     // sessionType = "kyc" | "personhood"
     const sessionType = issuanceNullifier ? "personhood" : "kyc";
 
-    console.log("sessionType", sessionType, "issuanceNullifier", issuanceNullifier);
+    console.log(
+      "sessionType",
+      sessionType,
+      "issuanceNullifier",
+      issuanceNullifier
+    );
 
     if (!sid) {
-      return res.status(400).json({ error: "sid is required" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "sid is required" });
     }
     if (!faceTecParams) {
-      return res.status(400).json({ error: "faceTecParams is required" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "faceTecParams is required" });
     }
 
     // --- Validate id-server session ---
@@ -52,17 +61,21 @@ export async function enrollment3d(req, res) {
     try {
       objectId = new ObjectId(sid);
     } catch (err) {
-      return res.status(400).json({ error: "Invalid sid" });
+      return res.status(400).json({ error: true, errorMessage: "Invalid sid" });
     }
 
     const session = await Session.findOne({ _id: objectId }).exec();
 
     if (!session) {
-      return res.status(404).json({ error: "Session not found" });
+      return res
+        .status(404)
+        .json({ error: true, errorMessage: "Session not found" });
     }
 
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
-      return res.status(400).json({ error: "Session is not in progress" });
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "Session is not in progress" });
     }
 
     if (session.num_facetec_liveness_checks >= 5) {
@@ -86,7 +99,7 @@ export async function enrollment3d(req, res) {
     // TODO: For rate limiting, allow the user to enroll up to 5 times.
     // Once the user has reached this limit, do not allow them to create any more
     // facetec session tokens; also, obviously, do not let them enroll anymore.
-    
+
     // Increment num_facetec_liveness_checks.
     // TODO: Make this atomic. Right now, this endpoint is subject to a
     // time-of-check-time-of-use attack. It's not a big deal since we only
@@ -122,17 +135,29 @@ export async function enrollment3d(req, res) {
       if (!enrollmentResponse.data.success) {
         // YES, session is still IN_PROGRESS
         // TODO: facetec: user should be able to retry enrollment
-        let falseChecks = Object.values(enrollmentResponse.data.faceScanSecurityChecks).filter(
-          (value) => value === false
-        ).length;
+        let falseChecks = Object.values(
+          enrollmentResponse.data.faceScanSecurityChecks
+        ).filter((value) => value === false).length;
 
-        console.log('falseChecks', falseChecks, enrollmentResponse.data.faceScanSecurityChecks)
+        console.log(
+          "falseChecks",
+          falseChecks,
+          enrollmentResponse.data.faceScanSecurityChecks
+        );
         if (falseChecks > 0) {
-          return res
-            .status(400)
-            .json({ error: `liveness check failed. ${falseChecks} out of ${Object.keys(enrollmentResponse.data.faceScanSecurityChecks).length} checks failed` });
+          return res.status(400).json({
+            error: true,
+            errorMessage: `liveness check failed. ${falseChecks} out of ${
+              Object.keys(enrollmentResponse.data.faceScanSecurityChecks).length
+            } checks failed`,
+            triggerRetry: true,
+          });
         } else {
-          return res.status(400).json({ error: "liveness enrollment failed" });
+          return res.status(400).json({
+            error: true,
+            errorMessage: "liveness enrollment failed",
+            triggerRetry: true,
+          });
         }
       }
 
@@ -151,7 +176,9 @@ export async function enrollment3d(req, res) {
         );
 
         return res.status(502).json({
-          error: "Did not receive a response from the FaceTec server",
+          error: true,
+          errorMessage: "Did not receive a response from the FaceTec server",
+          triggerRetry: true,
         });
       } else if (err.response) {
         console.error(
@@ -160,13 +187,19 @@ export async function enrollment3d(req, res) {
         );
 
         return res.status(err.response.status).json({
-          error: "FaceTec server returned an error",
+          error: true,
+          errorMessage: "FaceTec server returned an error",
           data: err.response.data,
+          triggerRetry: true,
         });
       } else {
         console.error("err");
         console.error({ error: err }, "Error during FaceTec enrollment-3d");
-        return res.status(500).json({ error: "An unknown error occurred" });
+        return res.status(500).json({
+            error: true,
+            errorMessage: "An unknown error occurred",
+            triggerRetry: true,
+          });
       }
     }
 
@@ -203,8 +236,9 @@ export async function enrollment3d(req, res) {
       console.log("faceDbSearchResponse.data", faceDbSearchResponse.data);
 
       if (!faceDbSearchResponse.data.success) {
-        return res.status(400)
-          .json({ error: "duplicate check: search failed" });
+        return res
+          .status(400)
+          .json({ error: true, errorMessage: "duplicate check: search failed", triggerRetry: true });
       }
 
       if (faceDbSearchResponse.data.results.length > 0) {
@@ -219,8 +253,9 @@ export async function enrollment3d(req, res) {
           `Proof of personhood failed as highly matching duplicates are found.`
         );
 
-        return res.status(400)
-          .json({ error: "duplicate check: found duplicates" });
+        return res
+          .status(400)
+          .json({ error: true, errorMessage: "duplicate check: found duplicates", triggerRetry: false });
       }
 
       // here we are all good to issue proof of personhood credential
@@ -233,22 +268,24 @@ export async function enrollment3d(req, res) {
       );
       if (dbResponse.error) return res.status(400).json(dbResponse);
 
-      console.log(
-        "issuev2",
-        issuanceNullifier,
-        data.externalDatabaseRefID
-      );
+      console.log("issuev2", issuanceNullifier, data.externalDatabaseRefID);
 
-      const refBuffers = data.externalDatabaseRefID.split("-").map((x) => Buffer.from(x))
-      const refArgs = refBuffers.map((x) => ethers.BigNumber.from(x).toString());
+      const refBuffers = data.externalDatabaseRefID
+        .split("-")
+        .map((x) => Buffer.from(x));
+      const refArgs = refBuffers.map((x) =>
+        ethers.BigNumber.from(x).toString()
+      );
       const referenceHash = ethers.BigNumber.from(poseidon(refArgs)).toString();
 
-      const issueV2Response = JSON.parse(issuev2(
-        process.env.HOLONYM_ISSUER_PRIVKEY,
-        issuanceNullifier,
-        referenceHash,
-        "0".toString() // or use hash of scanResultBlob ???
-      ));
+      const issueV2Response = JSON.parse(
+        issuev2(
+          process.env.HOLONYM_ISSUER_PRIVKEY,
+          issuanceNullifier,
+          referenceHash,
+          "0".toString() // or use hash of scanResultBlob ???
+        )
+      );
       console.log("issueV2Response", issueV2Response);
       // issueV2Response.metadata = creds;
 
@@ -309,6 +346,6 @@ export async function enrollment3d(req, res) {
     else return res.status(500).json({ error: "An unknown error occurred" });
   } catch (err) {
     console.log("POST /enrollment-3d: Error encountered", err.message);
-    return res.status(500).json({ error: "An unknown error occurred" });
+    return res.status(500).json({ error: true, errorMessage: "An unknown error occurred", triggerRetry: true });
   }
 }
