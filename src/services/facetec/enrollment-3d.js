@@ -86,6 +86,17 @@ export async function enrollment3d(req, res) {
     // TODO: For rate limiting, allow the user to enroll up to 5 times.
     // Once the user has reached this limit, do not allow them to create any more
     // facetec session tokens; also, obviously, do not let them enroll anymore.
+    
+    // Increment num_facetec_liveness_checks.
+    // TODO: Make this atomic. Right now, this endpoint is subject to a
+    // time-of-check-time-of-use attack. It's not a big deal since we only
+    // care about a loose upper bound on the number of FaceTec checks per
+    // user, but atomicity would be nice.
+    await Session.updateOne(
+      { _id: objectId },
+      { $inc: { num_facetec_liveness_checks: 1 } }
+    );
+
     try {
       if (sessionType === "personhood") faceTecParams.storeAsFaceVector = true;
       // console.log('enrollment-3d faceTecParams', faceTecParams)
@@ -119,7 +130,7 @@ export async function enrollment3d(req, res) {
         if (falseChecks > 0) {
           return res
             .status(400)
-            .json({ error: "liveness check and enrollment failed" });
+            .json({ error: `liveness check failed. ${falseChecks} out of ${Object.keys(enrollmentResponse.data.faceScanSecurityChecks).length} checks failed` });
         } else {
           return res.status(400).json({ error: "liveness enrollment failed" });
         }
@@ -158,16 +169,6 @@ export async function enrollment3d(req, res) {
         return res.status(500).json({ error: "An unknown error occurred" });
       }
     }
-
-    // Increment num_facetec_liveness_checks.
-    // TODO: Make this atomic. Right now, this endpoint is subject to a
-    // time-of-check-time-of-use attack. It's not a big deal since we only
-    // care about a loose upper bound on the number of FaceTec checks per
-    // user, but atomicity would be nice.
-    await Session.updateOne(
-      { _id: objectId },
-      { $inc: { num_facetec_liveness_checks: 1 } }
-    );
 
     console.log("facetec POST /enrollment-3d response:", data);
 
