@@ -138,54 +138,51 @@ async function getOrderTransactionStatus(req, res) {
   }
 }
 
+// GET /status/:externalOrderId/fulfilled.
+// API key gated endpoint. To be called by verifier server after minting the SBT.
+// Sets order.fulfilled to true.
+async function setOrderFulfilled(req, res) {
+  try {
+    const { externalOrderId } = req.params;
+
+    // Check for API key in header
+    const apiKey = req.headers["x-api-key"];
+
+    // to be sure that ORDERS_API_KEY is defined and that apiKey is passed
+    if (!process.env.ORDERS_API_KEY || !apiKey) {
+      return res.status(500).json({ error: "Unauthorized. No API key found." });
+    }
+
+    if (apiKey !== process.env.ORDERS_API_KEY) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Query the DB for the order
+    const order = await Order.findOne({ externalOrderId });
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    // Validate TX (check tx.memo, to, amount, etc)
+    const validTx = await validateTx(
+      order.stellar.txHash,
+      order.externalOrderId,
+      idvSessionUSDPrice
+    );
+
+    // Update the order to fulfilled
+    order.fulfilled = true;
+    await order.save();
+
+    return res.status(200).json({ message: "Order set to fulfilled" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 
-
-// TODO: Implement these endpoints
-// // GET /:externalOrderId/fulfilled.
-// // API key gated endpoint. To be called by verifier server after minting the SBT.
-// // Sets order.fulfilled to true.
-// async function setOrderFulfilled(req, res) {
-//   try {
-//     const { externalOrderId } = req.params;
-
-//     // Check for API key in header
-//     const apiKey = req.headers["x-api-key"];
-
-//     // to be sure that ORDERS_API_KEY is defined and that apiKey is passed
-//     if (!process.env.ORDERS_API_KEY || !apiKey) {
-//       return res.status(500).json({ error: "Unauthorized. No API key found." });
-//     }
-
-//     if (apiKey !== process.env.ORDERS_API_KEY) {
-//       return res.status(401).json({ error: "Unauthorized" });
-//     }
-
-//     // Query the DB for the order
-//     const order = await Order.findOne({ externalOrderId });
-
-//     if (!order) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
-
-//     // Validate TX (check tx.data, tx.to, tx.value, etc)
-//     const validTx = await validateTx(
-//       order.chainId,
-//       order.txHash,
-//       order.externalOrderId,
-//       idvSessionUSDPrice
-//     );
-
-//     // Update the order to fulfilled
-//     order.fulfilled = true;
-//     await order.save();
-
-//     return res.status(200).json({ message: "Order set to fulfilled" });
-//   } catch (error) {
-//     return res.status(500).json({ error: error.message });
-//   }
-// }
-
+// TODO: Implement this endpoints
 // // GET /:externalOrderId/refund.
 // // Refunds an unfulfilled order.
 // // Gated by admin API key. Why? Because if an order is unfulfilled, a user could trigger
@@ -244,6 +241,6 @@ async function getOrderTransactionStatus(req, res) {
 export {
   createOrder,
   getOrderTransactionStatus,
-  // setOrderFulfilled,
+  setOrderFulfilled,
   // refundOrder,
 };

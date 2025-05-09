@@ -8,6 +8,7 @@ import {
 import {
   createOrder as createStellarOrder,
   getOrderTransactionStatus as getStellarOrderTransactionStatus,
+  setOrderFulfilled as setStellarOrderFulfilled
 } from "../services/orders/stellar/endpoints.js"
 const router = express.Router();
 
@@ -17,12 +18,16 @@ const router = express.Router();
 // GET /:externalOrderId/transaction/status. To be called by verifier server. Should query the DB for the tx metadata, wait a little bit for the tx to be confirmed (if it's not already), and return a success response if all goes well.
 // GET /:externalOrderId/fulfilled. API key gated endpoint. To be called by verifier server after minting the SBT. Sets order.fulfilled to true.
 // GET /:externalOrderId/refund.  Refunds an unfulfilled order.
+
+// --- EVM ---
 router.post("/", createOrder);
 router.get("/:externalOrderId/transaction/status", getOrderTransactionStatus);
 router.get("/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
 router.post("/admin/refund", refundOrder);
 
+// --- Stellar ---
 router.post("/stellar", createStellarOrder);
 router.get("/stellar/:externalOrderId/transaction/status", getStellarOrderTransactionStatus);
+router.get("/stellar/:externalOrderId/fulfilled", setStellarOrderFulfilled); // gated by ORDERS_API_KEY
 
 export default router;
