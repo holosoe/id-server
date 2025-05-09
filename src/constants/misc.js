@@ -121,4 +121,4 @@ export const v3EPassportSybilResistanceCircuitId =
 // ---------------- Stellar stuff ----------------
 export const horizonServer = new StellarSdk.Horizon.Server("https://horizon.stellar.org");
 
-export const idServerStellarPaymentAddress = "GCAF6MZL2MJTLEIPICKJ2ET7YY2KZ2TFVULASX6XEVILPJDHNZE7LJFX";
+export const idServerStellarPaymentAddress = "GCJCFGPSKP2D6I4KU3PGA6NUKPUHKYT7XECMU5SGIATX6374WI4OX24B";
