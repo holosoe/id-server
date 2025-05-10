@@ -39,6 +39,8 @@ export async function match3d2dIdScan(req, res) {
     const faceTecParams = req.body.faceTecParams;
     const issuanceNullifier = req.params.nullifier;
 
+    const groupName = process.env.FACETEC_GROUP_NAME_FOR_KYC;
+
     if (!sid) {
       return res
         .status(400)
@@ -231,6 +233,13 @@ export async function match3d2dIdScan(req, res) {
           sessionStatusEnum.VERIFICATION_FAILED,
           `User has already registered. User ID: ${user._id}`
         );
+
+        // as this ends the session, send SSE error event to client
+        req.app.locals.sseManager.sendToClient(sid, {
+          status: "error",
+          message: `User has already registered. User ID: ${user._id}`,
+        });
+
         return res.status(400).json({
           error: true,
           errorMessage: `User has already registered. User ID: ${user._id}`,
@@ -275,8 +284,36 @@ export async function match3d2dIdScan(req, res) {
         message: "id check: issued credentials, proceed to mint SBT",
       });
 
-      // NOTE: This response shape is different from the veriff and onfido issuance
-      // endpoints. This one includes some of the response from FaceTec
+      // do /3d-db/enroll
+      console.log("/3d-db/enroll for kyc", {
+        externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
+        groupName: groupName,
+      });
+      const faceDbEnrollResponse = await axios.post(
+        `${facetecServerBaseURL}/3d-db/enroll`,
+        {
+          externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
+          groupName: groupName,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-Device-Key": req.headers["x-device-key"],
+            "X-User-Agent": req.headers["x-user-agent"],
+            "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
+          },
+        }
+      );
+
+      // this should be a rare case
+      if (!faceDbEnrollResponse.data.success) {
+        // TODO: facetec: if that happens, we would need to rewind above issueV2 steps
+        return res
+          .status(400)
+          .json({ error: "duplicate check: /3d-db enrollment failed" });
+      }
+    
+      // return with issuedCreds and scanResultBlob
       return res.status(200).json({
         issuedCreds: response,
         scanResultBlob: data.scanResultBlob,

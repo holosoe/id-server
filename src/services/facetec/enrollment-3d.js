@@ -45,11 +45,6 @@ export async function enrollment3d(req, res) {
       groupName = process.env.FACETEC_GROUP_NAME_FOR_KYC;
     }
 
-    let duplicationCheck = false;
-    if (sessionType === "personhood" || sessionType === "kyc") {
-      duplicationCheck = true;
-    }
-
     if (!sid) {
       return res
         .status(400)
@@ -205,7 +200,8 @@ export async function enrollment3d(req, res) {
 
     // console.log("facetec POST /enrollment-3d response:", data);
 
-    if (duplicationCheck) {
+    // duplication check for personhood and kyc (during face scan)
+    if (sessionType === "personhood" || sessionType === "kyc") {
       // do duplication check here
       req.app.locals.sseManager.sendToClient(sid, {
         status: "in_progress",
@@ -253,8 +249,14 @@ export async function enrollment3d(req, res) {
         await updateSessionStatus(
           session,
           sessionStatusEnum.VERIFICATION_FAILED,
-          `Proof of personhood failed as highly matching duplicates are found.`
+          `Face scan failed as highly matching duplicates are found.`
         );
+
+        // as this ends the session, send SSE error event to client
+        req.app.locals.sseManager.sendToClient(sid, {
+          status: "error",
+          message: `Face scan failed as highly matching duplicates are found.`,
+        });
 
         return res.status(400).json({
           error: true,
@@ -264,7 +266,8 @@ export async function enrollment3d(req, res) {
       }
     }
 
-    let issueV2Response = null;
+    // issue proof of personhood credentials
+    // if successful, enroll in 3d-db
     if (sessionType === "personhood") {
       // here we are all good to issue proof of personhood credential
       const uuidNew = govIdUUID(data.externalDatabaseRefID, "", "");
@@ -286,12 +289,12 @@ export async function enrollment3d(req, res) {
       );
       const referenceHash = ethers.BigNumber.from(poseidon(refArgs)).toString();
 
-      issueV2Response = JSON.parse(
+      const issueV2Response = JSON.parse(
         issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,
           issuanceNullifier,
           referenceHash,
-          "0".toString() // or use hash of scanResultBlob ???
+          "001".toString() // reference to 3d-db groupName for personhood
         )
       );
       console.log("issueV2Response", issueV2Response);
@@ -309,11 +312,9 @@ export async function enrollment3d(req, res) {
         status: "completed",
         message: "proof of personhood: issued credentials, proceed to mint SBT",
       });
-    }
-
-    if (duplicationCheck) {
+    
       // do /3d-db/enroll
-      console.log("/3d-db/enroll", {
+      console.log("/3d-db/enroll for personhood", {
         externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
         groupName: groupName,
       });
@@ -338,13 +339,10 @@ export async function enrollment3d(req, res) {
         // TODO: facetec: if that happens, we would need to rewind above issueV2 steps
         return res
           .status(400)
-          .json({ error: "duplicate check: enrollment failed" });
+          .json({ error: "duplicate check: /3d-db enrollment failed" });
       }
-    }
-
-    // NOTE: This response shape is different from the veriff and onfido issuance
-    // endpoints. This one includes some of the response from FaceTec
-    if (sessionType === "personhood") {
+    
+      // return with issuedCreds and scanResultBlob
       return res.status(200).json({
         issuedCreds: issueV2Response,
         scanResultBlob: data.scanResultBlob,
@@ -354,7 +352,12 @@ export async function enrollment3d(req, res) {
     // --- Forward response from FaceTec server ---
 
     if (data) return res.status(200).json(data);
-    else return res.status(500).json({ error: "An unknown error occurred" });
+    else
+      return res.status(500).json({
+        error: true,
+        errorMessage: "An unknown error occurred",
+        triggerRetry: true,
+      });
   } catch (err) {
     console.log("POST /enrollment-3d: Error encountered", err.message);
     return res.status(500).json({
