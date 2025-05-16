@@ -36,7 +36,7 @@ export async function enrollment3d(req, res) {
     const issuanceNullifier = req.params.nullifier;
 
     // sessionType = "kyc" | "personhood"
-    const sessionType = issuanceNullifier ? "personhood" : "kyc";
+    const sessionType = req.query.sessionType;
 
     let groupName = "";
     if (sessionType === "personhood") {
@@ -49,6 +49,16 @@ export async function enrollment3d(req, res) {
       return res
         .status(400)
         .json({ error: true, errorMessage: "sid is required" });
+    }
+    if (!sessionType) {
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "sessionType is required" });
+    }
+    if (!issuanceNullifier) {
+      return res
+        .status(400)
+        .json({ error: true, errorMessage: "issuanceNullifier is required" });
     }
     if (!faceTecParams) {
       return res
@@ -93,6 +103,9 @@ export async function enrollment3d(req, res) {
       });
     }
 
+    // set externalDatabaseRefID to session.externalDatabaseRefID
+    faceTecParams.externalDatabaseRefID = session.externalDatabaseRefID;
+
     // --- Forward request to FaceTec server ---
 
     let data = null;
@@ -130,6 +143,8 @@ export async function enrollment3d(req, res) {
           },
         }
       );
+
+      console.log("enrollmentResponse.data", enrollmentResponse.data);
 
       // check for enrollment success
       if (!enrollmentResponse.data.success) {
@@ -172,7 +187,7 @@ export async function enrollment3d(req, res) {
 
         return res.status(502).json({
           error: true,
-          errorMessage: "Did not receive a response from the FaceTec server",
+          errorMessage: "Did not receive a response from the server during enrollment-3d",
           triggerRetry: true,
         });
       } else if (err.response) {
@@ -183,13 +198,13 @@ export async function enrollment3d(req, res) {
 
         return res.status(err.response.status).json({
           error: true,
-          errorMessage: "FaceTec server returned an error",
+          errorMessage: "Server returned an error during enrollment-3d",
           data: err.response.data,
           triggerRetry: true,
         });
       } else {
         console.error("err");
-        console.error({ error: err }, "Error during FaceTec enrollment-3d");
+        console.error({ error: err }, "Error during enrollment-3d");
         return res.status(500).json({
           error: true,
           errorMessage: "An unknown error occurred",
@@ -200,23 +215,24 @@ export async function enrollment3d(req, res) {
 
     // console.log("facetec POST /enrollment-3d response:", data);
 
-    // duplication check for personhood and kyc (during face scan)
-    if (sessionType === "personhood" || sessionType === "kyc") {
-      // do duplication check here
-      req.app.locals.sseManager.sendToClient(sid, {
-        status: "in_progress",
-        message: "duplicates check: sending to server",
-      });
+    // duplication check /3d-db/search
+    // do duplication check here
+    req.app.locals.sseManager.sendToClient(sid, {
+      status: "in_progress",
+      message: "duplicates check: sending to server",
+    });
 
-      console.log("/3d-db/search", {
-        externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-        minMatchLevel: 15,
-        groupName: groupName,
-      });
+    console.log("/3d-db/search", {
+      externalDatabaseRefID: session.externalDatabaseRefID,
+      minMatchLevel: 15,
+      groupName: groupName,
+    });
+
+    try {
       const faceDbSearchResponse = await axios.post(
         `${facetecServerBaseURL}/3d-db/search`,
         {
-          externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
+          externalDatabaseRefID: session.externalDatabaseRefID,
           minMatchLevel: 15,
           groupName: groupName,
         },
@@ -230,14 +246,6 @@ export async function enrollment3d(req, res) {
         }
       );
       console.log("faceDbSearchResponse.data", faceDbSearchResponse.data);
-
-      if (!faceDbSearchResponse.data.success) {
-        return res.status(400).json({
-          error: true,
-          errorMessage: "duplicate check: search failed",
-          triggerRetry: true,
-        });
-      }
 
       if (faceDbSearchResponse.data.results.length > 0) {
         // duplicates found, return error
@@ -262,6 +270,34 @@ export async function enrollment3d(req, res) {
           error: true,
           errorMessage: "duplicate check: found duplicates",
           triggerRetry: false,
+        });
+      }
+    } catch (err) {
+      console.error("Error during /3d-db/search:", err.message);
+      if (err.request) {
+        console.error("No response received from the server during duplicate check");
+        return res.status(502).json({
+          error: true,
+          errorMessage: "Did not receive a response from the server during duplicate check",
+          triggerRetry: true,
+        });
+      } else if (err.response) {
+        console.error(
+          { error: err.response.data },
+          "(err.response) Error during /3d-db/search"
+        );
+        return res.status(err.response.status).json({
+          error: true,
+          errorMessage: "Server returned an error during duplicate check",
+          data: err.response.data,
+          triggerRetry: true,
+        });
+      } else {
+        console.error("Unknown error:", err);
+        return res.status(500).json({
+          error: true,
+          errorMessage: "An unknown error occurred during duplicate check",
+          triggerRetry: true,
         });
       }
     }
@@ -293,8 +329,8 @@ export async function enrollment3d(req, res) {
         issuev2(
           process.env.HOLONYM_ISSUER_PRIVKEY,
           issuanceNullifier,
+          "1", // reference to 3d-db groupName for personhood
           referenceHash,
-          "001".toString() // reference to 3d-db groupName for personhood
         )
       );
       console.log("issueV2Response", issueV2Response);
@@ -315,31 +351,59 @@ export async function enrollment3d(req, res) {
     
       // do /3d-db/enroll
       console.log("/3d-db/enroll for personhood", {
-        externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
+        externalDatabaseRefID: session.externalDatabaseRefID,
         groupName: groupName,
       });
-      const faceDbEnrollResponse = await axios.post(
-        `${facetecServerBaseURL}/3d-db/enroll`,
-        {
-          externalDatabaseRefID: faceTecParams.externalDatabaseRefID,
-          groupName: groupName,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Device-Key": req.headers["x-device-key"],
-            "X-User-Agent": req.headers["x-user-agent"],
-            "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
-          },
-        }
-      );
 
-      // this should be a rare case
-      if (!faceDbEnrollResponse.data.success) {
-        // TODO: facetec: if that happens, we would need to rewind above issueV2 steps
-        return res
-          .status(400)
-          .json({ error: "duplicate check: /3d-db enrollment failed" });
+      try {
+        const faceDbEnrollResponse = await axios.post(
+          `${facetecServerBaseURL}/3d-db/enroll`,
+          {
+            externalDatabaseRefID: session.externalDatabaseRefID,
+            groupName: groupName,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Device-Key": req.headers["x-device-key"],
+              "X-User-Agent": req.headers["x-user-agent"],
+              "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
+            },
+          }
+        );
+
+        // this should be a rare case
+        if (!faceDbEnrollResponse.data.success) {
+          // TODO: facetec: if that happens, we would need to rewind above issueV2 steps
+          return res
+            .status(400)
+            .json({ error: "duplicate check: /3d-db enrollment failed" });
+        }
+      } catch (err) {
+        console.error("Error during /3d-db/enroll:", err.message);
+        if (err.request) {
+          console.error("No response received from the server during /3d-db/enroll");
+          return res.status(502).json({
+            error: true,
+            errorMessage: "Did not receive a response from the server during /3d-db/enroll",
+            triggerRetry: true,
+          });
+        } else if (err.response) {
+          console.error("Response data:", err.response.data);
+          return res.status(err.response.status).json({
+            error: true,
+            errorMessage: "The server returned an error during /3d-db/enroll",
+            data: err.response.data,
+            triggerRetry: true,
+          }); 
+        } else {
+          console.error("Unknown error:", err);
+          return res.status(500).json({
+            error: true,
+            errorMessage: "An unknown error occurred during /3d-db/enroll",
+            triggerRetry: true,
+          });
+        }
       }
     
       // return with issuedCreds and scanResultBlob

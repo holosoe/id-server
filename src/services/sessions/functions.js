@@ -25,6 +25,7 @@ import {
   createOnfidoCheck,
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
+import { v4 as uuidV4 } from "uuid";
 
 async function handleIdvSessionCreation(session, logger) {
   if (session.idvProvider === "veriff") {
@@ -92,6 +93,7 @@ async function handleIdvSessionCreation(session, logger) {
     };
   } else if (session.idvProvider === "facetec") {
     session.num_facetec_liveness_checks = 0;
+    session.externalDatabaseRefID = uuidV4();
 
     await session.save();
 
@@ -101,6 +103,7 @@ async function handleIdvSessionCreation(session, logger) {
     };
   } else if (session.idvProvider === "personhood") {
     session.num_facetec_liveness_checks = 0;
+    session.externalDatabaseRefID = uuidV4();
 
     await session.save();
 

@@ -179,6 +179,11 @@ const sessionSchema = new Schema({
     type: String,
     required: false,
   },
+  // externalDatabaseRefID is use in FaceTec
+  externalDatabaseRefID: {
+    type: String,
+    required: false,
+  },
 });
 
 const amlChecksSessionSchema = new Schema({
