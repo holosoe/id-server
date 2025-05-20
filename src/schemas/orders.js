@@ -10,7 +10,11 @@ export const OrderSchema = new Schema({
   externalOrderId: { type: String, required: true },
   category: { type: String, required: true },
   fulfilled: { type: Boolean, default: false,required: true },
-  
+  fulfillmentReceipt: {
+    type: String,
+    required: false
+  },
+
   // For EVM payments
   txHash: { type: String, required: false },
   chainId: { type: Number, required: false },
