@@ -172,7 +172,7 @@ async function setOrderFulfilled(req, res) {
       }
 
       // Right now, fulfillment receipt must be a JSON object with a hex string as the value.
-      const pattern = /\{\s*\w+\s*:\s*(0x)?[0-9a-fA-F]+\s*\}/;
+      const pattern = /\{\s*"\w+"\s*:\s*"((0x)?[0-9a-fA-F]+)"\s*\}/;
       if (!pattern.test(fulfillmentReceipt)) {
         return res.status(400).json({
           error: `Invalid fulfillment receipt. If present, it must be a JSON object with a hex string value. Received '${fulfillmentReceipt}'`
