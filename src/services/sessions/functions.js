@@ -23,8 +23,18 @@ import {
   createOnfidoApplicant,
   createOnfidoSdkToken,
   createOnfidoCheck,
+  createOnfidoWorkflowRun,
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
+
+function campaignIdToWorkflowId(campaignId) {
+  const campaignIdToWorkflowIdMap = {
+    "test": "19d0c530-8b15-4893-9067-03c0685e2624",
+    "test1": "0ce09160-ef72-4726-ab13-56244adcc266",
+  }
+
+  return campaignIdToWorkflowIdMap[campaignId] || campaignIdToWorkflowIdMap["default"];
+}
 
 async function handleIdvSessionCreation(session, logger) {
   if (session.idvProvider === "veriff") {
@@ -78,18 +88,35 @@ async function handleIdvSessionCreation(session, logger) {
       "Created Onfido applicant"
     );
 
-    const sdkTokenData = await createOnfidoSdkToken(applicant.id);
-    if (!sdkTokenData) {
-      throw new Error("Error creating Onfido SDK token");
+    if (session.campaignId && session.workflowId) {
+
+      // https://documentation.onfido.com/api/latest/#create-workflow-run
+      const workflowRun = await createOnfidoWorkflowRun(applicant.id, session.workflowId);
+      if (!workflowRun) {
+        throw new Error("Error creating Onfido workflow run");
+      }
+
+      console.log("workflowRun", workflowRun);
+      return {
+        applicant_id: applicant.id,
+        sdk_token: workflowRun.sdk_token,
+        workflow_id: workflowRun.workflow_id,
+      };
+    } else {
+
+      const sdkTokenData = await createOnfidoSdkToken(applicant.id);
+      if (!sdkTokenData) {
+        throw new Error("Error creating Onfido SDK token");
+      }
+
+      session.onfido_sdk_token = sdkTokenData.token;
+      await session.save();
+
+      return {
+        applicant_id: applicant.id,
+        sdk_token: sdkTokenData.token,
+      };
     }
-
-    session.onfido_sdk_token = sdkTokenData.token;
-    await session.save();
-
-    return {
-      applicant_id: applicant.id,
-      sdk_token: sdkTokenData.token,
-    };
   } else if (session.idvProvider === "facetec") {
     session.num_facetec_liveness_checks = 0;
 
@@ -103,4 +130,4 @@ async function handleIdvSessionCreation(session, logger) {
   }
 }
 
-export { handleIdvSessionCreation };
+export { handleIdvSessionCreation, campaignIdToWorkflowId };

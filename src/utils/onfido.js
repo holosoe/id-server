@@ -90,6 +90,30 @@ export async function createOnfidoCheck(applicant_id) {
   }
 }
 
+export async function createOnfidoWorkflowRun(applicant_id, workflow_id) {
+  try {
+    // Create a workflow run for the applicant
+    const reqBody = {
+      applicant_id,
+      workflow_id,
+    };
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Token token=${process.env.ONFIDO_API_TOKEN}`,
+      },
+    };
+    const resp = await axios.post(
+      "https://api.us.onfido.com/v3.6/workflow_runs",
+      reqBody,
+      config
+    );
+    return resp.data;
+  } catch (err) {
+    console.error("Error creating Onfido workflow run", err.message, err.response?.data);
+  }
+}
+
 /**
  * @param {string} check_id
  */

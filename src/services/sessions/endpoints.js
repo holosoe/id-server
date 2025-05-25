@@ -7,7 +7,7 @@ import {
   capturePayPalOrder,
   refundMintFeePayPal
 } from "../../utils/paypal.js";
-import { createOnfidoSdkToken, createOnfidoCheck } from "../../utils/onfido.js";
+import { createOnfidoSdkToken, createOnfidoCheck, createOnfidoWorkflowRun } from "../../utils/onfido.js";
 import {
   validateTxForSessionCreation,
   refundMintFeeOnChain,
@@ -20,6 +20,7 @@ import {
 } from "../../constants/misc.js";
 import {
   handleIdvSessionCreation,
+  campaignIdToWorkflowId,
 } from "./functions.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
 import { getSessionById } from "../../utils/sessions.js";
@@ -204,6 +205,11 @@ async function postSessionV2(req, res) {
       return res.status(500).json({ error: "Could not determine country from IP" });
     }
 
+    const campaignId = req.body.campaignId;
+    const workflowId = campaignIdToWorkflowId(campaignId);
+
+    console.log("postSessionV2:", campaignId, workflowId);
+
     const session = new Session({
       sigDigest: sigDigest,
       idvProvider: idvProvider,
@@ -211,7 +217,11 @@ async function postSessionV2(req, res) {
       frontendDomain: domain,
       silkDiffWallet,
       ipCountry: ipCountry,
+      campaignId: campaignId,
+      workflowId: workflowId,
     });
+
+    console.log("session", session);
 
     // Only allow a user to create up to 3 sessions
     const existingSessions = await Session.find({
@@ -713,6 +723,17 @@ async function refreshOnfidoToken(req, res) {
       return res.status(400).json({ error: "Session is missing applicant_id" });
     }
 
+    // creating workflow run returns sdk_token as well
+    // so return back sdk_token and workflow_id for initiating Onfido with workflow run
+    if (session.campaignId && session.workflowId) {
+      const workflowRun = await createOnfidoWorkflowRun(session.applicant_id, session.workflowId);
+
+      return res.status(200).json({
+        sdk_token: workflowRun.sdk_token,
+        workflow_id: workflowRun.workflow_id,
+      });
+    }
+
     let actualReferrer = "";
     if (referrer && referrer === "silk") {
       actualReferrer =
@@ -737,7 +758,7 @@ async function refreshOnfidoToken(req, res) {
       sdk_token: sdkTokenData.token,
     });
   } catch (err) {
-    refreshOnfidoTokenLogger.error({ error: err }, "Error creating Onfido check");
+    refreshOnfidoTokenLogger.error({ error: err }, "Error refreshing Onfido token");
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

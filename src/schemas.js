@@ -179,6 +179,15 @@ const sessionSchema = new Schema({
     type: String,
     required: false,
   },
+  campaignId: {
+    type: String,
+    required: false,
+  },
+  // Onfido workflow_id https://documentation.onfido.com/api/latest/#workflow-runs
+  workflowId: {
+    type: String,
+    required: false,
+  },
 });
 
 const amlChecksSessionSchema = new Schema({
