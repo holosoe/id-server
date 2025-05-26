@@ -26,13 +26,9 @@ import {
   createOnfidoWorkflowRun,
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
+import { campaignIdToWorkflowIdMap } from "../../utils/constants.js";
 
 function campaignIdToWorkflowId(campaignId) {
-  const campaignIdToWorkflowIdMap = {
-    "test": "19d0c530-8b15-4893-9067-03c0685e2624",
-    "test1": "0ce09160-ef72-4726-ab13-56244adcc266",
-  }
-
   return campaignIdToWorkflowIdMap[campaignId] || campaignIdToWorkflowIdMap["default"];
 }
 
@@ -98,7 +94,7 @@ async function handleIdvSessionCreation(session, logger) {
 
       session.onfido_sdk_token = workflowRun.sdk_token;
       await session.save();
-      
+
       return {
         applicant_id: applicant.id,
         sdk_token: workflowRun.sdk_token,
