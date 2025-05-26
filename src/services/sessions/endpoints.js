@@ -728,9 +728,15 @@ async function refreshOnfidoToken(req, res) {
     if (session.campaignId && session.workflowId) {
       const workflowRun = await createOnfidoWorkflowRun(session.applicant_id, session.workflowId);
 
+      console.log("refreshOnfidoToken: workflowRun", workflowRun);
+
+      session.onfido_sdk_token = workflowRun.sdk_token;
+      session.onfido_workflowId = workflowRun.workflow_id;
+      await session.save();
+
       return res.status(200).json({
         sdk_token: workflowRun.sdk_token,
-        workflow_id: workflowRun.workflow_id,
+        workflow_run_id: workflowRun.id,
       });
     }
 

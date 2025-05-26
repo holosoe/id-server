@@ -96,11 +96,13 @@ async function handleIdvSessionCreation(session, logger) {
         throw new Error("Error creating Onfido workflow run");
       }
 
-      console.log("workflowRun", workflowRun);
+      session.onfido_sdk_token = workflowRun.sdk_token;
+      await session.save();
+      
       return {
         applicant_id: applicant.id,
         sdk_token: workflowRun.sdk_token,
-        workflow_id: workflowRun.workflow_id,
+        workflow_run_id: workflowRun.id,
       };
     } else {
 
