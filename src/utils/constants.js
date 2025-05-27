@@ -99,6 +99,11 @@ export const campaignIdToWorkflowIdMap = {
   "test1": "0ce09160-ef72-4726-ab13-56244adcc266",
 }
 
+export const campaignIdToActionIdMap = {
+  "test": "001",
+  "test1": "007",
+}
+
 export const stateAbbreviations = {
   ALABAMA: "AL",
   ALASKA: "AK",

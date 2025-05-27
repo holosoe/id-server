@@ -15,6 +15,7 @@ import silk from "./routes/silk.js";
 import facetec from "./routes/facetec.js";
 import nullifiers from "./routes/nullifiers.js";
 import orders from "./routes/orders.js";
+import constants from "./routes/constants.js";
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use("/silk", silk); // temporary
 app.use("/facetec", facetec);
 app.use("/nullifiers", nullifiers);
 app.use("/orders", orders);
+app.use("/constants", constants);
 
 // Trust the X-Forwarded-For header from the load balancer or the user's proxy
 app.set("trust proxy", true);
