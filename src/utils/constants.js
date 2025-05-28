@@ -96,12 +96,12 @@ export const cleanHandsDummyUserCreds = {
 
 export const campaignIdToWorkflowIdMap = {
   "test": "19d0c530-8b15-4893-9067-03c0685e2624",
-  "test1": "0ce09160-ef72-4726-ab13-56244adcc266",
+  "ika": "0ce09160-ef72-4726-ab13-56244adcc266",
 }
 
 export const campaignIdToActionIdMap = {
   "test": "001",
-  "test1": "007",
+  "ika": "007",
 }
 
 export const stateAbbreviations = {
