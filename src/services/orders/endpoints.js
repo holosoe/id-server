@@ -4,6 +4,7 @@ import {
   validateTx,
   validateTxConfirmation,
   handleRefund,
+  getOrderByTxHash,
 } from "./functions.js";
 import { idvSessionUSDPrice } from "../../constants/misc.js";
 import { pinoOptions, logger } from "../../utils/logger.js";
@@ -263,9 +264,24 @@ async function refundOrder(req, res) {
   }
 }
 
+async function getOrder(req, res) {
+  const apiKey = req.headers["x-api-key"];
+
+  if (apiKey !== process.env.ADMIN_API_KEY_LOW_PRIVILEGE) {
+    return res.status(401).json({ error: "Invalid API key." });
+  }
+
+  if (req.query.txHash) {
+    return getOrderByTxHash(req, res)
+  }
+
+  return res.status(501).json({ error: 'Not implemented' })
+}
+
 export {
   createOrder,
   getOrderTransactionStatus,
   setOrderFulfilled,
   refundOrder,
+  getOrder,
 };

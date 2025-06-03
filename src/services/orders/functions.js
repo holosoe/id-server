@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { Order } from "../../init.js";
 import { idvSessionUSDPrice } from "../../constants/misc.js";
 import { retry } from "../../utils/utils.js";
 import {
@@ -228,10 +229,46 @@ async function handleRefund(order) {
   };
 }
 
+async function getOrderByTxHash(req, res) {
+  const { txHash, chainId } = req.query;
+
+  if (!txHash || !chainId) {
+    return res
+      .status(400)
+      .json({ error: "txHash and chainId are required" });
+  }
+
+  const order = await Order.findOne({ txHash, chainId });
+
+  if (!order) {
+    return res.status(404).json({
+      error: `No order has the associated txHash (${txHash}) and chainId (${chainId})`
+    })
+  }
+
+  return res.status(200).json({
+    order: {
+      externalOrderId: order.externalOrderId,
+      category: order.category,
+      fulfilled: order.fulfilled, 
+      fulfillmentReceipt: order.fulfillmentReceipt,
+      // For EVM payments
+      txHash: order.txHash,
+      chainId: order.chainId,
+      // For EVM payments
+      refunded: order.refunded,
+      refundTxHash: order.refundTxHash,
+      // For Stellar payments
+      stellar: order.stellar
+    }
+  })
+}
+
 export {
   getTransaction,
   getProvider,
   validateTx,
   validateTxConfirmation,
   handleRefund,
+  getOrderByTxHash,
 };

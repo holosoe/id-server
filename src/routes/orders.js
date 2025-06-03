@@ -4,6 +4,7 @@ import {
   getOrderTransactionStatus, 
   setOrderFulfilled, 
   refundOrder,
+  getOrder
 } from "../services/orders/endpoints.js";
 import {
   createOrder as createStellarOrder,
@@ -23,6 +24,7 @@ const router = express.Router();
 router.post("/", createOrder);
 router.get("/:externalOrderId/transaction/status", getOrderTransactionStatus);
 router.get("/:externalOrderId/fulfilled", setOrderFulfilled); // gated by ORDERS_API_KEY
+router.get("/", getOrder);
 router.post("/admin/refund", refundOrder);
 
 // --- Stellar ---
