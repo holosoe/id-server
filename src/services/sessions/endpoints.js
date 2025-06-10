@@ -746,6 +746,11 @@ async function refreshOnfidoToken(req, res) {
         process.env.NODE_ENV === "development"
           ? "http://localhost:3000/*"
           : "https://silksecure.net/*";
+    } else if (referrer && referrer === "human-id") {
+      actualReferrer =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/*"
+          : "https://id.human.tech/*";
     } else {
       actualReferrer =
         process.env.NODE_ENV === "development"
