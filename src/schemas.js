@@ -170,6 +170,11 @@ const sessionSchema = new Schema({
     type: Number,
     required: false,
   },
+  // Facetec externalDatabaseRefID
+  externalDatabaseRefID: {
+    type: String,
+    required: false,
+  },
   verificationFailureReason: {
     type: String,
     required: false,

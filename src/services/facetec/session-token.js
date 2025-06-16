@@ -47,6 +47,12 @@ export async function sessionToken(req, res) {
 
     let data = null;
     try {
+      req.app.locals.sseManager.sendToClient(sid, { 
+        status: 'in_progress',
+        message: 'starting verification session'
+      });
+
+      console.log("facetecServerBaseURL", facetecServerBaseURL);
       const resp = await axios.get(
         `${facetecServerBaseURL}/session-token`,
         {
@@ -93,7 +99,7 @@ export async function sessionToken(req, res) {
     if (data) return res.status(200).json(data);
     else return res.status(500).json({ error: "An unknown error occurred" });
   } catch (err) {
-    console.log("POST /sessions: Error encountered", err.message);
+    console.log("POST /session-token: Error encountered", err.message);
     return res.status(500).json({ error: "An unknown error occurred" });
   }
 }

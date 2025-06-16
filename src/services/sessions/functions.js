@@ -27,6 +27,7 @@ import {
 } from "../../utils/onfido.js";
 import { usdToETH, usdToFTM, usdToAVAX } from "../../utils/cmc.js";
 import { campaignIdToWorkflowIdMap } from "../../utils/constants.js";
+import { v4 as uuidV4 } from "uuid";
 
 function campaignIdToWorkflowId(campaignId) {
   return campaignIdToWorkflowIdMap[campaignId] || campaignIdToWorkflowIdMap["default"];
@@ -117,11 +118,21 @@ async function handleIdvSessionCreation(session, logger) {
     }
   } else if (session.idvProvider === "facetec") {
     session.num_facetec_liveness_checks = 0;
+    session.externalDatabaseRefID = uuidV4();
 
     await session.save();
 
     return {
-      message: 'todo: integrate facetec in backend',
+      externalDatabaseRefID: session.externalDatabaseRefID,
+    };
+  } else if (session.idvProvider === "personhood") {
+    session.num_facetec_liveness_checks = 0;
+    session.externalDatabaseRefID = uuidV4();
+
+    await session.save();
+
+    return {
+      externalDatabaseRefID: session.externalDatabaseRefID,
     };
   } else {
     throw new Error("Invalid idvProvider");
