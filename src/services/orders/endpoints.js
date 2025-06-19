@@ -200,6 +200,14 @@ async function setOrderFulfilled(req, res) {
     order.fulfilled = true;
     if (fulfillmentReceipt) {
       order.fulfillmentReceipt = fulfillmentReceipt
+    } else {
+      ordersLogger.info(
+        {
+          fulfillmentReceipt,
+          externalOrderId,
+        },
+        "Marking order fulfilled without fulfillmentReceipt"
+      )
     }
     await order.save();
 
