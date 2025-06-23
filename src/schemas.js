@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { OrderSchema } from "./schemas/orders.js";
+import { HumanIDPaymentGateWhitelistSchema } from "./schemas/whitelists.js";
 dotenv.config();
 
 const { Schema } = mongoose;
@@ -541,4 +542,5 @@ export {
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
   OrderSchema,
+  HumanIDPaymentGateWhitelistSchema,
 };

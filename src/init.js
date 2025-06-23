@@ -25,6 +25,7 @@ import {
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
   OrderSchema,
+  HumanIDPaymentGateWhitelistSchema
 } from "./schemas.js";
 import dotenv from "dotenv";
 dotenv.config();
@@ -244,6 +245,14 @@ async function initializeMongoDb() {
   await initializeDailyVerificationDeletions(DailyVerificationDeletions);
 
   const Order = mongoose.model("Order", OrderSchema);
+
+  const humanIDPaymenGateWhitelistName = "HumanIDPaymentGateWhitelist"
+  const HumanIDPaymentGateWhitelist = mongoose.model(
+    humanIDPaymenGateWhitelistName,
+    HumanIDPaymentGateWhitelistSchema,
+    humanIDPaymenGateWhitelistName
+  );
+
   return {
     UserVerifications,
     IDVSessions,
@@ -262,6 +271,7 @@ async function initializeMongoDb() {
     GalxeCampaignZeroUser,
     SilkPeanutCampaignsMetadata,
     Order,
+    HumanIDPaymentGateWhitelist,
   };
 }
 
@@ -283,7 +293,8 @@ let UserVerifications,
   AMLChecksSession,
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata,
-  Order;
+  Order,
+  HumanIDPaymentGateWhitelist;
 initializeMongoDb().then((result) => {
   if (result) {
     logger.info("Initialized MongoDB connection");
@@ -304,6 +315,7 @@ initializeMongoDb().then((result) => {
     GalxeCampaignZeroUser = result.GalxeCampaignZeroUser;
     SilkPeanutCampaignsMetadata = result.SilkPeanutCampaignsMetadata;
     Order = result.Order;
+    HumanIDPaymentGateWhitelist = result.HumanIDPaymentGateWhitelist;
   } else {
     logger.error("MongoDB initialization failed");
   }
@@ -334,5 +346,6 @@ export {
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata,
   Order,
+  HumanIDPaymentGateWhitelist,
   zokProvider,
 };
