@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ObjectId } from "mongodb";
-import { Session } from "../../init.js";
+import { Session, BiometricsSession } from "../../init.js";
 import {
   sessionStatusEnum,
   facetecServerBaseURL,
@@ -35,12 +35,12 @@ export async function enrollment3d(req, res) {
     const faceTecParams = req.body.faceTecParams;
     const issuanceNullifier = req.params.nullifier;
 
-    // sessionType = "kyc" | "personhood"
+    // sessionType = "kyc" | "biometrics"
     const sessionType = req.query.sessionType;
 
     let groupName = "";
-    if (sessionType === "personhood") {
-      groupName = process.env.FACETEC_GROUP_NAME_FOR_PERSONHOOD;
+    if (sessionType === "biometrics") {
+      groupName = process.env.FACETEC_GROUP_NAME_FOR_BIOMETRICS;
     } else if (sessionType === "kyc") {
       groupName = process.env.FACETEC_GROUP_NAME_FOR_KYC;
     }
@@ -74,7 +74,14 @@ export async function enrollment3d(req, res) {
       return res.status(400).json({ error: true, errorMessage: "Invalid sid" });
     }
 
-    const session = await Session.findOne({ _id: objectId }).exec();
+    let session;
+    if(sessionType === "biometrics") {
+      session = await BiometricsSession.findOne({ _id: objectId }).exec();
+    } else if(sessionType === "kyc") {
+      session = await Session.findOne({ _id: objectId }).exec();
+    } else {
+      session = await Session.findOne({ _id: objectId }).exec();
+    }
 
     if (!session) {
       return res
@@ -85,7 +92,7 @@ export async function enrollment3d(req, res) {
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
       return res
         .status(400)
-        .json({ error: true, errorMessage: "Session is not in progress" });
+        .json({ error: true, errorMessage: `Session is not in progress. It is ${session.status}.` });
     }
 
     if (session.num_facetec_liveness_checks >= 5) {
@@ -118,13 +125,20 @@ export async function enrollment3d(req, res) {
     // time-of-check-time-of-use attack. It's not a big deal since we only
     // care about a loose upper bound on the number of FaceTec checks per
     // user, but atomicity would be nice.
-    await Session.updateOne(
-      { _id: objectId },
-      { $inc: { num_facetec_liveness_checks: 1 } }
-    );
+    if(sessionType === "biometrics") {
+      await BiometricsSession.updateOne(
+        { _id: objectId },
+        { $inc: { num_facetec_liveness_checks: 1 } }
+      );
+    } else {
+      await Session.updateOne(
+        { _id: objectId },
+        { $inc: { num_facetec_liveness_checks: 1 } }
+      );
+    }
 
     try {
-      if (sessionType === "personhood") faceTecParams.storeAsFaceVector = true;
+      if (sessionType === "biometrics") faceTecParams.storeAsFaceVector = true;
       // console.log('enrollment-3d faceTecParams', faceTecParams)
       req.app.locals.sseManager.sendToClient(sid, {
         status: "in_progress",
@@ -302,113 +316,18 @@ export async function enrollment3d(req, res) {
       }
     }
 
-    // issue proof of personhood credentials
-    // if successful, enroll in 3d-db
-    if (sessionType === "personhood") {
-      // here we are all good to issue proof of personhood credential
-      const uuidNew = govIdUUID(data.externalDatabaseRefID, "", "");
-
-      // Store UUID for Sybil resistance
-      const dbResponse = await saveUserToDb(
-        uuidNew,
-        data.additionalSessionData.sessionID
-      );
-      if (dbResponse.error) return res.status(400).json(dbResponse);
-
-      console.log("issuev2", issuanceNullifier, data.externalDatabaseRefID);
-
-      const refBuffers = data.externalDatabaseRefID
-        .split("-")
-        .map((x) => Buffer.from(x));
-      const refArgs = refBuffers.map((x) =>
-        ethers.BigNumber.from(x).toString()
-      );
-      const referenceHash = ethers.BigNumber.from(poseidon(refArgs)).toString();
-
-      const issueV2Response = JSON.parse(
-        issuev2(
-          process.env.HOLONYM_ISSUER_PRIVKEY,
-          issuanceNullifier,
-          "1", // reference to 3d-db groupName for personhood
-          referenceHash,
-        )
-      );
-      console.log("issueV2Response", issueV2Response);
-      // issueV2Response.metadata = creds;
-
-      // endpointLogger.info(
-      //   { uuidV2: uuidNew, sessionId: sid },
-      //   "Issuing credentials"
-      // );
-      console.log({ uuidV2: uuidNew, sessionId: sid }, "Issuing credentials");
-
-      await updateSessionStatus(session, sessionStatusEnum.ISSUED);
-
+    // credentials issuance and 3d-dbenrollment logic happens via getCredentialsV3 endpoint
+    // when /store page is accessed
+    // here just return success and scanResultBlob
+    if (sessionType === "biometrics") {
       req.app.locals.sseManager.sendToClient(sid, {
         status: "completed",
-        message: "proof of personhood: issued credentials, proceed to mint SBT",
+        message: "biometrics verification successful, proceed to mint SBT",
       });
-    
-      // do /3d-db/enroll
-      console.log("/3d-db/enroll for personhood", {
-        externalDatabaseRefID: session.externalDatabaseRefID,
-        groupName: groupName,
-      });
-
-      try {
-        const faceDbEnrollResponse = await axios.post(
-          `${facetecServerBaseURL}/3d-db/enroll`,
-          {
-            externalDatabaseRefID: session.externalDatabaseRefID,
-            groupName: groupName,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Device-Key": req.headers["x-device-key"],
-              "X-User-Agent": req.headers["x-user-agent"],
-              "X-Api-Key": process.env.FACETEC_SERVER_API_KEY,
-            },
-          }
-        );
-
-        // this should be a rare case
-        if (!faceDbEnrollResponse.data.success) {
-          // TODO: facetec: if that happens, we would need to rewind above issueV2 steps
-          return res
-            .status(400)
-            .json({ error: "duplicate check: /3d-db enrollment failed" });
-        }
-      } catch (err) {
-        console.error("Error during /3d-db/enroll:", err.message);
-        if (err.request) {
-          console.error("No response received from the server during /3d-db/enroll");
-          return res.status(502).json({
-            error: true,
-            errorMessage: "Did not receive a response from the server during /3d-db/enroll",
-            triggerRetry: true,
-          });
-        } else if (err.response) {
-          console.error("Response data:", err.response.data);
-          return res.status(err.response.status).json({
-            error: true,
-            errorMessage: "The server returned an error during /3d-db/enroll",
-            data: err.response.data,
-            triggerRetry: true,
-          }); 
-        } else {
-          console.error("Unknown error:", err);
-          return res.status(500).json({
-            error: true,
-            errorMessage: "An unknown error occurred during /3d-db/enroll",
-            triggerRetry: true,
-          });
-        }
-      }
     
       // return with issuedCreds and scanResultBlob
       return res.status(200).json({
-        issuedCreds: issueV2Response,
+        issuedCreds: true,
         scanResultBlob: data.scanResultBlob,
       });
     }

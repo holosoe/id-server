@@ -11,6 +11,7 @@ import ipInfo from "./routes/ip-info.js";
 import prices from "./routes/prices.js";
 import sessions from "./routes/sessions.js";
 import amlSessions from "./routes/aml-sessions.js";
+import biometricsSessions from "./routes/biometrics-sessions.js";
 import silk from "./routes/silk.js";
 import facetec from "./routes/facetec.js";
 import nullifiers from "./routes/nullifiers.js";
@@ -39,6 +40,7 @@ app.use("/ip-info", ipInfo);
 app.use("/sessions", sessions);
 // TODO: Rename these to "ctf-sessions"
 app.use("/aml-sessions", amlSessions);
+app.use("/biometrics-sessions", biometricsSessions);
 app.use("/prices", prices);
 app.use("/silk", silk); // temporary
 app.use("/facetec", facetec);

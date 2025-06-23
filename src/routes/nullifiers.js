@@ -4,6 +4,7 @@ import {
   putGovIdNullifier,
   putPhoneNullifier,
   putCleanHandsNullifier,
+  putBiometricsNullifier,
 } from "../services/nullifiers.js";
 
 const router = express.Router();
@@ -13,5 +14,6 @@ router.get("/", getNullifiers);
 router.put("/gov-id", putGovIdNullifier);
 router.put("/phone", putPhoneNullifier);
 router.put("/clean-hands", putCleanHandsNullifier)
+router.put("/biometrics", putBiometricsNullifier)
 
 export default router;

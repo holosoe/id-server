@@ -30,7 +30,15 @@ const userVerificationsSchema = new Schema({
       issuedAt: Date,
     },
     required: false,
-  }
+  },
+  biometrics: {
+    type: {
+      uuidV2: String,
+      sessionId: String,
+      issuedAt: Date,
+    },
+    required: false,
+  },
 });
 // By keeping track of a user's sessions, we can let them start verification
 // and finish issuance in separate browsing sessions, which is useful for
@@ -251,6 +259,31 @@ const amlChecksSessionSchema = new Schema({
   },
 });
 
+const biometricsSessionSchema = new Schema({
+  sigDigest: String,
+  // The possible values of status are the same as for the sessions above
+  status: String,
+  // silkDiffWallet indicates whether the user is on silksecure.net/holonym/silk or
+  // silksecure.net/holonym/diff-wallet
+  silkDiffWallet: {
+    type: String,
+    required: false,
+  },
+  // ipCountry should be an ISO 3166-1 alpha-2 or alpha-3 country code
+  ipCountry: {
+    type: String,
+    required: false,
+  },
+  externalDatabaseRefID: {
+    type: String,
+    required: false,
+  },
+  num_facetec_liveness_checks: {
+    type: Number,
+    required: false,
+  },
+});
+
 // TODO: Do not use MongoDB for mutex purposes. Use something like Redis instead.
 const sessionRefundMutexSchema = new Schema({
   // sessionId is NOT a Veriff sessionId. It is the _id of the associated Session.
@@ -303,6 +336,13 @@ const userCredentialsV2Schema = new Schema({
     },
     required: false,
   },
+  encryptedBiometricsCreds: {
+    type: {
+      ciphertext: String,
+      iv: String,
+    },
+    required: false,
+  },
 });
 
 const userProofMetadataSchema = new Schema({
@@ -341,13 +381,19 @@ const NullifierAndCredsSchema = new Schema({
         },
         required: false,
       },
+      facetec: {
+        type: {
+          externalDatabaseRefID: String,
+        },
+        required: false,
+      },
     },
-    required: false
+    required: false,
   },
   uuidV2: {
     type: String,
     required: false,
-  }
+  },
 });
 
 // A collection to associate an issuance nullifier to the
@@ -361,14 +407,37 @@ const CleanHandsNullifierAndCredsSchema = new Schema({
       firstName: String,
       lastName: String,
       dateOfBirth: String,
-      expiry: Date
+      expiry: Date,
     },
-    required: false
+    required: false,
   },
   uuid: {
     type: String,
     required: false,
-  }
+  },
+});
+
+// A collection to associate an issuance nullifier to the
+// user's Biometrics creds so that the user can lookup their
+// credentials using their nullifier.
+const BiometricsNullifierAndCredsSchema = new Schema({
+  holoUserId: String,
+  issuanceNullifier: String,
+  idvSessionIds: {
+    type: {
+      facetec: {
+        type: {
+          externalDatabaseRefID: String,
+        },
+        required: false,
+      },
+    },
+    required: false,
+  },
+  uuidV2: {
+    type: String,
+    required: false,
+  },
 });
 
 // To allow the user to persist a nullifier so that they can request their
@@ -413,7 +482,19 @@ const EncryptedNullifiersSchema = new Schema({
       createdAt: Date,
     },
     required: false,
-  }
+  },
+  biometrics: {
+    type: {
+      encryptedNullifier: {
+        type: {
+          ciphertext: String,
+          iv: String,
+        },
+      },
+      createdAt: Date,
+    },
+    required: false,
+  },      
 });
 
 const DailyVerificationCountSchema = new Schema({
@@ -491,7 +572,7 @@ const VerificationCollisionMetadataSchema = new Schema({
         populated: {
           type: Boolean,
           required: false,
-        }
+        },
       },
       postcode: {
         populated: {
@@ -509,9 +590,9 @@ const VerificationCollisionMetadataSchema = new Schema({
         populated: {
           type: Boolean,
           required: false,
-        }
+        },
       },
-    }
+    },
   },
 });
 
@@ -539,10 +620,12 @@ export {
   EncryptedNullifiersSchema,
   NullifierAndCredsSchema,
   CleanHandsNullifierAndCredsSchema,
+  BiometricsNullifierAndCredsSchema,
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,
   amlChecksSessionSchema,
+  biometricsSessionSchema,
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
   OrderSchema,

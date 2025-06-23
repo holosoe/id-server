@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ObjectId } from "mongodb";
-import { Session } from "../../init.js";
+import { Session, BiometricsSession } from "../../init.js";
 import {
   sessionStatusEnum,
   facetecServerBaseURL,
@@ -20,6 +20,7 @@ import { pinoOptions, logger } from "../../utils/logger.js";
 export async function sessionToken(req, res) {
   try {
     const sid = req.body.sid;
+    const sessionType = req.body.sessionType;
 
     if (!sid) {
       return res.status(400).json({ error: "sid is required" });
@@ -33,14 +34,21 @@ export async function sessionToken(req, res) {
       return res.status(400).json({ error: "Invalid sid" });
     }
 
-    const session = await Session.findOne({ _id: objectId }).exec();
+    let session;
+    if(sessionType === "biometrics") {
+      session = await BiometricsSession.findOne({ _id: objectId }).exec();
+    } else if(sessionType === "kyc") {
+      session = await Session.findOne({ _id: objectId }).exec();
+    } else {
+      session = await Session.findOne({ _id: objectId }).exec();
+    }
 
     if (!session) {
       return res.status(404).json({ error: "Session not found" });
     }
 
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
-      return res.status(400).json({ error: "Session is not in progress" });
+      return res.status(400).json({ error: `Session is not in progress. It is ${session.status}.` });
     }
 
     // --- Forward request to FaceTec server ---

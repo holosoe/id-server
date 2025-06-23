@@ -71,7 +71,7 @@ export async function match3d2dIdScan(req, res) {
     if (session.status !== sessionStatusEnum.IN_PROGRESS) {
       return res
         .status(400)
-        .json({ error: true, errorMessage: "Session is not in progress" });
+        .json({ error: true, errorMessage: `Session is not in progress. It is ${session.status}.` });
     }
 
     // --- Forward request to FaceTec server ---
