@@ -5,6 +5,7 @@ import {
   putPhoneCredentials,
   putGovIdCredentials,
   putCleanHandsCredentials,
+  putBiometricsCredentials,
 } from "../services/credentials-v2.js";
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.get("/v2", getCredentialsV2);
 router.put("/v2/phone", putPhoneCredentials);
 router.put("/v2/gov-id", putGovIdCredentials);
 router.put("/v2/clean-hands", putCleanHandsCredentials)
+router.put("/v2/biometrics", putBiometricsCredentials)
 
 export default router;

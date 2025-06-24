@@ -18,10 +18,12 @@ import {
   EncryptedNullifiersSchema,
   NullifierAndCredsSchema,
   CleanHandsNullifierAndCredsSchema,
+  BiometricsNullifierAndCredsSchema,
   DailyVerificationCountSchema,
   DailyVerificationDeletionsSchema,
   VerificationCollisionMetadataSchema,
   amlChecksSessionSchema,
+  biometricsSessionSchema,
   GalxeCampaignZeroUserSchema,
   SilkPeanutCampaignsMetadataSchema,
   OrderSchema,
@@ -215,6 +217,11 @@ async function initializeMongoDb() {
     CleanHandsNullifierAndCredsSchema
   );
 
+  const BiometricsNullifierAndCreds = mongoose.model(
+    "BiometricsNullifierAndCreds",
+    BiometricsNullifierAndCredsSchema
+  );
+
   const DailyVerificationCount = mongoose.model(
     "DailyVerificationCount",
     DailyVerificationCountSchema
@@ -231,6 +238,8 @@ async function initializeMongoDb() {
   );
 
   const AMLChecksSession = mongoose.model("AMLChecksSession", amlChecksSessionSchema);
+
+  const BiometricsSession = mongoose.model("BiometricsSession", biometricsSessionSchema);
 
   const GalxeCampaignZeroUser = mongoose.model(
     "GalxeCampaignZeroUser",
@@ -264,10 +273,12 @@ async function initializeMongoDb() {
     EncryptedNullifiers,
     NullifierAndCreds,
     CleanHandsNullifierAndCreds,
+    BiometricsNullifierAndCreds,
     DailyVerificationCount,
     DailyVerificationDeletions,
     VerificationCollisionMetadata,
     AMLChecksSession,
+    BiometricsSession,
     GalxeCampaignZeroUser,
     SilkPeanutCampaignsMetadata,
     Order,
@@ -287,10 +298,12 @@ let UserVerifications,
   EncryptedNullifiers,
   NullifierAndCreds,
   CleanHandsNullifierAndCreds,
+  BiometricsNullifierAndCreds,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
   AMLChecksSession,
+  BiometricsSession,
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata,
   Order,
@@ -308,10 +321,12 @@ initializeMongoDb().then((result) => {
     EncryptedNullifiers = result.EncryptedNullifiers;
     NullifierAndCreds = result.NullifierAndCreds;
     CleanHandsNullifierAndCreds = result.CleanHandsNullifierAndCreds;
+    BiometricsNullifierAndCreds = result.BiometricsNullifierAndCreds;
     DailyVerificationCount = result.DailyVerificationCount;
     DailyVerificationDeletions = result.DailyVerificationDeletions;
     VerificationCollisionMetadata = result.VerificationCollisionMetadata;
     AMLChecksSession = result.AMLChecksSession;
+    BiometricsSession = result.BiometricsSession;
     GalxeCampaignZeroUser = result.GalxeCampaignZeroUser;
     SilkPeanutCampaignsMetadata = result.SilkPeanutCampaignsMetadata;
     Order = result.Order;
@@ -339,10 +354,12 @@ export {
   EncryptedNullifiers,
   NullifierAndCreds,
   CleanHandsNullifierAndCreds,
+  BiometricsNullifierAndCreds,
   DailyVerificationCount,
   DailyVerificationDeletions,
   VerificationCollisionMetadata,
   AMLChecksSession,
+  BiometricsSession,
   GalxeCampaignZeroUser,
   SilkPeanutCampaignsMetadata,
   Order,

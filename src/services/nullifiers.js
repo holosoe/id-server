@@ -233,9 +233,69 @@ async function putCleanHandsNullifier(req, res) {
   return res.status(200).json({ success: true });
 }
 
+/**
+ * ENDPOINT
+ */
+async function putBiometricsNullifier(req, res) {
+  const holoUserId = req?.body?.holoUserId;
+  const encryptedNullifier = req?.body?.encryptedNullifier;
+
+  const validationResult = await validatePutNullifierArgs(
+    holoUserId,
+    encryptedNullifier
+  );
+  if (validationResult.error) {
+    logger.error({ error: validationResult.error }, "Invalid request body");
+    return res.status(400).json({ error: validationResult.error });
+  }
+
+  let encryptedNullifiersDoc;
+  try {
+    encryptedNullifiersDoc = await EncryptedNullifiers.findOne({
+      holoUserId: holoUserId,
+    }).exec();
+  } catch (err) {
+    logger.error({ error: err }, "An error occurred while retrieving encrypted nullifiers");
+    return { error: "An error occurred while retrieving encrypted nullifiers." };
+  }
+
+  if (encryptedNullifiersDoc) {
+    // Make sure user doesn't already have a nullifier that was created within the last 11 months
+    if (encryptedNullifiersDoc.biometrics?.createdAt > new Date(Date.now() - (335 * 24 * 60 * 60 * 1000))) {
+      return res.status(200).json({ success: true, message: "User already has a valid nullifier" });
+    }
+
+    encryptedNullifiersDoc.biometrics = {
+      encryptedNullifier,
+      createdAt: new Date(),
+    };
+  } else {
+    encryptedNullifiersDoc = new EncryptedNullifiers({
+      holoUserId,
+      biometrics: {
+        encryptedNullifier,
+        createdAt: new Date(),
+      },
+    });
+  }
+
+  try {
+    await encryptedNullifiersDoc.save();
+  } catch (err) {
+    logger.error(
+      { error: err },
+      "An error occurred while saving user encrypted nullifier to database"
+    );
+    return { error: "An error occurred while trying to save object to database." };
+  }
+
+  return res.status(200).json({ success: true });
+}
+
 export { 
   getNullifiers, 
   putGovIdNullifier, 
   putPhoneNullifier,
-  putCleanHandsNullifier
+  putCleanHandsNullifier,
+  putBiometricsNullifier
 };

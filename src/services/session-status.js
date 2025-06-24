@@ -386,6 +386,13 @@ async function getSessionStatusV2(req, res) {
           failureReason,
         },
       });
+    } else if (session.idvProvider === "facetec") {
+      return res.status(200).json({
+        facetec: { // to-do: not actually needed, but check again
+          sid: session._id,
+          status: null,
+        },
+      });
     } else {
       return res.status(500).json({ error: "Unknown idvProvider" });
     }
