@@ -125,15 +125,6 @@ async function handleIdvSessionCreation(session, logger) {
     return {
       externalDatabaseRefID: session.externalDatabaseRefID,
     };
-  } else if (session.idvProvider === "personhood") {
-    session.num_facetec_liveness_checks = 0;
-    session.externalDatabaseRefID = uuidV4();
-
-    await session.save();
-
-    return {
-      externalDatabaseRefID: session.externalDatabaseRefID,
-    };
   } else {
     throw new Error("Invalid idvProvider");
   }
