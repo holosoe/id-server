@@ -125,10 +125,10 @@ async function getCredentialsV3(req, res) {
 
     let ISSUER_PRIVKEY, groupName;
     if (sessionType === "biometrics") {
-      ISSUER_PRIVKEY = process.env.HOLONYM_ISSUER_FACETEC_BIOMETRICS_PRIVKEY;
+      ISSUER_PRIVKEY = process.env.NODE_ENV === "production" ? process.env.HOLONYM_ISSUER_FACETEC_BIOMETRICS_PRIVKEY : process.env.HOLONYM_ISSUER_FACETEC_BIOMETRICS_PRIVKEY_DEV;
       groupName = process.env.FACETEC_GROUP_NAME_FOR_BIOMETRICS;
     } else {
-      ISSUER_PRIVKEY = process.env.HOLONYM_ISSUER_FACETEC_KYC_PRIVKEY;
+      ISSUER_PRIVKEY = process.env.NODE_ENV === "production" ? process.env.HOLONYM_ISSUER_FACETEC_KYC_PRIVKEY : process.env.HOLONYM_ISSUER_FACETEC_KYC_PRIVKEY_DEV;
       groupName = process.env.FACETEC_GROUP_NAME_FOR_KYC;
     }
 
