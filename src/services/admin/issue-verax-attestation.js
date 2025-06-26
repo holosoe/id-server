@@ -5,8 +5,10 @@ import {
   defaultActionId,
   kycIssuerAddress,
   phoneIssuerAddress,
+  biometricsIssuerAddress,
   v3KYCSybilResistanceCircuitId,
   v3PhoneSybilResistanceCircuitId,
+  v3BiometricsSybilResistanceCircuitId,
   // v3EPassportSybilResistanceCircuitId 
 } from "../../constants/misc.js";
 import HubV3ABI from "../../constants/abi/HubV3ABI.js";
@@ -73,6 +75,34 @@ function validateKYCAttestation(attestation) {
   }
 }
 
+function validateBiometricsAttestation(attestation) {
+  const { circuitId, publicValues, revoked } = attestation.decodedPayload[0]
+  
+  const actionId = publicValues[2].toString();
+  const issuer = publicValues[4];
+  
+  // Make sure circuitId matches biometrics circuit ID
+  if (circuitId != v3BiometricsSybilResistanceCircuitId) {
+    return {
+      error: "Invalid circuit ID"
+    }
+  }
+  
+  // Validate action ID
+  if (actionId != defaultActionId.toString()) {
+    return {
+      error: "Invalid action ID"
+    }
+  }
+  
+  // Make sure issuer is the Biometrics Holonym issuer
+  if (issuer != BigInt(biometricsIssuerAddress)) {
+    return {
+      error: "Invalid Biometrics issuer"
+    }
+  }
+}
+
 function validatePhoneAttestation(attestation) {
   const { circuitId, publicValues, revoked } = attestation.decodedPayload[0]
   
@@ -127,6 +157,10 @@ function getAndValidateV3PhoneSBT(address) {
   return getAndValidateV3SBT(address, v3PhoneSybilResistanceCircuitId, phoneIssuerAddress);
 }
 
+function getAndValidateV3BiometricsSBT(address) {
+  return getAndValidateV3SBT(address, v3BiometricsSybilResistanceCircuitId, biometricsIssuerAddress);
+}
+
 function getSBT(address, attestationType) {
   if (attestationType == 'kyc') {
     return getAndValidateV3KYCSBT(address);
@@ -135,6 +169,11 @@ function getSBT(address, attestationType) {
   if (attestationType == 'phone') {
     return getAndValidateV3PhoneSBT(address);
   }
+
+  if (attestationType == 'biometrics') {
+    return getAndValidateV3BiometricsSBT(address);
+  }
+
 }
 
 async function attest(subject, circuitId, publicValues, revoked) {
@@ -177,7 +216,7 @@ async function issueVeraxAttestation(req, res) {
     const address = req.body.address;
     const attestationType = req.body.attestationType;
 
-    if (['kyc', 'phone'].indexOf(attestationType) === -1) {
+    if (['kyc', 'phone', 'biometrics'].indexOf(attestationType) === -1) {
       return res.status(400).json({ error: "Invalid attestation type" });
     }
 
@@ -188,6 +227,9 @@ async function issueVeraxAttestation(req, res) {
     )[0];
     const phoneAttestation = attestations.filter(
       (attestation) => attestation.decodedPayload[0].circuitId == v3PhoneSybilResistanceCircuitId
+    )[0];
+    const biometricsAttestation = attestations.filter(
+      (attestation) => attestation.decodedPayload[0].circuitId == v3BiometricsSybilResistanceCircuitId
     )[0];
 
     if (attestationType == 'kyc' && kycAttestation) {
@@ -201,6 +243,13 @@ async function issueVeraxAttestation(req, res) {
       const validationResult = validatePhoneAttestation(phoneAttestation)
       if (!validationResult?.error) {
         return res.status(400).json({ error: "User already has a phone attestation" });
+      }
+    }
+
+    if (attestationType == 'biometrics' && biometricsAttestation) {
+      const validationResult = validateBiometricsAttestation(biometricsAttestation)
+      if (!validationResult?.error) {
+        return res.status(400).json({ error: "User already has a biometrics attestation" });
       }
     }
     
@@ -225,6 +274,8 @@ async function issueVeraxAttestation(req, res) {
       circuitId = v3KYCSybilResistanceCircuitId;
     } else if (attestationType == 'phone') {
       circuitId = v3PhoneSybilResistanceCircuitId;
+    } else if (attestationType == 'biometrics') {
+      circuitId = v3BiometricsSybilResistanceCircuitId;
     }
     const revoked = sbt[2];
     await attest(address, circuitId, publicValues, revoked);
